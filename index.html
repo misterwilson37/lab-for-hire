@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lab for Hire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<!-- Lab for Hire v0.1.1 (game) · content schema 0.2.0 · built by Playfair -->
+<style>
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --paper: #FBF9FF; --bg: #F1ECFB; --ink: #2A1F4A; --ink-soft: #5D5480; --line: #D9D0EE;
+  --plot: #FFFFFF; --g-major: #CFC4EA; --g-minor: #E9E3F6;
+  --pink: #D93A72; --pink-soft: #FCE3EC; --violet: #6547CF; --violet-soft: #ECE6FC;
+  --sky: #1F8FBF; --sky-soft: #DFF3FB; --amber: #C98313; --mint: #25845A; --mint-soft: #E1F4EA;
+  --warn-soft: #FFF3D6; --r-solid: #C9D6F6; --r-liquid: #B9E4F2; --r-gas: #FADBE6;
+  --grid-1: rgba(42,31,74,.24); --grid-2: rgba(42,31,74,.16); --grid-3: rgba(42,31,74,.45); --stamp-bg: rgba(251,249,255,.7);
+  --display: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Verdana", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #221B3A; --bg: #17122A; --ink: #F1ECFF; --ink-soft: #B8AEDB; --line: #3D3363;
+    --plot: #1D1733; --g-major: #4A3F75; --g-minor: #302852;
+    --pink: #FF6F9F; --pink-soft: #4A2238; --violet: #A58FFF; --violet-soft: #2F2653;
+    --sky: #4FC3EE; --sky-soft: #173A4A; --amber: #F2B64B; --mint: #5BD497; --mint-soft: #173B2C;
+    --warn-soft: #43381B; --r-solid: #34416B; --r-liquid: #1E4A5C; --r-gas: #52283D;
+    --grid-1: rgba(241,236,255,.24); --grid-2: rgba(241,236,255,.16); --grid-3: rgba(241,236,255,.45); --stamp-bg: rgba(34,27,58,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #221B3A; --bg: #17122A; --ink: #F1ECFF; --ink-soft: #B8AEDB; --line: #3D3363;
+  --plot: #1D1733; --g-major: #4A3F75; --g-minor: #302852;
+  --pink: #FF6F9F; --pink-soft: #4A2238; --violet: #A58FFF; --violet-soft: #2F2653;
+  --sky: #4FC3EE; --sky-soft: #173A4A; --amber: #F2B64B; --mint: #5BD497; --mint-soft: #173B2C;
+  --warn-soft: #43381B; --r-solid: #34416B; --r-liquid: #1E4A5C; --r-gas: #52283D;
+  --grid-1: rgba(241,236,255,.24); --grid-2: rgba(241,236,255,.16); --grid-3: rgba(241,236,255,.45); --stamp-bg: rgba(34,27,58,.7);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body); }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; line-height: 1.2; margin: 0 0 .4em; }
+h1 { font-size: 2rem; } h2 { font-size: 1.3rem; } h3 { font-size: 1.15rem; }
+p { margin: 0 0 .7em; }
+button { font: inherit; color: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.small { font-size: .9rem; color: var(--ink-soft); }
+
+/* top bar */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 24px; background: var(--paper); border-bottom: 2px solid var(--line); }
+.wordmark { font-family: var(--display); font-size: 1.5rem; font-weight: 600; background: none; border: 0; cursor: pointer; padding: 0; color: var(--pink); letter-spacing: -.01em; }
+.rank { display: flex; align-items: center; gap: 12px; font-size: .95rem; }
+.rank-name { font-weight: 700; }
+.meter { width: 120px; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--pink); border-radius: 5px; }
+.rep { color: var(--ink-soft); }
+
+/* buttons */
+.btn { border: 2px solid var(--ink); background: var(--paper); border-radius: 999px; padding: 9px 20px; cursor: pointer; font-weight: 700; }
+.btn.primary { background: var(--pink); border-color: var(--pink); color: #fff; }
+.btn.ghost { border-color: var(--line); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+.small-btn { padding: 6px 14px; font-size: .9rem; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.linkish { background: none; border: 0; color: var(--ink-soft); text-decoration: underline; cursor: pointer; padding: 8px 0; font-size: .9rem; }
+
+/* hub */
+.hub { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 32px; max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
+.preview-banner { grid-column: 1 / -1; background: var(--warn-soft); border-radius: 12px; padding: 12px 16px; font-size: .95rem; }
+.lede { color: var(--ink-soft); max-width: 60ch; }
+.path { list-style: none; margin: 20px 0 0; padding: 0; position: relative; }
+.path::before { content: ""; position: absolute; left: 21px; top: 20px; bottom: 20px; border-left: 3px dashed var(--line); }
+.node { position: relative; display: flex; gap: 18px; margin-bottom: 18px; }
+.node-num { flex: none; width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 3px solid var(--pink); font-family: var(--display); font-size: 1.2rem; font-weight: 600; color: var(--pink); z-index: 1; }
+.node.done .node-num { background: var(--pink); color: #fff; }
+.node.locked .node-num { border-color: var(--line); color: var(--ink-soft); }
+.node-body { flex: 1; background: var(--paper); border: 2px solid var(--line); border-radius: 18px; padding: 14px 18px; }
+.node.locked .node-body { opacity: .65; }
+.node-body h3 { margin-bottom: 2px; }
+.client { color: var(--ink-soft); font-size: .95rem; margin-bottom: 6px; }
+.client.big { font-size: 1.05rem; }
+.stars span, .bigstars span { color: var(--line); } .stars span.on, .bigstars span.on { color: var(--amber); }
+.stars { margin-bottom: 8px; letter-spacing: 2px; }
+.lock-note { font-size: .9rem; color: var(--ink-soft); margin: 0; }
+.badge { font-family: var(--body); font-size: .75rem; background: var(--warn-soft); border-radius: 6px; padding: 2px 8px; vertical-align: middle; }
+.side { display: flex; flex-direction: column; gap: 20px; }
+.bay-card { background: var(--sky-soft); border-radius: 18px; padding: 18px; border: 2px solid transparent; }
+.bay-card h2 { color: var(--sky); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn { border: 2px solid var(--sky); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 5px 12px; font-size: .88rem; cursor: pointer; }
+.chip-btn.strong { background: var(--sky); color: #fff; font-weight: 700; }
+.shelf-card { background: var(--paper); border: 2px solid var(--line); border-radius: 18px; padding: 18px; }
+.shelf { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; text-align: center; font-size: .72rem; color: var(--ink-soft); }
+.shelf li { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.shelf-item { width: 48px; height: 48px; display: grid; place-items: center; font-size: 1.6rem; border-radius: 12px; background: var(--bg); color: var(--ink-soft); }
+.shelf li.got .shelf-item { background: var(--pink-soft); }
+
+/* intro + report ticket */
+.intro, .report { max-width: 760px; margin: 0 auto; padding: 36px 24px 56px; }
+.ticket { background: var(--paper); border: 2px solid var(--line); border-radius: 22px; padding: 28px 32px; border-top: 10px solid var(--pink); }
+.ticket-kicker { font-family: var(--display); color: var(--pink); font-size: 1.05rem; margin-bottom: 2px; }
+.pitch { font-size: 1.12rem; max-width: 62ch; }
+.bigstars { font-size: 2.6rem; letter-spacing: 6px; margin: 4px 0 8px; }
+.results { list-style: none; padding: 0; margin: 0 0 16px; }
+.results li { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.res-mark { width: 18px; height: 18px; border-radius: 50%; }
+.res-first .res-mark { background: var(--mint); } .res-helped .res-mark { background: var(--sky); } .res-shown .res-mark { background: var(--line); }
+.res-how { color: var(--ink-soft); font-size: .92rem; }
+.visited { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.visited li { border-radius: 999px; padding: 4px 12px; font-size: .9rem; }
+.visited li.z-cal { background: var(--sky-soft); } .visited li.z-arc { background: var(--violet-soft); }
+.promo { background: var(--pink-soft); border-radius: 12px; padding: 10px 14px; font-weight: 700; margin: 10px 0; }
+
+/* case bench */
+.casewrap { max-width: 1320px; margin: 0 auto; padding: 16px 20px 40px; }
+.casebar, .zonebar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.casebar h2, .zonebar h2 { margin: 0; }
+.casebar .client { margin: 0; }
+.progress { display: flex; gap: 6px; align-items: center; }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--pink); }
+.dot.did { background: var(--pink); } .dot.now { box-shadow: 0 0 0 3px var(--pink-soft); }
+.build-tag { font-family: var(--display); color: var(--pink); }
+.bench { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr); gap: 22px; align-items: start; }
+.visual-panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.paper { position: relative; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 10px; }
+.work-panel { background: var(--paper); border: 2px solid var(--line); border-radius: 22px; padding: 22px 24px; }
+.skill { display: inline-block; font-size: .85rem; font-weight: 700; color: var(--violet); background: var(--violet-soft); border-radius: 999px; padding: 3px 12px; margin-bottom: 10px; }
+.step-name { font-family: var(--display); color: var(--pink); font-size: 1.05rem; margin-bottom: 4px; }
+.prompt { font-family: var(--body); font-weight: 700; font-size: 1.14rem; line-height: 1.45; }
+.instr { color: var(--ink-soft); font-size: .95rem; }
+.count { font-weight: 700; color: var(--pink); margin-left: 6px; }
+.options { display: flex; flex-direction: column; gap: 9px; margin: 8px 0; }
+.opt { display: flex; align-items: flex-start; gap: 12px; text-align: left; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 11px 14px; cursor: pointer; line-height: 1.4; }
+.opt:not(:disabled):hover { border-color: var(--ink-soft); }
+.opt .box { flex: none; width: 20px; height: 20px; margin-top: 1px; border: 2px solid var(--ink-soft); border-radius: 6px; }
+.opt.picked { border-color: var(--pink); background: var(--pink-soft); }
+.opt.picked .box { background: var(--pink); border-color: var(--pink); box-shadow: inset 0 0 0 3px var(--pink-soft); }
+.opt.is-right { border-color: var(--mint); background: var(--mint-soft); }
+.opt.is-right .box { background: var(--mint); border-color: var(--mint); }
+.opt.is-wrong { border-style: dashed; }
+.opt:disabled { cursor: default; }
+.fb { border-radius: 14px; padding: 14px 16px; margin-top: 14px; }
+.fb-head { font-weight: 700; margin-bottom: 4px; }
+.fb-correct { background: var(--mint-soft); border-left: 6px solid var(--mint); }
+.fb-reveal, .fb-retry { background: var(--warn-soft); border-left: 6px solid var(--amber); }
+.fb-mission.z-cal { background: var(--sky-soft); border-left: 6px solid var(--sky); }
+.fb-mission.z-arc { background: var(--violet-soft); border-left: 6px solid var(--violet); }
+.fb-where { font-family: var(--display); font-size: .95rem; margin: 0; }
+.z-cal .fb-where { color: var(--sky); } .z-arc .fb-where { color: var(--violet); }
+.earned { color: var(--pink); margin-left: 6px; }
+.tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.tab { border: 2px solid var(--line); background: var(--paper); border-radius: 10px 10px 0 0; padding: 6px 14px; cursor: pointer; font-weight: 700; font-size: .92rem; }
+.tab[aria-selected="true"] { border-color: var(--pink); color: var(--pink); }
+.tab-note { font-size: .85rem; color: var(--ink-soft); margin-left: 6px; }
+.built-badge { position: absolute; right: 16px; bottom: 14px; font-size: .78rem; font-weight: 700; background: var(--pink-soft); color: var(--pink); border-radius: 999px; padding: 2px 10px; }
+.hint { font-size: .88rem; color: var(--ink-soft); margin-top: 8px; }
+.talk { list-style: none; padding: 0; margin: 0 0 10px; }
+.talk li { padding: 7px 0 7px 32px; position: relative; border-bottom: 1px solid var(--line); }
+.talk li::before { content: ""; position: absolute; left: 4px; top: 11px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink-soft); }
+.talk li.ok::before { background: var(--mint); border-color: var(--mint); }
+.talk strong { color: var(--pink); font-size: 1.1em; }
+.blank-grid { margin-top: 10px; height: 220px; border-radius: 8px; background-color: var(--plot); background-image: linear-gradient(var(--g-major) 1px, transparent 1px), linear-gradient(90deg, var(--g-major) 1px, transparent 1px); background-size: 28px 28px; opacity: .8; }
+
+/* zones */
+.zone.z-cal .zonebar h2 { color: var(--sky); } .zone.z-arc .zonebar h2 { color: var(--violet); }
+.zone.z-cal .work-panel { border-color: var(--sky); } .zone.z-arc .work-panel { border-color: var(--violet); }
+.explain { background: var(--sky-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+.archive-card { background: var(--violet-soft); border-radius: 18px; padding: 26px 28px; border: 2px solid var(--violet); }
+.archive-card h3 { color: var(--violet); font-size: 1.5rem; }
+.archive-card p:last-child { font-size: 1.2rem; margin: 8px 0 0; }
+.streak { font-weight: 700; color: var(--sky); margin: 0; }
+
+/* svg visuals */
+.viz { width: 100%; height: auto; display: block; font-family: var(--body); }
+.plot-target { cursor: crosshair; touch-action: none; }
+.viz .g-major { stroke: var(--grid-1); stroke-width: 1.2; }
+.viz .g-minor { stroke: var(--grid-2); stroke-width: 1; }
+.viz .g-decade { stroke: var(--grid-3); stroke-width: 1.8; }
+.viz .frame { fill: none; stroke: var(--ink); stroke-width: 2; }
+.viz .tick { fill: var(--ink); font-size: 14px; }
+.viz .v-title { fill: var(--ink); font-family: var(--display); font-weight: 600; font-size: 19px; }
+.viz .ax-title { fill: var(--ink); font-weight: 700; font-size: 15px; }
+.viz .legend { fill: var(--ink); font-size: 13px; }
+.viz .bar { fill: var(--pink); }
+.viz .boundary { stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.viz .r-solid { fill: var(--r-solid); } .viz .r-liquid { fill: var(--r-liquid); } .viz .r-gas { fill: var(--r-gas); }
+.viz .region-label { fill: var(--ink); font-family: var(--display); font-size: 22px; font-weight: 600; paint-order: stroke; stroke: var(--plot); stroke-width: 4px; }
+.viz .pt-dot { fill: var(--ink); }
+.viz .pt-label, .viz .hl-label { fill: var(--ink); font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--plot); stroke-width: 4px; }
+.viz .hl-label { font-size: 15px; }
+.viz .hl-ring { fill: none; stroke: var(--ink); stroke-width: 3; }
+.viz .hl-dot { fill: var(--ink); }
+.viz .arrow { stroke: var(--ink); stroke-width: 3; stroke-dasharray: 8 5; }
+.viz .pending line { stroke: var(--pink); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.viz .pending circle { fill: none; stroke: var(--pink); stroke-width: 3; }
+.viz .ghost { fill: none; stroke: var(--mint); stroke-width: 3; stroke-dasharray: 5 4; }
+.draw-in { stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: draw 1.2s ease-out .15s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.stamp { position: absolute; font-family: var(--display); font-weight: 600; font-size: 2.2rem; color: var(--pink); border: 5px solid var(--pink); border-radius: 12px; padding: 2px 18px; transform: rotate(-12deg); opacity: .9; animation: stamp .45s cubic-bezier(.2, 1.6, .5, 1) .9s both; background: var(--stamp-bg); }
+@keyframes stamp { from { transform: rotate(-12deg) scale(2.2); opacity: 0; } to { transform: rotate(-12deg) scale(1); opacity: .9; } }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+.datatable { border-collapse: collapse; width: 100%; font-size: 1rem; }
+.datatable caption { font-family: var(--display); font-weight: 600; font-size: 1.1rem; text-align: left; padding: 4px 4px 10px; }
+.datatable th, .datatable td { border: 2px solid var(--line); padding: 9px 12px; text-align: center; }
+.datatable thead th { background: var(--violet-soft); font-size: .95rem; }
+.datatable tbody th { font-weight: 700; }
+.datatable tr.row-now td, .datatable tr.row-now th { background: var(--pink-soft); border-color: var(--pink); }
+.datatable tr.row-done { color: var(--ink-soft); }
+.datatable tr.row-done th::after { content: " ✓"; color: var(--mint); }
+
+@media (max-width: 920px) {
+  .hub, .bench { grid-template-columns: 1fr; }
+  .visual-panel { position: static; }
+  .topbar { padding: 10px 14px; } .meter { width: 70px; }
+  .ticket { padding: 22px 20px; }
+  h1 { font-size: 1.6rem; }
+}
+@media (max-width: 520px) { .rep { display: none; } .rank-name { font-size: .85rem; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .draw-in { stroke-dasharray: none; stroke-dashoffset: 0; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="lfh-content" type="application/json">{"schema":"0.2.0","source":"LabForHire_Content_v0.2.0.xlsx","cases":[{"id":"MOVIN-MOLECULES","status":"Live","order":1,"title":"Movin' Molecules","client":"Rook, lead programmer at Pixel Pond Studios","pitch":"Pixel Pond Studios is building a video game where water freezes, melts, and boils. Rook needs the water to behave like real science. Scientists measured how fast water molecules move at different temperatures. Build the graph from their data, then use it to help Rook program the physics.","win":"Rook's water physics are ready. Players will never know how much science is hiding in that puddle!","standard":"7.PS1.3"},{"id":"COLD-PACK","status":"Live","order":2,"title":"The Cold Pack Challenge","client":"Coach Rivera, athletic trainer","pitch":"Coach Rivera needs instant cold packs for the team's first-aid kit. A lab tested four substances by dissolving each one in water and measuring the temperature. The pack has to get cold fast, stay cold, and not blow the budget. Use the evidence to pick the winner.","win":"Coach Rivera ordered a case of cold packs, and they're the right ones. Twisted ankles everywhere thank you.","standard":"7.PS1 (energy in chemical reactions)"},{"id":"PHASE-PROBE","status":"Live","order":3,"title":"Mission to Kestrel-b","client":"Captain Juno Park, probe mission planner","pitch":"Captain Park is landing a probe on Kestrel-b, a moon with a thick atmosphere where the pressure changes from place to place. The probe needs liquid water to run its experiments. Use the phase diagram for water to pick safe landing sites.","win":"The probe touched down right next to liquid water. Mission control is cheering!","standard":"7.PS1.3"},{"id":"DRY-ICE","status":"Live","order":4,"title":"Fog for Frankenstein","client":"Mack, effects designer at the Lantern Light Theater","pitch":"The Lantern Light Theater is staging Frankenstein, and the graveyard scene needs creepy fog. Mack uses dry ice, which is solid carbon dioxide. Before the show, Mack needs to understand CO2's phase diagram. Careful: the pressure axis on this one is a stretchy log scale!","win":"The graveyard scene is gloriously foggy. (Fun fact: the fog you see is tiny water droplets. The CO2 gas itself is invisible!)","standard":"7.PS1.3"},{"id":"BOUNCE-LAB","status":"Live","order":5,"title":"The Winter Bounce Test","client":"Priya, product tester at Rebound Sports Co.","pitch":"Rebound Sports Co. is making basketballs for an outdoor winter league. Priya tested the same ball at different temperatures and recorded the air pressure inside and how high it bounced. Use her table and graph to explain what the air particles are doing.","win":"Priya's report is done, and the winter league now keeps its balls warm between games. Science wins again.","standard":"7.PS1.3"}],"visuals":[{"id":"MM-GRAPH","caseId":"MOVIN-MOLECULES","label":"Graph","type":"Line graph","title":"Speed of Water Molecules at Different Temperatures","build":true,"x":{"label":"Temperature","unit":"°C","min":-40,"max":140,"step":20,"scale":"Linear"},"y":{"label":"Water Molecule Speed","unit":"m/s","min":500,"max":800,"step":50,"scale":"Linear"}},{"id":"CP-GRAPH","caseId":"COLD-PACK","label":"Temperature graph","type":"Line graph","title":"Water Temperature After Adding Each Substance","build":false,"x":{"label":"Time","unit":"min","min":0,"max":10,"step":2,"scale":"Linear"},"y":{"label":"Temperature","unit":"°C","min":0,"max":50,"step":5,"scale":"Linear"}},{"id":"CP-COST","caseId":"COLD-PACK","label":"Cost table","type":"Data table","title":"Cost of Each Substance","build":false,"x":{"label":"","unit":"","min":null,"max":null,"step":null,"scale":"Linear"},"y":{"label":"","unit":"","min":null,"max":null,"step":null,"scale":"Linear"}},{"id":"PH-DIAGRAM","caseId":"PHASE-PROBE","label":"Phase diagram","type":"Phase diagram","title":"Phase Diagram of Water","build":false,"x":{"label":"Temperature","unit":"°C","min":-40,"max":200,"step":20,"scale":"Linear"},"y":{"label":"Pressure","unit":"atm","min":0,"max":12,"step":2,"scale":"Linear"}},{"id":"DI-DIAGRAM","caseId":"DRY-ICE","label":"Phase diagram","type":"Phase diagram","title":"Phase Diagram of Carbon Dioxide","build":false,"x":{"label":"Temperature","unit":"°C","min":-120,"max":20,"step":20,"scale":"Linear"},"y":{"label":"Pressure","unit":"atm","min":0.1,"max":100,"step":null,"scale":"Log"}},{"id":"BL-TABLE","caseId":"BOUNCE-LAB","label":"Test results","type":"Data table","title":"Priya's Basketball Tests","build":false,"x":{"label":"","unit":"","min":null,"max":null,"step":null,"scale":"Linear"},"y":{"label":"","unit":"","min":null,"max":null,"step":null,"scale":"Linear"}},{"id":"BL-BARS","caseId":"BOUNCE-LAB","label":"Bounce graph","type":"Bar graph","title":"Bounce Height at Different Temperatures","build":false,"x":{"label":"Ball temperature","unit":"","min":null,"max":null,"step":null,"scale":"Linear"},"y":{"label":"Bounce height","unit":"cm","min":0,"max":150,"step":25,"scale":"Linear"}}],"data":[{"visualId":"MM-GRAPH","series":"Water","x":-20,"y":550,"label":""},{"visualId":"MM-GRAPH","series":"Water","x":0,"y":600,"label":""},{"visualId":"MM-GRAPH","series":"Water","x":40,"y":700,"label":""},{"visualId":"MM-GRAPH","series":"Water","x":100,"y":740,"label":""},{"visualId":"MM-GRAPH","series":"Water","x":120,"y":750,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":0,"y":22,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":2,"y":6,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":4,"y":3,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":6,"y":4,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":8,"y":6,"label":""},{"visualId":"CP-GRAPH","series":"Ammonium nitrate","x":10,"y":8,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":0,"y":22,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":2,"y":9,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":4,"y":7,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":6,"y":7,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":8,"y":8,"label":""},{"visualId":"CP-GRAPH","series":"Urea","x":10,"y":10,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":0,"y":22,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":2,"y":21,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":4,"y":21,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":6,"y":21,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":8,"y":21,"label":""},{"visualId":"CP-GRAPH","series":"Sodium chloride","x":10,"y":22,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":0,"y":22,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":2,"y":38,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":4,"y":44,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":6,"y":42,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":8,"y":39,"label":""},{"visualId":"CP-GRAPH","series":"Calcium chloride","x":10,"y":36,"label":""},{"visualId":"PH-DIAGRAM","series":"Sublimation line","x":-40,"y":0.0001,"label":""},{"visualId":"PH-DIAGRAM","series":"Sublimation line","x":-20,"y":0.001,"label":""},{"visualId":"PH-DIAGRAM","series":"Sublimation line","x":0.01,"y":0.006,"label":""},{"visualId":"PH-DIAGRAM","series":"Melting line","x":0.01,"y":0.006,"label":""},{"visualId":"PH-DIAGRAM","series":"Melting line","x":-0.09,"y":12,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":0.01,"y":0.006,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":20,"y":0.023,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":40,"y":0.073,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":60,"y":0.197,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":80,"y":0.467,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":100,"y":1,"label":"Boils at 100°C at 1 atm"},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":120,"y":1.96,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":140,"y":3.57,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":160,"y":6.1,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":180,"y":9.92,"label":""},{"visualId":"PH-DIAGRAM","series":"Boiling line","x":200,"y":15.35,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-110,"y":0.05,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-100,"y":0.14,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-90,"y":0.37,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-78.5,"y":1,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-70,"y":1.9,"label":""},{"visualId":"DI-DIAGRAM","series":"Sublimation line","x":-56.6,"y":5.1,"label":"Triple point"},{"visualId":"DI-DIAGRAM","series":"Melting line","x":-56.6,"y":5.1,"label":""},{"visualId":"DI-DIAGRAM","series":"Melting line","x":-54.8,"y":100,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-56.6,"y":5.1,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-50,"y":6.7,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-40,"y":10,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-30,"y":14.1,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-20,"y":19.4,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":-10,"y":26.1,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":0,"y":34.4,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":10,"y":44.4,"label":""},{"visualId":"DI-DIAGRAM","series":"Boiling line","x":20,"y":56.5,"label":""},{"visualId":"BL-BARS","series":"0°C","x":null,"y":108,"label":""},{"visualId":"BL-BARS","series":"20°C","x":null,"y":125,"label":""},{"visualId":"BL-BARS","series":"40°C","x":null,"y":138,"label":""}],"tables":[{"visualId":"CP-COST","row":0,"cells":["Substance","Cost per pack","","","",""]},{"visualId":"CP-COST","row":1,"cells":["Ammonium nitrate","$1.20","","","",""]},{"visualId":"CP-COST","row":2,"cells":["Urea","$0.85","","","",""]},{"visualId":"CP-COST","row":3,"cells":["Sodium chloride","$0.10","","","",""]},{"visualId":"CP-COST","row":4,"cells":["Calcium chloride","$0.60","","","",""]},{"visualId":"BL-TABLE","row":0,"cells":["Ball temperature (°C)","Air pressure inside (psi)","Bounce height (cm)","Air particle motion","",""]},{"visualId":"BL-TABLE","row":1,"cells":["0","6.5","108","Slow","",""]},{"visualId":"BL-TABLE","row":2,"cells":["20","8.0","125","Moderate","",""]},{"visualId":"BL-TABLE","row":3,"cells":["40","9.5","138","Fast","",""]},{"visualId":"BL-TABLE","row":4,"cells":["60","?","?","?","",""]}],"questions":[{"id":"MM-01","caseId":"MOVIN-MOLECULES","order":1,"role":"Main","forTag":"","skill":"Read a value","type":"Multiple choice","visuals":[],"prompt":"Rook's first level takes place at 40°C. How fast should the water molecules move?","why":"Find 40°C on the x-axis, go straight up to the line, then across to the y-axis: 700 m/s."},{"id":"MM-02","caseId":"MOVIN-MOLECULES","order":2,"role":"Main","forTag":"","skill":"Read the scale","type":"Multiple choice","visuals":[],"prompt":"The point at 100°C sits between two gridlines. What is the molecule speed at 100°C?","why":"Each gridline is worth 50 m/s. The point is most of the way from 700 to 750, at 740 m/s."},{"id":"MM-03","caseId":"MOVIN-MOLECULES","order":3,"role":"Main","forTag":"","skill":"Identify a trend","type":"Multiple choice","visuals":[],"prompt":"Rook needs one rule for the game engine. Which statement best describes the overall trend?","why":"From the first point to the last, the line keeps rising: hotter water, faster molecules."},{"id":"MM-04","caseId":"MOVIN-MOLECULES","order":4,"role":"Main","forTag":"","skill":"Compare","type":"Multiple choice","visuals":[],"prompt":"Between which two measured temperatures did the molecule speed go up by the greatest amount?","why":"From 0°C to 40°C the speed jumped from 600 to 700 m/s, a 100 m/s increase. That's the biggest jump."},{"id":"MM-05","caseId":"MOVIN-MOLECULES","order":5,"role":"Main","forTag":"","skill":"Predict / extrapolate","type":"Multiple choice","visuals":[],"prompt":"Rook wants a bonus level with superheated steam at 140°C. Based on the pattern, what is the best prediction?","why":"The speed keeps rising, but the line flattens near the end, so expect a little faster than 750 m/s."},{"id":"MM-06","caseId":"MOVIN-MOLECULES","order":6,"role":"Main","forTag":"","skill":"Apply the science","type":"Pick two","visuals":[],"prompt":"Rook wants the in-game science tips to be accurate. Pick the TWO statements supported by the graph AND by science.","why":"Hotter water has more average kinetic energy, and even ice at -20°C has molecules moving at 550 m/s."},{"id":"MM-07","caseId":"MOVIN-MOLECULES","order":7,"role":"Main","forTag":"","skill":"Select evidence","type":"Select all that apply","visuals":[],"prompt":"A coworker claims: \"Heating water makes its molecules speed up.\" Select ALL the statements that are evidence for this claim.","why":"Evidence must be true AND show that heating led to more speed. The water being a liquid is true but doesn't show speed changing."},{"id":"MM-08","caseId":"MOVIN-MOLECULES","order":8,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Rook's next level is at the bottom of a deep ocean, where the pressure is very high. To know whether water there is a solid, liquid, or gas, which graph should Rook use?","why":"A phase diagram uses temperature AND pressure to show which state exists. This line graph only shows speed vs. temperature."},{"id":"CP-01","caseId":"COLD-PACK","order":1,"role":"Main","forTag":"","skill":"Read a value","type":"Multiple choice","visuals":["CP-GRAPH"],"prompt":"What was the water temperature with urea at 4 minutes?","why":"Find the urea line in the key, go to 4 minutes, and read across: 7°C, between the 5 and 10 gridlines."},{"id":"CP-02","caseId":"COLD-PACK","order":2,"role":"Main","forTag":"","skill":"Identify a trend","type":"Multiple choice","visuals":["CP-GRAPH"],"prompt":"Which statement describes the ammonium nitrate line from 0 to 10 minutes?","why":"It plunges from 22°C to 3°C in 4 minutes, then slowly warms back up as the room adds thermal energy."},{"id":"CP-03","caseId":"COLD-PACK","order":3,"role":"Main","forTag":"","skill":"Apply the science","type":"Pick two","visuals":["CP-GRAPH"],"prompt":"Pick the TWO statements that explain why an ammonium nitrate pack feels cold on an injured ankle.","why":"Dissolving ammonium nitrate absorbs thermal energy, so thermal energy flows out of your warm skin into the pack."},{"id":"CP-04","caseId":"COLD-PACK","order":4,"role":"Main","forTag":"","skill":"Compare","type":"Select all that apply","visuals":["CP-GRAPH"],"prompt":"Coach Rivera's rules: the pack must be below 10°C at 2 minutes AND still below 10°C at 8 minutes. Select ALL the substances that meet both rules.","why":"Ammonium nitrate (6°C, then 6°C) and urea (9°C, then 8°C) both pass. Urea is close to the 10°C line, so read carefully!"},{"id":"CP-05","caseId":"COLD-PACK","order":5,"role":"Main","forTag":"","skill":"Evaluate a claim","type":"Multiple choice","visuals":["CP-GRAPH","CP-COST"],"prompt":"An assistant says: \"Ammonium nitrate is the best choice because it gets the coldest.\" Using the graph AND the cost table, what's the best response?","why":"Both ammonium nitrate and urea meet Coach's rules, and urea costs $0.35 less per pack. Coldest isn't the only thing that matters."},{"id":"CP-06","caseId":"COLD-PACK","order":6,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":["CP-GRAPH"],"prompt":"The team also needs HOT packs for sore muscles. Which substance should go in them?","why":"Calcium chloride made the water warmer: dissolving it releases thermal energy."},{"id":"CP-07","caseId":"COLD-PACK","order":7,"role":"Main","forTag":"","skill":"Compare","type":"Multiple choice","visuals":["CP-GRAPH"],"prompt":"Which substance changed the water temperature the LEAST?","why":"The sodium chloride line is almost flat: it barely moved from 22°C."},{"id":"PH-01","caseId":"PHASE-PROBE","order":1,"role":"Main","forTag":"","skill":"Read a value","type":"Multiple choice","visuals":[],"prompt":"Landing site Alpha is 20°C with a pressure of 6 atm. What state is water at site Alpha?","why":"Find 20°C across and 6 atm up. They meet in the liquid region."},{"id":"PH-02","caseId":"PHASE-PROBE","order":2,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"At site Alpha (20°C, 6 atm), what are the water molecules doing?","why":"Water at site Alpha is a liquid, and liquid particles slide past one another while staying close together."},{"id":"PH-03","caseId":"PHASE-PROBE","order":3,"role":"Main","forTag":"","skill":"Read the scale","type":"Multiple choice","visuals":[],"prompt":"Normal air pressure on Earth is 1 atm. According to the diagram, at what temperature does water boil at 1 atm?","why":"1 atm is halfway between the 0 and 2 gridlines. Slide right until you hit the boiling line: 100°C."},{"id":"PH-04","caseId":"PHASE-PROBE","order":4,"role":"Main","forTag":"","skill":"Compare","type":"Multiple choice","visuals":[],"prompt":"At which landing site do the water molecules have the greatest average kinetic energy?","why":"Average kinetic energy follows temperature. 150°C is the hottest site, even though its pressure is low."},{"id":"PH-05","caseId":"PHASE-PROBE","order":5,"role":"Main","forTag":"","skill":"Predict / extrapolate","type":"Multiple choice","visuals":[],"prompt":"A water sample starts at 20°C and 4 atm. The pressure stays at 4 atm while the probe heats it to 180°C. What happens?","why":"At 4 atm, move straight right from 20°C to 180°C. You start in liquid and cross the boiling line into gas."},{"id":"PH-06","caseId":"PHASE-PROBE","order":6,"role":"Main","forTag":"","skill":"Predict / extrapolate","type":"Multiple choice","visuals":[],"prompt":"Water vapor at 160°C and 2 atm is pumped into a chamber. The temperature stays at 160°C while the pressure rises to 10 atm. What happens?","why":"At 160°C, move straight up from 2 atm to 10 atm. You start in gas and cross into liquid. Pressure alone changed the state!"},{"id":"PH-07","caseId":"PHASE-PROBE","order":7,"role":"Main","forTag":"","skill":"Read a value","type":"Select all that apply","visuals":[],"prompt":"Select ALL the landing sites where the probe would find liquid water.","why":"20°C/6 atm, 50°C/8 atm, and 100°C/10 atm all land in the liquid region."},{"id":"PH-08","caseId":"PHASE-PROBE","order":8,"role":"Main","forTag":"","skill":"Select evidence","type":"Pick two","visuals":[],"prompt":"Captain Park claims: \"Raising the pressure can turn water vapor into liquid water, even when the temperature doesn't change.\" Pick the TWO statements that are evidence for her claim.","why":"Both show the SAME temperature, with a higher pressure causing a change from gas to liquid."},{"id":"DI-01","caseId":"DRY-ICE","order":1,"role":"Main","forTag":"","skill":"Read the scale","type":"Multiple choice","visuals":[],"prompt":"Look at the pressure axis. What pressure is at the triple point, where solid, liquid, and gas meet?","why":"Start at the 1 atm line and count up: the unlabeled lines mean 2, 3, 4, 5... The triple point sits at about 5 atm."},{"id":"DI-02","caseId":"DRY-ICE","order":2,"role":"Main","forTag":"","skill":"Read a value","type":"Multiple choice","visuals":[],"prompt":"Mack stores dry ice at normal air pressure, 1 atm, at -100°C. What state is the carbon dioxide?","why":"Find -100°C across and 1 atm up. They meet in the solid region."},{"id":"DI-03","caseId":"DRY-ICE","order":3,"role":"Main","forTag":"","skill":"Predict / extrapolate","type":"Multiple choice","visuals":[],"prompt":"On stage, the dry ice stays at 1 atm while it warms from -100°C up to room temperature, 20°C. What happens to it?","why":"At 1 atm, move straight right. You go from solid directly into gas. The line at 1 atm never passes through the liquid region!"},{"id":"DI-04","caseId":"DRY-ICE","order":4,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"What is the name for the change you just traced, when a solid turns directly into a gas?","why":"Sublimation is solid straight to gas, skipping the liquid. That's why dry ice never leaves a puddle."},{"id":"DI-05","caseId":"DRY-ICE","order":5,"role":"Main","forTag":"","skill":"Read the scale","type":"Pick two","visuals":[],"prompt":"Mack wonders if CO2 can ever be a liquid. Pick the TWO conditions where carbon dioxide is a liquid.","why":"-40°C/20 atm and 0°C/50 atm both land in the liquid region. Liquid CO2 needs a lot of pressure: more than 5 atm!"},{"id":"DI-06","caseId":"DRY-ICE","order":6,"role":"Main","forTag":"","skill":"Compare","type":"Multiple choice","visuals":[],"prompt":"At which condition do carbon dioxide molecules have the greatest average kinetic energy?","why":"10°C is the highest temperature on the list, so it has the greatest average kinetic energy, even at a low pressure."},{"id":"DI-07","caseId":"DRY-ICE","order":7,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Once the dry ice has turned into gas on stage, what are the carbon dioxide particles doing?","why":"Gas particles move freely and spread far apart, which is why the CO2 spreads across the stage floor."},{"id":"BL-01","caseId":"BOUNCE-LAB","order":1,"role":"Main","forTag":"","skill":"Read a value","type":"Multiple choice","visuals":["BL-TABLE"],"prompt":"What was the air pressure inside the ball at 20°C?","why":"Find the 20°C row, then slide across to the pressure column: 8.0 psi."},{"id":"BL-02","caseId":"BOUNCE-LAB","order":2,"role":"Main","forTag":"","skill":"Read the scale","type":"Multiple choice","visuals":["BL-BARS"],"prompt":"About how much higher did the ball bounce at 40°C than at 0°C?","why":"The 40°C bar is about 138 cm and the 0°C bar is about 108 cm: a difference of about 30 cm."},{"id":"BL-03","caseId":"BOUNCE-LAB","order":3,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":["BL-TABLE"],"prompt":"Why did the air pressure inside the ball go up as the ball warmed?","why":"Warmer air particles move faster, so they hit the inside of the ball harder and more often. More hits = more pressure."},{"id":"BL-04","caseId":"BOUNCE-LAB","order":4,"role":"Main","forTag":"","skill":"Predict / extrapolate","type":"Pick two","visuals":["BL-TABLE"],"prompt":"Priya left the 60°C row blank. Pick the TWO predictions that fit the pattern in her data.","why":"Pressure went up 1.5 psi every 20°C, so about 11 psi at 60°C. Bounce height kept rising, so higher than 138 cm."},{"id":"BL-05","caseId":"BOUNCE-LAB","order":5,"role":"Main","forTag":"","skill":"Select evidence","type":"Select all that apply","visuals":["BL-TABLE","BL-BARS"],"prompt":"Claim: \"The ball bounces higher when it is warmer.\" Select ALL the evidence that supports the claim.","why":"Both statements come straight from the data and show bounce rising with temperature."},{"id":"BL-06","caseId":"BOUNCE-LAB","order":6,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":["BL-TABLE"],"prompt":"Priya pumps more air into a ball without changing its temperature. What happens inside?","why":"More particles in the same space means more collisions with the walls, so the pressure rises."},{"id":"BL-07","caseId":"BOUNCE-LAB","order":7,"role":"Main","forTag":"","skill":"Apply the science","type":"Multiple choice","visuals":["BL-TABLE"],"prompt":"A pump can squeeze lots of extra air into a basketball, but you can't squeeze extra water into a full water bottle. Why?","why":"Gas particles have lots of empty space between them. Liquid particles are already close together, so there's no room to squeeze."},{"id":"CK-KE-1","caseId":"","order":1,"role":"Check","forTag":"SCI-KE-TEMP","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Four sealed containers hold the same gas. In which container do the particles have the greatest average kinetic energy?","why":"The hottest container wins. Temperature measures average kinetic energy; pressure doesn't."},{"id":"CK-KE-2","caseId":"","order":2,"role":"Check","forTag":"SCI-KE-TEMP","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Tank A holds air at 10°C and 20 atm. Tank B holds air at 60°C and 2 atm. Which tank's particles have more average kinetic energy?","why":"Tank B is hotter, so its particles have more average kinetic energy. The high pressure in Tank A doesn't change that."},{"id":"CK-MOT-1","caseId":"","order":1,"role":"Check","forTag":"SCI-MOTION-STATES","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"In which state do particles vibrate in place but NOT move past each other?","why":"Solid particles are locked in position. They vibrate but don't slide or spread out."},{"id":"CK-MOT-2","caseId":"","order":2,"role":"Check","forTag":"SCI-MOTION-STATES","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Juice is poured into a cup. What are the juice particles doing?","why":"Juice is a liquid: its particles stay close together but slide past one another, so it can flow."},{"id":"CK-STOP-1","caseId":"","order":1,"role":"Check","forTag":"SCI-PARTICLES-STOP","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A block of ice sits in a freezer at -10°C. What are its water molecules doing?","why":"Frozen doesn't mean stopped. Ice molecules vibrate in place."},{"id":"CK-SPD-1","caseId":"","order":1,"role":"Check","forTag":"SCI-SPEED-TEMP","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A pot of water is heated from 30°C to 70°C. What happens to its molecules?","why":"Adding thermal energy speeds particles up."},{"id":"CK-GP-1","caseId":"","order":1,"role":"Check","forTag":"SCI-GRAPH-PURPOSE","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Which graph would best answer: \"Is carbon dioxide a solid, liquid, or gas at -60°C and 5 atm?\"","why":"A question about state at a temperature AND a pressure needs a phase diagram."},{"id":"CK-EV-1","caseId":"","order":1,"role":"Check","forTag":"SCI-EVIDENCE","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Claim: \"Ice melts faster in a warm room.\" Which statement is evidence for this claim?","why":"It's true AND it compares warm vs. cool rooms, which is exactly what the claim is about."},{"id":"CK-PC-1","caseId":"","order":1,"role":"Check","forTag":"SCI-PARTICLES-CHANGE","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A balloon is carried from a hot car into a cold house, and it shrinks. What happened to the air particles inside?","why":"The particles themselves didn't change. They slowed down and moved closer together."},{"id":"CK-PS-1","caseId":"","order":1,"role":"Check","forTag":"SCI-PRESSURE-SOURCE","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A sealed jar of air is warmed. Why does the pressure inside go up?","why":"Faster particles hit the jar's walls harder and more often. That's what pressure is."},{"id":"CK-CMP-1","caseId":"","order":1,"role":"Check","forTag":"SCI-COMPRESS","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A small tank for a camping stove holds a LOT of gas. How is that possible?","why":"Gas particles have lots of empty space between them, so they can be pushed much closer together."},{"id":"CK-PM-1","caseId":"","order":1,"role":"Check","forTag":"SCI-PARTICLE-MODEL","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A pool float goes a little flat on a chilly night. Which answer explains it using particles?","why":"A particle explanation talks about the particles: here, the air particles slowed down and moved closer together."},{"id":"CK-EE-1","caseId":"","order":1,"role":"Check","forTag":"SCI-ENDO-EXO","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"You hold an ice cube and your hand feels cold. What is happening?","why":"Thermal energy moves from warmer to cooler: out of your hand and into the ice."},{"id":"CK-EE-2","caseId":"","order":2,"role":"Check","forTag":"SCI-ENDO-EXO","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"A hand-warmer packet gets hot when you open it. Which statement is true?","why":"A hand warmer releases thermal energy, which flows into your cooler hands."},{"id":"CK-PN-1","caseId":"","order":1,"role":"Check","forTag":"SCI-PHASE-NAMES","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"Frost forms on a window when water vapor turns directly into ice. What is this change called?","why":"Gas straight to solid is deposition, the reverse of sublimation."},{"id":"CK-PN-2","caseId":"","order":2,"role":"Check","forTag":"SCI-PHASE-NAMES","skill":"Apply the science","type":"Multiple choice","visuals":[],"prompt":"At 0°C and 1 atm, ice turns into liquid water. What is this change called?","why":"Solid to liquid is melting. (Liquid to solid is freezing.)"}],"options":[{"qid":"MM-01","letter":"A","text":"700 m/s","correct":true,"tag":""},{"qid":"MM-01","letter":"B","text":"740 m/s","correct":false,"tag":"CAL-POINT"},{"qid":"MM-01","letter":"C","text":"40 m/s","correct":false,"tag":"CAL-AXIS"},{"qid":"MM-01","letter":"D","text":"600 m/s","correct":false,"tag":"CAL-POINT"},{"qid":"MM-02","letter":"A","text":"740 m/s","correct":true,"tag":""},{"qid":"MM-02","letter":"B","text":"750 m/s","correct":false,"tag":"CAL-SCALE"},{"qid":"MM-02","letter":"C","text":"700 m/s","correct":false,"tag":"CAL-SCALE"},{"qid":"MM-02","letter":"D","text":"745 m/s","correct":false,"tag":"CAL-SCALE"},{"qid":"MM-03","letter":"A","text":"As temperature increases, molecule speed increases.","correct":true,"tag":""},{"qid":"MM-03","letter":"B","text":"As temperature increases, molecule speed decreases.","correct":false,"tag":"CAL-TREND"},{"qid":"MM-03","letter":"C","text":"Molecule speed stays about the same at every temperature.","correct":false,"tag":"CAL-TREND"},{"qid":"MM-03","letter":"D","text":"Molecule speed increases until 100°C, then decreases.","correct":false,"tag":"CAL-TREND"},{"qid":"MM-04","letter":"A","text":"Between 0°C and 40°C","correct":true,"tag":""},{"qid":"MM-04","letter":"B","text":"Between 40°C and 100°C","correct":false,"tag":"CAL-SPACING"},{"qid":"MM-04","letter":"C","text":"Between 100°C and 120°C","correct":false,"tag":"CAL-SPACING"},{"qid":"MM-04","letter":"D","text":"Between -20°C and 0°C","correct":false,"tag":"CAL-POINT"},{"qid":"MM-05","letter":"A","text":"A little faster than 750 m/s","correct":true,"tag":""},{"qid":"MM-05","letter":"B","text":"Much faster, around 900 m/s","correct":false,"tag":"CAL-PREDICT"},{"qid":"MM-05","letter":"C","text":"Exactly 750 m/s, because molecules reach a top speed","correct":false,"tag":"SCI-SPEED-TEMP"},{"qid":"MM-05","letter":"D","text":"Slower than 750 m/s","correct":false,"tag":"SCI-SPEED-TEMP"},{"qid":"MM-06","letter":"A","text":"As water gets hotter, its molecules have more average kinetic energy.","correct":true,"tag":""},{"qid":"MM-06","letter":"B","text":"The molecules in ice at -20°C are still moving.","correct":true,"tag":""},{"qid":"MM-06","letter":"C","text":"The molecules at -20°C are not moving because the water is frozen.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"MM-06","letter":"D","text":"Molecules move faster when the pressure increases.","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"MM-06","letter":"E","text":"Each molecule gets bigger as the water heats up.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"MM-07","letter":"A","text":"At -20°C the speed was 550 m/s; at 0°C it was 600 m/s.","correct":true,"tag":"SCI-EVIDENCE"},{"qid":"MM-07","letter":"B","text":"Every time the temperature went up, the speed went up.","correct":true,"tag":"SCI-EVIDENCE"},{"qid":"MM-07","letter":"C","text":"At 100°C the speed was 700 m/s.","correct":false,"tag":"CAL-POINT"},{"qid":"MM-07","letter":"D","text":"Water is a liquid at 40°C.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"MM-07","letter":"E","text":"The fastest speed was measured at the highest temperature.","correct":true,"tag":"SCI-EVIDENCE"},{"qid":"MM-08","letter":"A","text":"A phase diagram of water","correct":true,"tag":""},{"qid":"MM-08","letter":"B","text":"This line graph of molecule speed","correct":false,"tag":"SCI-GRAPH-PURPOSE"},{"qid":"MM-08","letter":"C","text":"A bar graph of molecule speeds at five temperatures","correct":false,"tag":"SCI-GRAPH-PURPOSE"},{"qid":"CP-01","letter":"A","text":"7°C","correct":true,"tag":""},{"qid":"CP-01","letter":"B","text":"3°C","correct":false,"tag":"CAL-SERIES"},{"qid":"CP-01","letter":"C","text":"9°C","correct":false,"tag":"CAL-POINT"},{"qid":"CP-01","letter":"D","text":"5°C","correct":false,"tag":"CAL-SCALE"},{"qid":"CP-02","letter":"A","text":"It drops quickly, then slowly warms back up.","correct":true,"tag":""},{"qid":"CP-02","letter":"B","text":"It keeps getting colder the whole time.","correct":false,"tag":"CAL-TREND"},{"qid":"CP-02","letter":"C","text":"It stays at about the same temperature.","correct":false,"tag":"CAL-TREND"},{"qid":"CP-02","letter":"D","text":"It rises quickly, then slowly cools down.","correct":false,"tag":"CAL-SERIES"},{"qid":"CP-03","letter":"A","text":"Dissolving it absorbs thermal energy from the water around it.","correct":true,"tag":""},{"qid":"CP-03","letter":"B","text":"Thermal energy moves from your warm skin into the colder pack.","correct":true,"tag":""},{"qid":"CP-03","letter":"C","text":"The pack gives off cold that flows into your skin.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CP-03","letter":"D","text":"The particles in the pack stop moving.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"CP-03","letter":"E","text":"The pack releases thermal energy into your ankle.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CP-04","letter":"A","text":"Ammonium nitrate","correct":true,"tag":"CAL-SERIES"},{"qid":"CP-04","letter":"B","text":"Urea","correct":true,"tag":"CAL-SCALE"},{"qid":"CP-04","letter":"C","text":"Sodium chloride","correct":false,"tag":"CAL-SERIES"},{"qid":"CP-04","letter":"D","text":"Calcium chloride","correct":false,"tag":"CAL-SERIES"},{"qid":"CP-05","letter":"A","text":"Urea also meets both rules and costs less, so urea is the better choice.","correct":true,"tag":""},{"qid":"CP-05","letter":"B","text":"Agree. The coldest pack is always the best choice.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"CP-05","letter":"C","text":"Calcium chloride is best because it costs less than ammonium nitrate.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CP-05","letter":"D","text":"Sodium chloride is best because it's the cheapest.","correct":false,"tag":"CAL-TREND"},{"qid":"CP-06","letter":"A","text":"Calcium chloride","correct":true,"tag":""},{"qid":"CP-06","letter":"B","text":"Ammonium nitrate","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CP-06","letter":"C","text":"Urea","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CP-06","letter":"D","text":"Sodium chloride","correct":false,"tag":"CAL-TREND"},{"qid":"CP-07","letter":"A","text":"Sodium chloride","correct":true,"tag":""},{"qid":"CP-07","letter":"B","text":"Urea","correct":false,"tag":"CAL-SERIES"},{"qid":"CP-07","letter":"C","text":"Calcium chloride","correct":false,"tag":"CAL-TREND"},{"qid":"CP-07","letter":"D","text":"Ammonium nitrate","correct":false,"tag":"CAL-TREND"},{"qid":"PH-01","letter":"A","text":"Liquid","correct":true,"tag":""},{"qid":"PH-01","letter":"B","text":"Solid","correct":false,"tag":"CAL-REGION"},{"qid":"PH-01","letter":"C","text":"Gas","correct":false,"tag":"CAL-REGION"},{"qid":"PH-01","letter":"D","text":"It is changing between two states","correct":false,"tag":"CAL-REGION"},{"qid":"PH-02","letter":"A","text":"Sliding past one another while staying close together","correct":true,"tag":""},{"qid":"PH-02","letter":"B","text":"Vibrating in fixed positions","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"PH-02","letter":"C","text":"Moving freely and spreading far apart","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"PH-02","letter":"D","text":"Not moving, because the pressure holds them still","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"PH-03","letter":"A","text":"100°C","correct":true,"tag":""},{"qid":"PH-03","letter":"B","text":"0°C","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"PH-03","letter":"C","text":"120°C","correct":false,"tag":"CAL-SCALE"},{"qid":"PH-03","letter":"D","text":"1°C","correct":false,"tag":"CAL-AXIS"},{"qid":"PH-04","letter":"A","text":"Site Bravo: 150°C and 3 atm","correct":true,"tag":""},{"qid":"PH-04","letter":"B","text":"Site Charlie: 60°C and 10 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"PH-04","letter":"C","text":"Site Delta: -20°C and 8 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"PH-04","letter":"D","text":"Site Echo: 30°C and 5 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"PH-05","letter":"A","text":"It changes from a liquid to a gas.","correct":true,"tag":""},{"qid":"PH-05","letter":"B","text":"It stays a liquid.","correct":false,"tag":"CAL-TRACE"},{"qid":"PH-05","letter":"C","text":"It changes from a gas to a liquid.","correct":false,"tag":"CAL-TRACE"},{"qid":"PH-05","letter":"D","text":"It changes from a solid to a liquid.","correct":false,"tag":"CAL-REGION"},{"qid":"PH-06","letter":"A","text":"It changes from a gas to a liquid.","correct":true,"tag":""},{"qid":"PH-06","letter":"B","text":"It stays a gas.","correct":false,"tag":"CAL-TRACE"},{"qid":"PH-06","letter":"C","text":"It changes from a liquid to a gas.","correct":false,"tag":"CAL-TRACE"},{"qid":"PH-06","letter":"D","text":"It changes from a gas to a solid.","correct":false,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"A","text":"20°C and 6 atm","correct":true,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"B","text":"50°C and 8 atm","correct":true,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"C","text":"160°C and 4 atm","correct":false,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"D","text":"-20°C and 6 atm","correct":false,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"E","text":"100°C and 10 atm","correct":true,"tag":"CAL-REGION"},{"qid":"PH-07","letter":"F","text":"180°C and 6 atm","correct":false,"tag":"CAL-REGION"},{"qid":"PH-08","letter":"A","text":"At 140°C, water is a gas at 2 atm but a liquid at 10 atm.","correct":true,"tag":""},{"qid":"PH-08","letter":"B","text":"At 160°C, water is a gas at 4 atm but a liquid at 10 atm.","correct":true,"tag":""},{"qid":"PH-08","letter":"C","text":"At 20°C, water is a liquid at both 4 atm and 8 atm.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"PH-08","letter":"D","text":"At 60°C, water is a solid at 10 atm.","correct":false,"tag":"CAL-REGION"},{"qid":"PH-08","letter":"E","text":"At 180°C, water is a gas at both 2 atm and 4 atm.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"DI-01","letter":"A","text":"About 5 atm","correct":true,"tag":""},{"qid":"DI-01","letter":"B","text":"About 7 atm","correct":false,"tag":"CAL-LOG"},{"qid":"DI-01","letter":"C","text":"About 50 atm","correct":false,"tag":"CAL-LOG"},{"qid":"DI-01","letter":"D","text":"About 0.5 atm","correct":false,"tag":"CAL-LOG"},{"qid":"DI-02","letter":"A","text":"Solid","correct":true,"tag":""},{"qid":"DI-02","letter":"B","text":"Liquid","correct":false,"tag":"CAL-REGION"},{"qid":"DI-02","letter":"C","text":"Gas","correct":false,"tag":"CAL-REGION"},{"qid":"DI-03","letter":"A","text":"It changes directly from a solid to a gas.","correct":true,"tag":""},{"qid":"DI-03","letter":"B","text":"It melts into a liquid, then boils into a gas.","correct":false,"tag":"CAL-TRACE"},{"qid":"DI-03","letter":"C","text":"It stays a solid.","correct":false,"tag":"CAL-TRACE"},{"qid":"DI-03","letter":"D","text":"It melts into a liquid and stays liquid.","correct":false,"tag":"CAL-TRACE"},{"qid":"DI-04","letter":"A","text":"Sublimation","correct":true,"tag":""},{"qid":"DI-04","letter":"B","text":"Evaporation","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"DI-04","letter":"C","text":"Melting","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"DI-04","letter":"D","text":"Deposition","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"DI-05","letter":"A","text":"-40°C and 20 atm","correct":true,"tag":""},{"qid":"DI-05","letter":"B","text":"0°C and 50 atm","correct":true,"tag":""},{"qid":"DI-05","letter":"C","text":"-40°C and 2 atm","correct":false,"tag":"CAL-LOG"},{"qid":"DI-05","letter":"D","text":"-100°C and 10 atm","correct":false,"tag":"CAL-REGION"},{"qid":"DI-05","letter":"E","text":"10°C and 20 atm","correct":false,"tag":"CAL-LOG"},{"qid":"DI-06","letter":"A","text":"10°C and 2 atm","correct":true,"tag":""},{"qid":"DI-06","letter":"B","text":"-60°C and 80 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"DI-06","letter":"C","text":"-100°C and 10 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"DI-06","letter":"D","text":"-40°C and 20 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"DI-07","letter":"A","text":"Moving freely and spreading far apart","correct":true,"tag":""},{"qid":"DI-07","letter":"B","text":"Vibrating in fixed positions","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"DI-07","letter":"C","text":"Sliding past one another while staying close","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"DI-07","letter":"D","text":"Breaking apart into carbon and oxygen atoms","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"BL-01","letter":"A","text":"8.0 psi","correct":true,"tag":""},{"qid":"BL-01","letter":"B","text":"125 psi","correct":false,"tag":"CAL-TABLE"},{"qid":"BL-01","letter":"C","text":"6.5 psi","correct":false,"tag":"CAL-TABLE"},{"qid":"BL-01","letter":"D","text":"20 psi","correct":false,"tag":"CAL-TABLE"},{"qid":"BL-02","letter":"A","text":"About 30 cm","correct":true,"tag":""},{"qid":"BL-02","letter":"B","text":"About 138 cm","correct":false,"tag":"CAL-POINT"},{"qid":"BL-02","letter":"C","text":"About 40 cm","correct":false,"tag":"CAL-AXIS"},{"qid":"BL-02","letter":"D","text":"About 10 cm","correct":false,"tag":"CAL-SCALE"},{"qid":"BL-03","letter":"A","text":"The particles moved faster and hit the inside walls harder and more often.","correct":true,"tag":""},{"qid":"BL-03","letter":"B","text":"The warm air particles grew bigger and crowded the ball.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"BL-03","letter":"C","text":"More air leaked into the ball when it was warm.","correct":false,"tag":"SCI-PRESSURE-SOURCE"},{"qid":"BL-03","letter":"D","text":"The warm rubber squeezed the air inside.","correct":false,"tag":"SCI-PARTICLE-MODEL"},{"qid":"BL-04","letter":"A","text":"Pressure: about 11 psi","correct":true,"tag":""},{"qid":"BL-04","letter":"B","text":"Bounce height: higher than 138 cm","correct":true,"tag":""},{"qid":"BL-04","letter":"C","text":"Particle motion: slow","correct":false,"tag":"SCI-SPEED-TEMP"},{"qid":"BL-04","letter":"D","text":"Pressure: about 6 psi","correct":false,"tag":"CAL-TREND"},{"qid":"BL-04","letter":"E","text":"Bounce height: about 108 cm","correct":false,"tag":"CAL-TABLE"},{"qid":"BL-05","letter":"A","text":"At 0°C it bounced 108 cm; at 40°C it bounced 138 cm.","correct":true,"tag":"SCI-EVIDENCE"},{"qid":"BL-05","letter":"B","text":"Every time the temperature went up, the bounce height went up.","correct":true,"tag":"SCI-EVIDENCE"},{"qid":"BL-05","letter":"C","text":"The ball is made of rubber.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"BL-05","letter":"D","text":"At 20°C the ball bounced 138 cm.","correct":false,"tag":"CAL-TABLE"},{"qid":"BL-06","letter":"A","text":"More particles are crowded in, so they hit the walls more often and the pressure rises.","correct":true,"tag":""},{"qid":"BL-06","letter":"B","text":"The particles shrink to make room for the new air.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"BL-06","letter":"C","text":"The particles stop moving because they're squeezed together.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"BL-06","letter":"D","text":"Each particle gets heavier, so the pressure rises.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"BL-07","letter":"A","text":"Gas particles have lots of space between them; liquid particles are already close together.","correct":true,"tag":""},{"qid":"BL-07","letter":"B","text":"Water particles are heavier, so they can't be pushed closer.","correct":false,"tag":"SCI-COMPRESS"},{"qid":"BL-07","letter":"C","text":"Air particles shrink when you pump them.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"BL-07","letter":"D","text":"Liquid particles don't move, so they can't be pushed closer.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"CK-KE-1","letter":"A","text":"80°C and 1 atm","correct":true,"tag":""},{"qid":"CK-KE-1","letter":"B","text":"20°C and 9 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"CK-KE-1","letter":"C","text":"50°C and 4 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"CK-KE-1","letter":"D","text":"0°C and 12 atm","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"CK-KE-2","letter":"A","text":"Tank B","correct":true,"tag":""},{"qid":"CK-KE-2","letter":"B","text":"Tank A","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"CK-KE-2","letter":"C","text":"They are the same","correct":false,"tag":"SCI-KE-TEMP"},{"qid":"CK-MOT-1","letter":"A","text":"Solid","correct":true,"tag":""},{"qid":"CK-MOT-1","letter":"B","text":"Liquid","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"CK-MOT-1","letter":"C","text":"Gas","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"CK-MOT-2","letter":"A","text":"Sliding past one another while staying close","correct":true,"tag":""},{"qid":"CK-MOT-2","letter":"B","text":"Vibrating in fixed positions","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"CK-MOT-2","letter":"C","text":"Moving freely and spreading far apart","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"CK-STOP-1","letter":"A","text":"Vibrating in place","correct":true,"tag":""},{"qid":"CK-STOP-1","letter":"B","text":"Not moving at all","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"CK-STOP-1","letter":"C","text":"Moving freely around the freezer","correct":false,"tag":"SCI-MOTION-STATES"},{"qid":"CK-SPD-1","letter":"A","text":"They move faster.","correct":true,"tag":""},{"qid":"CK-SPD-1","letter":"B","text":"They move slower.","correct":false,"tag":"SCI-SPEED-TEMP"},{"qid":"CK-SPD-1","letter":"C","text":"They keep the same speed.","correct":false,"tag":"SCI-SPEED-TEMP"},{"qid":"CK-GP-1","letter":"A","text":"A phase diagram of carbon dioxide","correct":true,"tag":""},{"qid":"CK-GP-1","letter":"B","text":"A line graph of carbon dioxide particle speed vs. temperature","correct":false,"tag":"SCI-GRAPH-PURPOSE"},{"qid":"CK-GP-1","letter":"C","text":"A bar graph of the boiling points of five substances","correct":false,"tag":"SCI-GRAPH-PURPOSE"},{"qid":"CK-EV-1","letter":"A","text":"Ice in a 30°C room melted in 12 minutes; ice in a 10°C room took 40 minutes.","correct":true,"tag":""},{"qid":"CK-EV-1","letter":"B","text":"Ice is frozen water.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"CK-EV-1","letter":"C","text":"Some rooms are warmer than others.","correct":false,"tag":"SCI-EVIDENCE"},{"qid":"CK-PC-1","letter":"A","text":"They slowed down and moved closer together.","correct":true,"tag":""},{"qid":"CK-PC-1","letter":"B","text":"Each particle got smaller.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"CK-PC-1","letter":"C","text":"Some of the particles disappeared in the cold.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"CK-PS-1","letter":"A","text":"The particles move faster and hit the walls harder and more often.","correct":true,"tag":""},{"qid":"CK-PS-1","letter":"B","text":"The warm particles get bigger and push outward.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"CK-PS-1","letter":"C","text":"The air gets heavier and presses down harder.","correct":false,"tag":"SCI-PRESSURE-SOURCE"},{"qid":"CK-CMP-1","letter":"A","text":"Gas particles have lots of space between them, so they can be pushed much closer together.","correct":true,"tag":""},{"qid":"CK-CMP-1","letter":"B","text":"The gas particles shrink inside the tank.","correct":false,"tag":"SCI-PARTICLES-CHANGE"},{"qid":"CK-CMP-1","letter":"C","text":"The gas particles stop moving inside the tank.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"CK-PM-1","letter":"A","text":"The air particles slowed down and moved closer together.","correct":true,"tag":""},{"qid":"CK-PM-1","letter":"B","text":"The cold made the float's plastic tighter.","correct":false,"tag":"SCI-PARTICLE-MODEL"},{"qid":"CK-PM-1","letter":"C","text":"The float got tired of being stretched.","correct":false,"tag":"SCI-PARTICLE-MODEL"},{"qid":"CK-EE-1","letter":"A","text":"Thermal energy moves from your hand into the ice.","correct":true,"tag":""},{"qid":"CK-EE-1","letter":"B","text":"Cold moves from the ice into your hand.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CK-EE-1","letter":"C","text":"The ice's particles stop moving and pull heat in.","correct":false,"tag":"SCI-PARTICLES-STOP"},{"qid":"CK-EE-2","letter":"A","text":"It releases thermal energy into your hands.","correct":true,"tag":""},{"qid":"CK-EE-2","letter":"B","text":"It absorbs thermal energy from your hands.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CK-EE-2","letter":"C","text":"It pulls cold out of the air.","correct":false,"tag":"SCI-ENDO-EXO"},{"qid":"CK-PN-1","letter":"A","text":"Deposition","correct":true,"tag":""},{"qid":"CK-PN-1","letter":"B","text":"Condensation","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"CK-PN-1","letter":"C","text":"Freezing","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"CK-PN-1","letter":"D","text":"Sublimation","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"CK-PN-2","letter":"A","text":"Melting","correct":true,"tag":""},{"qid":"CK-PN-2","letter":"B","text":"Boiling","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"CK-PN-2","letter":"C","text":"Condensation","correct":false,"tag":"SCI-PHASE-NAMES"},{"qid":"CK-PN-2","letter":"D","text":"Sublimation","correct":false,"tag":"SCI-PHASE-NAMES"}],"tags":[{"id":"CAL-SCALE","kind":"Calibration","title":"Scale Drift Detected","explain":"Your instruments are reading off! Before you read a value, find out what each gridline is worth: pick two labeled numbers next to each other on the axis and find the difference. A point between gridlines is between those values, so estimate how far between.","teacherNote":"Misread the axis interval, or snapped a between-gridline point to the nearest line.","drill":"scale-read"},{"id":"CAL-AXIS","kind":"Calibration","title":"Crossed Wires","explain":"Every point has two numbers: one across (x-axis) and one up (y-axis). Read the axis labels first. Which axis measures the thing the question is asking about?","teacherNote":"Answered with the x-value when the y-value was asked (or the reverse).","drill":"axis-read"},{"id":"CAL-POINT","kind":"Calibration","title":"Wrong Target","explain":"You read a real value, just not the one the question asked about. Find the question's value on its axis first, put your finger there, then move straight to the line or bar.","teacherNote":"Read a neighboring data point instead of the requested one.","drill":"point-find"},{"id":"CAL-SPACING","kind":"Calibration","title":"Uneven Ground","explain":"Data points aren't always the same distance apart. A long stretch of line can hide a small change! Compare the actual numbers, not how long the line looks.","teacherNote":"Judged the size of a change by how long the segment is; ignored uneven x-intervals. Also fires when plotting uneven data at even spacing.","drill":"uneven-spacing"},{"id":"CAL-TREND","kind":"Calibration","title":"Zoom Out","explain":"A trend is the overall direction of the whole line from left to right. Ignore the small wiggles and ask: from the first point to the last, did it mostly go up, go down, or stay flat?","teacherNote":"Misdescribed the overall direction, or let one segment override the whole pattern.","drill":"trend-read"},{"id":"CAL-PREDICT","kind":"Calibration","title":"Follow the Path","explain":"To predict past the end of the data, keep the line going the way it's already going, including whether it's getting steeper or flatter near the end.","teacherNote":"Extrapolated from the wrong part of the curve (e.g., used the early steep slope).","drill":"extrapolate"},{"id":"CAL-REGION","kind":"Calibration","title":"Lost the Map","explain":"On a phase diagram, find the temperature on the x-axis and the pressure on the y-axis, then slide both until they meet. The region where they meet tells you the state.","teacherNote":"Located the (T, P) point in the wrong region.","drill":"phase-region"},{"id":"CAL-TRACE","kind":"Calibration","title":"Retrace the Route","explain":"When one thing stays the same, you travel in a straight line. Same pressure: move left or right. Same temperature: move up or down. Note the region where you start, then watch for every line you cross.","teacherNote":"Traced a change in the wrong direction, or missed crossing a boundary.","drill":"phase-trace"},{"id":"CAL-LOG","kind":"Calibration","title":"The Stretchy Ruler","explain":"On a log scale, each labeled line is 10 times the one below it: 0.1, 1, 10, 100. The unlabeled lines between two labels count up by the lower label. Between 1 and 10 they mean 2, 3, 4... 9, and they get squeezed closer together near the top. Count lines instead of measuring distance.","teacherNote":"Read a log axis as if it were evenly spaced. Tested on the unit test's nitrogen diagram; not practiced in Lesson 5.","drill":"log-read"},{"id":"CAL-TABLE","kind":"Calibration","title":"Row and Column Check","explain":"Find the row for the thing you're asked about, then slide across to the right column. Check the column header twice: the cell where your row and column meet is your answer.","teacherNote":"Read the wrong row or the wrong column of a data table.","drill":"table-read"},{"id":"CAL-SERIES","kind":"Calibration","title":"Wrong Line","explain":"This graph has more than one line. Use the key to find the line for the thing the question asks about (match the shape of its markers), then read only that line.","teacherNote":"Read a value or trend from the wrong data series on a multi-line graph.","drill":"series-read"},{"id":"CAL-SCALE-CHOICE","kind":"Calibration","title":"Blueprint Check","explain":"A good scale fits ALL the data, counts by the same amount every time, and uses most of the graph so it's easy to read.","teacherNote":"Chose a scale that cuts off data, uses unequal intervals, or squashes the data (Lesson 5, Step 2).","drill":"scale-choose"},{"id":"SCI-KE-TEMP","kind":"Archive","title":"Temperature Is the Speedometer","explain":"Average kinetic energy depends on temperature. Higher temperature means faster particles and more kinetic energy. Pressure can change the state, but it isn't what measures particle energy.","teacherNote":"Hanson's named misconception: picking the highest-pressure point for greatest kinetic energy.","drill":""},{"id":"SCI-MOTION-STATES","kind":"Archive","title":"Know Your States","explain":"Solid particles vibrate in place. Liquid particles slide past one another while staying close. Gas particles move freely and spread far apart.","teacherNote":"Read the phase correctly but matched it to the wrong particle motion (Hanson's second named misconception).","drill":""},{"id":"SCI-PARTICLES-STOP","kind":"Archive","title":"Particles Never Clock Out","explain":"Particles in solids, liquids, and gases are always moving. In a solid they vibrate in place, but they never just stop, not even in ice, and not when they're squeezed.","teacherNote":"Believes frozen, cold, or high-pressure particles stop moving.","drill":""},{"id":"SCI-SPEED-TEMP","kind":"Archive","title":"Heat Speeds Things Up","explain":"Adding thermal energy makes particles move faster. As temperature rises, particle speed rises too. It doesn't hit a limit or turn around.","teacherNote":"Believes particle speed plateaus or reverses as temperature rises.","drill":""},{"id":"SCI-GRAPH-PURPOSE","kind":"Archive","title":"Right Tool for the Job","explain":"A line graph shows how one thing changes as another changes, like speed vs. temperature. A phase diagram shows which state exists at a temperature AND a pressure. Different questions need different graphs.","teacherNote":"Lesson 5's central idea: different graphs answer different questions.","drill":""},{"id":"SCI-EVIDENCE","kind":"Archive","title":"Evidence Check","explain":"Evidence has to be true AND connected to the claim. A true fact that doesn't show what the claim says isn't evidence for it.","teacherNote":"Chose true-but-irrelevant statements as evidence, or missed valid evidence. Supports CER writing.","drill":""},{"id":"SCI-PARTICLES-CHANGE","kind":"Archive","title":"Same Particles, New Moves","explain":"Heating, cooling, or squeezing doesn't change the particles themselves. They don't grow, shrink, get heavier, disappear, or break apart. What changes is how fast they move and how far apart they are.","teacherNote":"Believes particles themselves grow, shrink, gain mass, break apart, or are destroyed (unit test distractor pattern).","drill":""},{"id":"SCI-PRESSURE-SOURCE","kind":"Archive","title":"Tiny Collisions","explain":"Gas pressure comes from particles hitting the walls of their container. More hits, or harder hits, mean more pressure. Faster particles or more particles in the same space both raise the pressure.","teacherNote":"Attributes pressure to the weight of gas, suction, or air sneaking in (unit test distractor pattern).","drill":""},{"id":"SCI-COMPRESS","kind":"Archive","title":"Mind the Gap","explain":"Gas particles have lots of empty space between them, so they can be squeezed closer together. Liquid and solid particles are already close together, so they barely squeeze at all.","teacherNote":"Explains compressibility by weight or particle size instead of spacing.","drill":""},{"id":"SCI-PARTICLE-MODEL","kind":"Archive","title":"Think Particles","explain":"When a question asks what's happening with the particles, the answer has to be about the particles: their speed, their spacing, and their collisions. An explanation about the container or its material doesn't answer the question.","teacherNote":"Gave a non-particle explanation (rubber got stiff, can got weak). These are tempting because they sound plausible.","drill":""},{"id":"SCI-ENDO-EXO","kind":"Archive","title":"Follow the Energy","explain":"Cold isn't something that flows. Thermal energy always moves from warmer to cooler. A cold pack feels cold because it absorbs thermal energy from your skin. A hot pack releases thermal energy into it.","teacherNote":"Believes 'cold' is transferred, or reverses the direction of thermal energy flow.","drill":""},{"id":"SCI-PHASE-NAMES","kind":"Archive","title":"Name That Change","explain":"Melting: solid to liquid. Freezing: liquid to solid. Boiling or evaporation: liquid to gas. Condensation: gas to liquid. Sublimation: solid straight to gas. Deposition: gas straight to solid.","teacherNote":"Mixed up phase-change vocabulary or melting point vs. boiling point.","drill":""}]}</script>
+<script id="engine">/* Lab for Hire engine v0.1.0: pure logic, no DOM. Tested headlessly in Node. */
+(function (root) {
+  const LFH = {};
+  LFH.version = "0.1.0";
+  LFH.rng = Math.random;
+  const R = () => LFH.rng();
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const pick = (arr) => arr[Math.floor(R() * arr.length)];
+  const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const round = (v, d = 6) => Math.round(v * 10 ** d) / 10 ** d;
+  const fmt = (v) => { if (v === null || v === undefined || v === "") return ""; const r = round(v, 4); return (Math.abs(r) >= 1000 ? r.toLocaleString("en-US") : String(r)).replace("-", "−"); };
+  const withUnit = (v, u) => u ? `${fmt(v)} ${u}` : fmt(v);
+  LFH.util = { ri, pick, shuffle, fmt, withUnit, round };
+
+  /* ---------------- Content model ---------------- */
+  LFH.load = function (C) {
+    const M = { raw: C, cases: [], visuals: {}, visualsByCase: {}, main: {}, checks: {}, options: {}, tags: {}, questions: {} };
+    C.tags.forEach((t) => (M.tags[t.id] = t));
+    C.options.forEach((o) => (M.options[o.qid] = M.options[o.qid] || []).push(o));
+    C.questions.forEach((q) => {
+      M.questions[q.id] = q;
+      if (q.role === "Check") (M.checks[q.forTag] = M.checks[q.forTag] || []).push(q);
+      else (M.main[q.caseId] = M.main[q.caseId] || []).push(q);
+    });
+    Object.values(M.main).forEach((list) => list.sort((a, b) => a.order - b.order));
+    C.visuals.forEach((v) => {
+      M.visuals[v.id] = LFH.spec(C, v);
+      (M.visualsByCase[v.caseId] = M.visualsByCase[v.caseId] || []).push(v.id);
+    });
+    M.cases = C.cases.slice().sort((a, b) => a.order - b.order);
+    return M;
+  };
+
+  LFH.spec = function (C, v) {
+    const s = { id: v.id, label: v.label, type: v.type, title: v.title, build: v.build, x: v.x, y: v.y, series: [], table: null };
+    const byName = {};
+    C.data.filter((d) => d.visualId === v.id).forEach((d) => {
+      if (!byName[d.series]) { byName[d.series] = { name: d.series, points: [] }; s.series.push(byName[d.series]); }
+      byName[d.series].points.push({ x: d.x, y: d.y, label: d.label });
+    });
+    const rows = C.tables.filter((t) => t.visualId === v.id).sort((a, b) => a.row - b.row);
+    if (rows.length) {
+      const width = Math.max(...rows.map((r) => { let n = r.cells.length; while (n && !r.cells[n - 1]) n--; return n; }));
+      s.table = { headers: rows[0].cells.slice(0, width), rows: rows.slice(1).map((r) => r.cells.slice(0, width)) };
+    }
+    return s;
+  };
+
+  /* ---------------- Axes ---------------- */
+  LFH.isLog = (ax) => (ax.scale || "").toLowerCase() === "log";
+  LFH.toUnit = function (ax, v) {
+    if (LFH.isLog(ax)) return (Math.log10(v) - Math.log10(ax.min)) / (Math.log10(ax.max) - Math.log10(ax.min));
+    return (v - ax.min) / (ax.max - ax.min);
+  };
+  LFH.fromUnit = function (ax, u) {
+    if (LFH.isLog(ax)) return 10 ** (Math.log10(ax.min) + u * (Math.log10(ax.max) - Math.log10(ax.min)));
+    return ax.min + u * (ax.max - ax.min);
+  };
+  LFH.ticks = function (ax) {
+    const major = [], minor = [];
+    if (LFH.isLog(ax)) {
+      const k0 = Math.ceil(Math.log10(ax.min) - 1e-9), k1 = Math.floor(Math.log10(ax.max) + 1e-9);
+      for (let k = k0; k <= k1; k++) major.push(round(10 ** k));
+      for (let k = k0 - 1; k <= k1; k++) for (let m = 2; m <= 9; m++) { const v = round(m * 10 ** k); if (v > ax.min && v < ax.max) minor.push(v); }
+    } else {
+      const n = Math.round((ax.max - ax.min) / ax.step);
+      for (let i = 0; i <= n; i++) major.push(round(ax.min + i * ax.step));
+    }
+    return { major, minor };
+  };
+
+  /* ---------------- Phase model ----------------
+     The SAME function draws the regions and checks answer keys. */
+  LFH.phaseModel = function (spec) {
+    const get = (name) => (spec.series.find((s) => s.name === name) || { points: [] }).points.map((p) => ({ x: p.x, y: p.y }));
+    const log = LFH.isLog(spec.y);
+    const tp = (v) => (log ? Math.log10(Math.max(v, 1e-12)) : v);
+    const prep = (pts) => pts.map((p) => ({ T: p.x, u: tp(p.y) })).sort((a, b) => a.u - b.u);
+    const melt = prep(get("Melting line")), boil = prep(get("Boiling line")), sub = prep(get("Sublimation line"));
+    const interpT = (pts, u) => {
+      if (!pts.length) return null;
+      if (pts.length === 1) return pts[0].T;
+      let a = pts[0], b = pts[1];
+      if (u >= pts[pts.length - 1].u) { a = pts[pts.length - 2]; b = pts[pts.length - 1]; }
+      else for (let i = 0; i < pts.length - 1; i++) if (u >= pts[i].u && u <= pts[i + 1].u) { a = pts[i]; b = pts[i + 1]; break; }
+      if (b.u === a.u) return a.T;
+      return a.T + ((u - a.u) / (b.u - a.u)) * (b.T - a.T);
+    };
+    const tripleU = boil.length ? boil[0].u : melt.length ? melt[0].u : -Infinity;
+    const boilTop = boil.length ? boil[boil.length - 1].u : Infinity;
+    function state(T, P) {
+      const u = tp(P);
+      if (u >= tripleU) {
+        const mT = interpT(melt, u);
+        if (mT !== null && T < mT) return "solid";
+        if (u > boilTop) return "liquid";
+        const bT = interpT(boil, u);
+        return T < bT ? "liquid" : "gas";
+      }
+      const sT = interpT(sub, u);
+      return sT !== null && T < sT ? "solid" : "gas";
+    }
+    return { state };
+  };
+
+  /* ---------------- Grading ---------------- */
+  LFH.required = function (type) {
+    if (type === "Pick two") return { exact: 2 };
+    if (type === "Pick three") return { exact: 3 };
+    if (type === "Select all that apply") return { min: 1 };
+    return { exact: 1 };
+  };
+  LFH.grade = function (opts, selected, tags) {
+    const sel = new Set(selected);
+    const correct = opts.every((o) => o.correct === sel.has(o.letter));
+    const hit = [];
+    opts.forEach((o) => {
+      if (!o.correct && sel.has(o.letter) && o.tag) hit.push(o.tag);
+      if (o.correct && !sel.has(o.letter) && o.tag) hit.push(o.tag);
+    });
+    const uniq = [...new Set(hit)].filter((t) => tags[t]);
+    uniq.sort((a, b) => (tags[a].kind === "Calibration" ? 0 : 1) - (tags[b].kind === "Calibration" ? 0 : 1));
+    return { correct, tags: correct ? [] : uniq };
+  };
+
+  /* ---------------- Validation (mirrors the Sheet's rules) ---------------- */
+  LFH.validate = function (C) {
+    const err = [];
+    const caseIds = new Set(C.cases.map((c) => c.id));
+    const vis = {}; C.visuals.forEach((v) => (vis[v.id] = v));
+    const tags = {}; C.tags.forEach((t) => (tags[t.id] = t));
+    const drills = new Set(Object.keys(LFH.drills));
+    const types = ["Line graph", "Bar graph", "Data table", "Phase diagram"];
+    C.visuals.forEach((v) => {
+      if (!caseIds.has(v.caseId)) err.push(`${v.id}: unknown case ${v.caseId}`);
+      if (!types.includes(v.type)) err.push(`${v.id}: unknown visual type ${v.type}`);
+      if (v.build && v.type !== "Line graph") err.push(`${v.id}: only line graphs can be student-built`);
+      if (v.type !== "Data table") {
+        ["x", "y"].forEach((k) => {
+          const ax = v[k];
+          if (v.type === "Bar graph" && k === "x") return;
+          if (ax.min === null || ax.max === null) err.push(`${v.id}: ${k} min/max missing`);
+          if (LFH.isLog(ax) && !(ax.min > 0)) err.push(`${v.id}: log ${k} axis needs min above 0`);
+          if (!LFH.isLog(ax) && !(ax.step > 0)) err.push(`${v.id}: ${k} step missing`);
+        });
+      }
+      const d = C.data.filter((x) => x.visualId === v.id);
+      if (v.type === "Data table" && !C.tables.some((t) => t.visualId === v.id)) err.push(`${v.id}: table has no Tables rows`);
+      if (v.type !== "Data table" && !d.length) err.push(`${v.id}: no Data rows`);
+      if (v.type === "Phase diagram") {
+        d.forEach((x) => { if (!["Melting line", "Boiling line", "Sublimation line"].includes(x.series)) err.push(`${v.id}: bad phase series '${x.series}'`); });
+        if (!d.some((x) => x.series === "Boiling line")) err.push(`${v.id}: phase diagram needs a Boiling line`);
+      }
+    });
+    C.data.forEach((d) => { if (!vis[d.visualId]) err.push(`Data: unknown visual ${d.visualId}`); });
+    C.tables.forEach((t) => { if (!vis[t.visualId]) err.push(`Tables: unknown visual ${t.visualId}`); });
+    C.questions.forEach((q) => {
+      if (q.role === "Main" && !caseIds.has(q.caseId)) err.push(`${q.id}: unknown case`);
+      if (q.role === "Check" && !tags[q.forTag]) err.push(`${q.id}: check question needs a valid tag`);
+      (q.visuals || []).forEach((vid) => { if (!vis[vid] || vis[vid].caseId !== q.caseId) err.push(`${q.id}: visual ${vid} isn't in its case`); });
+      const opts = C.options.filter((o) => o.qid === q.id);
+      const nc = opts.filter((o) => o.correct).length;
+      const r = LFH.required(q.type);
+      if (!["Multiple choice", "Pick two", "Pick three", "Select all that apply"].includes(q.type)) err.push(`${q.id}: unknown type ${q.type}`);
+      else if ((r.exact && nc !== r.exact) || (r.min && nc < r.min)) err.push(`${q.id}: ${q.type} has ${nc} correct`);
+      if (opts.length < 2) err.push(`${q.id}: needs at least 2 options`);
+      opts.forEach((o) => {
+        if (!o.correct && !o.tag) err.push(`${q.id}${o.letter}: wrong option has no error tag`);
+        if (o.tag && !tags[o.tag]) err.push(`${q.id}${o.letter}: unknown tag ${o.tag}`);
+      });
+    });
+    C.options.forEach((o) => { if (!C.questions.some((q) => q.id === o.qid)) err.push(`Options: unknown question ${o.qid}`); });
+    const used = new Set(C.options.map((o) => o.tag).filter(Boolean));
+    C.tags.forEach((t) => {
+      if (t.kind === "Calibration" && !drills.has(t.drill)) err.push(`${t.id}: Calibration tag needs a valid drill`);
+      if (t.kind === "Archive" && used.has(t.id) && !C.questions.some((q) => q.role === "Check" && q.forTag === t.id)) err.push(`${t.id}: Archive tag has no Check question`);
+    });
+    return err;
+  };
+
+  /* ---------------- Build mode ---------------- */
+  LFH.buildAxisOptions = (spec) => [
+    { text: `${spec.x.label} (${spec.x.unit})`, correct: true },
+    { text: `${spec.y.label} (${spec.y.unit})`, correct: false, tag: "CAL-AXIS" },
+  ];
+  LFH.buildScaleOptions = function (spec) {
+    const y = spec.y, u = y.unit;
+    const vals = spec.series.flatMap((s) => s.points.map((p) => p.y)).sort((a, b) => a - b);
+    const dataMax = vals[vals.length - 1];
+    let smallMax = y.min + y.step * 2; while (smallMax >= dataMax) smallMax -= y.step;
+    const bigStep = 10 ** Math.ceil(Math.log10(y.max));
+    return [
+      { text: `Start at ${fmt(y.min)} and count by ${fmt(y.step)}s up to ${fmt(y.max)} ${u}`, correct: true },
+      { text: `Start at ${fmt(y.min)} and count by ${fmt(y.step)}s up to ${fmt(smallMax)} ${u}`, correct: false, tag: "CAL-SCALE-CHOICE", why: "That scale stops before the biggest values, so some points won't fit." },
+      { text: `Use the data values as the gridlines: ${vals.map(fmt).join(", ")}`, correct: false, tag: "CAL-SCALE-CHOICE", why: "Those gridlines aren't equal intervals, so distances on the graph would lie." },
+      { text: `Start at 0 and count by ${fmt(bigStep)}s up to ${fmt(bigStep * 10)} ${u}`, correct: false, tag: "CAL-SCALE-CHOICE", why: "Everything would be squashed into a thin sliver at the bottom. Too hard to read." },
+    ];
+  };
+  LFH.snapUnits = (spec) => ({ sx: spec.x.step / 4, sy: spec.y.step / 5 });
+  LFH.checkPlot = function (spec, i, x, y) {
+    const pts = spec.series[0].points, t = pts[i];
+    const { sx, sy } = LFH.snapUnits(spec);
+    const xOk = Math.abs(x - t.x) < sx / 2, yOk = Math.abs(y - t.y) < sy / 2;
+    if (xOk && yOk) return { ok: true };
+    const xs = pts.map((p) => p.x);
+    const gaps = xs.slice(1).map((v, k) => round(v - xs[k]));
+    const uneven = new Set(gaps).size > 1;
+    if (!xOk && yOk) {
+      const prev = i > 0 ? pts[i - 1].x : null;
+      if (uneven && prev !== null && Math.abs(x - (prev + spec.x.step)) < sx / 2) return { ok: false, tag: "CAL-SPACING" };
+      return { ok: false, tag: uneven ? "CAL-SPACING" : "CAL-SCALE" };
+    }
+    if (xOk && !yOk) return { ok: false, tag: "CAL-SCALE" };
+    return { ok: false, tag: "CAL-POINT" };
+  };
+
+  /* ---------------- Drills: fresh data every time ---------------- */
+  /* Each context lists only the trends that are physically honest for it.
+     (A drill must never show particle speed falling as temperature rises.) */
+  const ALL = ["up", "down", "flat", "peak"];
+  const CONTEXTS = [
+    { x: ["Time", "min"], y: ["Temperature", "°C"], dirs: ALL },
+    { x: ["Time", "hours"], y: ["Air temperature", "°C"], dirs: ALL },
+    { x: ["Time", "days"], y: ["Plant height", "cm"], dirs: ["up", "flat"] },
+    { x: ["Temperature", "°C"], y: ["Particle speed", "m/s"], dirs: ["up"] },
+    { x: ["Depth", "m"], y: ["Water pressure", "atm"], dirs: ["up"] },
+    { x: ["Time", "s"], y: ["Distance", "m"], dirs: ["up", "flat"] },
+    { x: ["Temperature", "°C"], y: ["Gas volume", "mL"], dirs: ["up"] },
+    { x: ["Time", "min"], y: ["Ice remaining", "g"], dirs: ["down", "flat"] },
+  ];
+  const ctxFor = (dir) => pick(CONTEXTS.filter((c) => c.dirs.includes(dir)));
+  const ax = (label, unit, min, max, step, scale = "Linear") => ({ label, unit, min, max, step, scale });
+  const line = (ctx, xs, ys, yAx, name = "Data") => ({
+    type: "Line graph", title: `${ctx.y[0]} vs. ${ctx.x[0]}`,
+    x: ax(ctx.x[0], ctx.x[1], xs.min, xs.max, xs.step), y: yAx,
+    series: [{ name, points: ys.map((p) => ({ x: p[0], y: p[1], label: "" })) }],
+  });
+  function mcOptions(correctText, wrongTexts) {
+    const seen = new Set([correctText]); const opts = [{ text: correctText, correct: true }];
+    wrongTexts.forEach((w) => { if (!seen.has(w)) { seen.add(w); opts.push({ text: w, correct: false }); } });
+    return shuffle(opts);
+  }
+  const STEPS = [2, 5, 10, 20, 25, 50];
+  const offsetsFor = (step) => { const o = [0.2, 0.4, 0.5, 0.6, 0.8].map((f) => f * step).filter((v) => Number.isInteger(v) && v > 0); return o.length ? o : [1]; };
+
+  LFH.drills = {
+    "scale-read"() {
+      const step = pick(STEPS), n = ri(5, 6), ctx = pick(CONTEXTS);
+      const k = ri(1, n - 2), off = pick(offsetsFor(step)), v = step * k + off;
+      const labels = ["A", "B", "C", "D"], target = ri(0, 3);
+      const bars = labels.map((l, i) => ({ x: null, y: i === target ? v : step * ri(1, n - 1), label: "" }));
+      const alt = step % 2 === 0 ? step / 2 : step * 2;
+      const u = ctx.y[1];
+      return {
+        visual: { type: "Bar graph", title: `${ctx.y[0]} of four samples`, x: ax("Sample", ""), y: ax(ctx.y[0], u, 0, step * n, step),
+          series: labels.map((l, i) => ({ name: `Sample ${l}`, points: [bars[i]] })) },
+        prompt: `What is the ${ctx.y[0].toLowerCase()} of Sample ${labels[target]}?`,
+        options: mcOptions(withUnit(v, u), [withUnit(step * k, u), withUnit(step * (k + 1), u), withUnit(round((k + off / step) * alt), u)]),
+        why: `Each gridline is worth ${fmt(step)} ${u}. Sample ${labels[target]}'s bar ends between ${fmt(step * k)} and ${fmt(step * (k + 1))}, at ${withUnit(v, u)}.`,
+      };
+    },
+    "axis-read"() {
+      const ctx = pick(CONTEXTS), xstep = pick([1, 2, 5, 10]), ystep = pick([5, 10, 20]);
+      const xs = [1, 2, 3, 4, 5].map((i) => i * xstep);
+      let acc = 0; const ys = ctx.dirs.length === 4 ? xs.map(() => ystep * ri(1, 8)) : ctx.dirs[0] === "down" ? xs.map((_, i) => ystep * (8 - i - ri(0, 1))) : xs.map(() => (acc += ystep * ri(1, 2)));
+      const i = ri(1, 3), askY = R() < 0.6;
+      const spec = line(ctx, { min: 0, max: xstep * 6, step: xstep }, xs.map((x, k) => [x, ys[k]]), ax(ctx.y[0], ctx.y[1], 0, ystep * 9, ystep));
+      spec.series[0].points[i].label = "★";
+      spec.highlight = [{ x: xs[i], y: ys[i], label: "★" }];
+      const ans = askY ? withUnit(ys[i], ctx.y[1]) : withUnit(xs[i], ctx.x[1]);
+      const swapped = askY ? withUnit(xs[i], ctx.y[1]) : withUnit(ys[i], ctx.x[1]);
+      const other = askY ? withUnit(ys[i + 1], ctx.y[1]) : withUnit(xs[i + 1], ctx.x[1]);
+      const other2 = askY ? withUnit(ys[i - 1], ctx.y[1]) : withUnit(xs[i - 1], ctx.x[1]);
+      return {
+        visual: spec,
+        prompt: `Look at the starred point. What is its ${(askY ? ctx.y[0] : ctx.x[0]).toLowerCase()}?`,
+        options: mcOptions(ans, [swapped, other, other2]),
+        why: `${askY ? ctx.y[0] : ctx.x[0]} is on the ${askY ? "y-axis (up the side)" : "x-axis (along the bottom)"}. From the star, go straight ${askY ? "left" : "down"} to read ${ans}.`,
+      };
+    },
+    "point-find"() {
+      const ctx = ctxFor("up"), xstep = pick([2, 5, 10, 20]), ystep = pick([5, 10, 25]);
+      const xs = [1, 2, 3, 4, 5, 6].map((i) => i * xstep);
+      let y = ystep * ri(1, 3); const ys = xs.map(() => (y += ystep * ri(0, 2) + (R() < 0.3 ? ystep / 5 * ri(1, 4) : 0), round(y)));
+      const top = Math.ceil((Math.max(...ys) + ystep) / ystep) * ystep;
+      const i = ri(1, 4);
+      const spec = line(ctx, { min: 0, max: xstep * 7, step: xstep }, xs.map((x, k) => [x, ys[k]]), ax(ctx.y[0], ctx.y[1], 0, top, ystep));
+      const u = ctx.y[1];
+      return {
+        visual: spec,
+        prompt: `What is the ${ctx.y[0].toLowerCase()} when the ${ctx.x[0].toLowerCase()} is ${withUnit(xs[i], ctx.x[1])}?`,
+        options: mcOptions(withUnit(ys[i], u), [withUnit(ys[i - 1], u), withUnit(ys[i + 1], u), withUnit(ys[i + 2] ?? ys[0], u)]),
+        why: `Find ${withUnit(xs[i], ctx.x[1])} on the x-axis first, go straight up to the line, then across: ${withUnit(ys[i], u)}.`,
+      };
+    },
+    "uneven-spacing"() {
+      for (let tries = 0; tries < 50; tries++) {
+        const ctx = ctxFor("up"), xstep = pick([5, 10, 20]), ystep = pick([10, 20, 50]);
+        const gaps = shuffle([1, 1, 3, 4]).map((g) => g * xstep);
+        const xs = [0]; gaps.forEach((g) => xs.push(xs[xs.length - 1] + g));
+        const rises = gaps.map((g) => (g === xstep ? ystep * ri(2, 4) : ystep * ri(0, 1) + ystep / 2));
+        const ys = [ystep]; rises.forEach((r) => ys.push(ys[ys.length - 1] + r));
+        const best = rises.indexOf(Math.max(...rises));
+        if (rises.filter((r) => r === rises[best]).length > 1) continue;
+        const top = Math.ceil((Math.max(...ys) + ystep) / ystep) * ystep;
+        const spec = line(ctx, { min: 0, max: xs[4] + xstep, step: xstep }, xs.map((x, k) => [x, ys[k]]), ax(ctx.y[0], ctx.y[1], 0, top, ystep));
+        const seg = (k) => `Between ${withUnit(xs[k], ctx.x[1])} and ${withUnit(xs[k + 1], ctx.x[1])}`;
+        const longest = gaps.indexOf(Math.max(...gaps));
+        return {
+          visual: spec,
+          prompt: `Between which two measurements did the ${ctx.y[0].toLowerCase()} go up by the greatest amount?`,
+          options: mcOptions(seg(best), [0, 1, 2, 3].filter((k) => k !== best).map(seg)),
+          why: `${seg(best)} it rose ${withUnit(rises[best], ctx.y[1])}, the biggest jump. The long stretch ${seg(longest).toLowerCase()} only rose ${withUnit(rises[longest], ctx.y[1])}.`,
+        };
+      }
+    },
+    "trend-read"() {
+      const kind = pick(ALL), ctx = ctxFor(kind), ystep = pick([5, 10, 20]);
+      const xs = [0, 1, 2, 3, 4, 5], base = ystep * 4;
+      const ys = xs.map((i) => {
+        const wig = (R() - 0.5) * ystep * 0.6;
+        if (kind === "up") return round(ystep + i * ystep * 1.2 + wig);
+        if (kind === "down") return round(ystep * 7 - i * ystep * 1.2 + wig);
+        if (kind === "flat") return round(base + wig * 0.5);
+        return round(ystep * 2 + (2.5 - Math.abs(i - 2.5)) * ystep * 1.6 + wig);
+      }).map((v) => Math.max(ystep / 2, v));
+      const X = ctx.x[0].toLowerCase(), Y = ctx.y[0].toLowerCase();
+      const T = { up: `As ${X} increases, ${Y} increases.`, down: `As ${X} increases, ${Y} decreases.`, flat: `${ctx.y[0]} stays about the same.`, peak: `${ctx.y[0]} increases, then decreases.` };
+      return {
+        visual: line(ctx, { min: 0, max: 5, step: 1 }, xs.map((x, k) => [x, ys[k]]), ax(ctx.y[0], ctx.y[1], 0, ystep * 9, ystep)),
+        prompt: "Which statement best describes the overall trend?",
+        options: shuffle(Object.keys(T).map((k) => ({ text: T[k], correct: k === kind }))),
+        why: `Compare the first point to the last and look at the overall shape, not the little wiggles: ${T[kind].charAt(0).toLowerCase() + T[kind].slice(1)}`,
+      };
+    },
+    "extrapolate"() {
+      const dir = R() < 0.7 ? "up" : "down", ctx = ctxFor(dir), xstep = pick([1, 2, 5, 10]), ystep = pick([5, 10, 20]);
+      const s = ystep * pick([1, 2]) * (dir === "up" ? 1 : -1);
+      const start = s > 0 ? ystep * ri(1, 2) : ystep * ri(11, 12);
+      const xs = [0, 1, 2, 3, 4].map((i) => i * xstep), ys = xs.map((x, i) => start + s * i);
+      const next = start + s * 5, u = ctx.y[1];
+      if (next < 0) return null;
+      const spec = line(ctx, { min: 0, max: xstep * 6, step: xstep }, xs.map((x, k) => [x, ys[k]]), ax(ctx.y[0], u, 0, ystep * 14, ystep));
+      return {
+        visual: spec,
+        prompt: `If the pattern continues, what will the ${ctx.y[0].toLowerCase()} be at ${withUnit(xstep * 5, ctx.x[1])}?`,
+        options: mcOptions(withUnit(next, u), [ys[4], next + s, ys[4] - s, next + 2 * s].filter((v) => v >= 0 && v !== next).slice(0, 3).map((v) => withUnit(v, u))),
+        why: `The line changes by ${withUnit(Math.abs(s), u)} every ${withUnit(xstep, ctx.x[1])}. One more step from ${withUnit(ys[4], u)} gives ${withUnit(next, u)}.`,
+      };
+    },
+    "phase-region"() {
+      const spec = fictionalPhase();
+      const m = LFH.phaseModel(spec);
+      const p = pointWithMargin(spec, m);
+      spec.highlight = [{ x: p.T, y: p.P, label: "Q" }];
+      const st = m.state(p.T, p.P);
+      return {
+        visual: spec,
+        prompt: `Point Q is at ${fmt(p.T)}°C and ${fmt(p.P)} atm. What state is Substance X at point Q?`,
+        options: shuffle(["solid", "liquid", "gas"].map((s) => ({ text: cap(s), correct: s === st }))), minOptions: 3,
+        why: `Find ${fmt(p.T)}°C along the bottom and ${fmt(p.P)} atm up the side. They meet in the ${st} region.`,
+      };
+    },
+    "phase-trace"() {
+      for (let tries = 0; tries < 200; tries++) {
+        const spec = fictionalPhase();
+        const m = LFH.phaseModel(spec);
+        const a = pointWithMargin(spec, m);
+        const horiz = R() < 0.6;
+        const b = horiz ? { T: pick(gridVals(spec.x)), P: a.P } : { T: a.T, P: pick(gridVals(spec.y)) };
+        if ((horiz && Math.abs(b.T - a.T) < spec.x.step * 3) || (!horiz && Math.abs(b.P - a.P) < spec.y.step * 2)) continue;
+        if (!clear(spec, m, b)) continue;
+        const seq = [];
+        for (let i = 0; i <= 60; i++) { const s = m.state(a.T + (b.T - a.T) * i / 60, a.P + (b.P - a.P) * i / 60); if (seq[seq.length - 1] !== s) seq.push(s); }
+        if (seq.length > 2) continue;
+        const S = ["solid", "liquid", "gas"], s0 = seq[0], s1 = seq[seq.length - 1];
+        const text = (x, y) => (x === y ? `It stays a ${x}.` : `It changes from a ${x} to a ${y}.`);
+        const third = S.find((s) => s !== s0 && s !== s1);
+        const wrong = [text(s1, s0), text(s0, s0), text(s0, third), text(s1, s1)];
+        spec.highlight = [{ x: a.T, y: a.P, label: "Start" }, { x: b.T, y: b.P, label: "End" }];
+        spec.arrow = { from: { x: a.T, y: a.P }, to: { x: b.T, y: b.P } };
+        const how = horiz ? `The pressure stays at ${fmt(a.P)} atm while the temperature changes to ${fmt(b.T)}°C.` : `The temperature stays at ${fmt(a.T)}°C while the pressure changes to ${fmt(b.P)} atm.`;
+        return {
+          visual: spec,
+          prompt: `Substance X starts at ${fmt(a.T)}°C and ${fmt(a.P)} atm. ${how} What happens?`,
+          options: traceOptions(text, s0, s1, wrong),
+          why: s0 === s1 ? `Follow the arrow from Start to End: it never crosses a line, so it stays a ${s0}.` : `Follow the arrow from Start to End: it starts in the ${s0} region and crosses a line into the ${s1} region.`,
+        };
+      }
+    },
+    "log-read"() {
+      const decades = pick([[0.1, 100], [1, 1000]]);
+      const ks = decades[0] === 0.1 ? [-1, 0, 1] : [0, 1, 2];
+      const k = pick(ks), mant = pick([2, 3, 4, 5, 6, 8]);
+      const v = round(mant * 10 ** k);
+      const labels = ["A", "B", "C", "D"], target = ri(0, 3);
+      const pts = labels.map((l, i) => ({ x: i + 1, y: i === target ? v : round(pick([1, 2, 3, 5, 7]) * 10 ** pick(ks)), label: l }));
+      const evenRead = round((1 + 9 * Math.log10(mant)) * 10 ** k, 3);
+      const nice = (z) => round(z, 2);
+      const unit = pick(["atm", "kPa", "mL"]);
+      return {
+        visual: { type: "Line graph", noLine: true, title: "Measurements on a log scale", x: ax("Sample", "", 0, 5, 1), y: ax("Value", unit, decades[0], decades[1], null, "Log"),
+          series: [{ name: "Samples", points: pts }], xLabels: { 1: "A", 2: "B", 3: "C", 4: "D" } },
+        prompt: `This y-axis is a log scale. What is the value of point ${labels[target]}?`,
+        options: mcOptions(withUnit(v, unit), [withUnit(nice(Math.round(evenRead)), unit), withUnit(round(v * 10), unit), withUnit(round(v / 10), unit)]),
+        why: `Point ${labels[target]} is above the ${fmt(10 ** k)} line. Each unlabeled line above it adds another ${fmt(10 ** k)}: ${[2, 3, 4, 5, 6, 7, 8, 9].slice(0, mant - 1).map((m) => fmt(round(m * 10 ** k))).join(", ")}. It sits on the line for ${withUnit(v, unit)}.`,
+      };
+    },
+    "table-read"() {
+      const names = shuffle(["Balloon A", "Balloon B", "Balloon C", "Balloon D"]);
+      const temps = [0, 20, 40, 60];
+      const rows = names.map((n, i) => [n, String(temps[i]), String(round(2 + i * 0.2 + ri(0, 1) * 0.1, 1)), String(ri(96, 104))]);
+      const headers = ["Balloon", "Temperature (°C)", "Volume (L)", "Pressure (kPa)"];
+      const r = ri(0, 3), c = ri(1, 3), r2 = (r + ri(1, 3)) % 4;
+      const unitOf = (ci) => ["", "°C", "L", "kPa"][ci];
+      const val = (ri_, ci) => `${rows[ri_][ci]} ${unitOf(ci)}`;
+      const others = [1, 2, 3].filter((x) => x !== c);
+      return {
+        visual: { type: "Data table", title: "Balloon measurements", table: { headers, rows } },
+        prompt: `What is the ${headers[c].split(" (")[0].toLowerCase()} of ${rows[r][0]}?`,
+        options: mcOptions(val(r, c), [val(r, others[0]), val(r, others[1]), val(r2, c)]),
+        why: `Find the ${rows[r][0]} row, then slide across to the "${headers[c]}" column: ${val(r, c)}.`,
+      };
+    },
+    "series-read"() {
+      const ystep = pick([5, 10]), names = ["Cup A", "Cup B", "Cup C"];
+      const xs = [0, 2, 4, 6, 8, 10];
+      const series = names.map((n, s) => ({ name: n, points: xs.map((x, i) => ({ x, y: Math.max(ystep, round(ystep * (2 + s * 2) + (s - 1) * i * ystep * 0.6 + (i % 2 ? ystep / 5 * ri(0, 2) : 0))), label: "" })) }));
+      const s = ri(0, 2), i = ri(1, 4), o = [0, 1, 2].filter((z) => z !== s);
+      const Y = (si, ii) => withUnit(series[si].points[ii].y, "°C");
+      const top = Math.ceil((Math.max(...series.flatMap((z) => z.points.map((p) => p.y))) + ystep) / ystep) * ystep;
+      const uniq = new Set([Y(s, i), Y(o[0], i), Y(o[1], i)]);
+      if (uniq.size < 3) return LFH.drills["series-read"]();
+      return {
+        visual: { type: "Line graph", title: "Temperature of three cups", x: ax("Time", "min", 0, 10, 2), y: ax("Temperature", "°C", 0, top, ystep), series },
+        prompt: `What was the temperature of ${names[s]} at ${xs[i]} minutes?`,
+        options: mcOptions(Y(s, i), [Y(o[0], i), Y(o[1], i), Y(s, i + 1)]),
+        why: `Use the key: ${names[s]} has the ${["circle", "square", "triangle"][s]} markers. At ${xs[i]} minutes, that line reads ${Y(s, i)}.`,
+      };
+    },
+    "scale-choose"() {
+      const lo = ri(2, 4) * 10, vals = [0, 1, 2, 3, 4].map((i) => lo + i * ri(8, 16) + ri(0, 5));
+      vals.sort((a, b) => a - b);
+      const max = vals[4], top = Math.ceil((max + 1) / 10) * 10;
+      const short = Math.floor((max - 12) / 10) * 10;
+      return {
+        visual: { type: "Data table", title: "Data to graph", table: { headers: ["Trial", "Height (cm)"], rows: vals.map((v, i) => [String(i + 1), String(v)]) } },
+        prompt: "You're about to graph this data. Which y-axis scale is best?",
+        options: mcOptions(`0 to ${top}, counting by 10s`, [`0 to ${short}, counting by 10s`, `Use the data values as gridlines: ${vals.join(", ")}`, "0 to 1,000, counting by 100s"]),
+        why: `0 to ${top} by 10s fits every value (the biggest is ${max}), counts by the same amount each time, and uses most of the graph.`,
+      };
+    },
+  };
+  function traceOptions(text, s0, s1, preferred) {
+    const right = text(s0, s1), S = ["solid", "liquid", "gas"];
+    const all = preferred.concat(S.flatMap((a) => S.map((b) => text(a, b))));
+    const wrong = [...new Set(all)].filter((t) => t !== right).slice(0, 3);
+    return mcOptions(right, wrong);
+  }
+  /* Every drill goes through here: a bad random roll is thrown away and re-rolled. */
+  LFH.makeDrill = function (id) {
+    for (let i = 0; i < 40; i++) {
+      const d = LFH.drills[id]();
+      if (!d) continue;
+      const texts = d.options.map((o) => o.text);
+      const bad = texts.some((t) => /NaN|undefined|Infinity/.test(t)) || /NaN|undefined/.test(d.prompt + d.why);
+      if (!bad && d.options.filter((o) => o.correct).length === 1 && new Set(texts).size === texts.length && texts.length >= (d.minOptions || 4)) { d.id = id; return d; }
+    }
+    throw new Error("drill failed to generate: " + id);
+  };
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const gridVals = (a) => LFH.ticks(a).major.filter((v) => v > a.min && v < a.max);
+  function fictionalPhase() {
+    const Tt = pick([0, 20, 40]), Pt = pick([1, 2]);
+    const tilt = pick([-4, 0, 6]);
+    const boil = [{ x: Tt, y: Pt, label: "" }];
+    const k = pick([0.0009, 0.0012, 0.0016]);
+    for (let T = Tt + 20; T <= 180; T += 20) boil.push({ x: T, y: round(Pt + k * (T - Tt) ** 2, 3), label: "" });
+    return {
+      type: "Phase diagram", title: "Phase diagram of Substance X",
+      x: ax("Temperature", "°C", -40, 160, 20), y: ax("Pressure", "atm", 0, 12, 2),
+      series: [
+        { name: "Sublimation line", points: [{ x: -40, y: 0.1, label: "" }, { x: round((Tt - 40) / 2), y: round(Pt / 3, 3), label: "" }, { x: Tt, y: Pt, label: "" }] },
+        { name: "Melting line", points: [{ x: Tt, y: Pt, label: "" }, { x: Tt + tilt, y: 12, label: "" }] },
+        { name: "Boiling line", points: boil },
+      ],
+    };
+  }
+  function clear(spec, m, p) {
+    const s = m.state(p.T, p.P), dT = spec.x.step * 0.6, dP = spec.y.step * 0.5;
+    return [[dT, 0], [-dT, 0], [0, dP], [0, -dP], [dT, dP], [-dT, -dP], [dT, -dP], [-dT, dP]]
+      .every(([a, b]) => { const T = p.T + a, P = p.P + b; return P < spec.y.min || P > spec.y.max || T < spec.x.min || T > spec.x.max || m.state(T, P) === s; });
+  }
+  function pointWithMargin(spec, m) {
+    const Ts = gridVals(spec.x), Ps = gridVals(spec.y).concat(gridVals(spec.y).map((v) => v + spec.y.step / 2)).filter((v) => v < spec.y.max);
+    for (let i = 0; i < 400; i++) { const p = { T: pick(Ts), P: pick(Ps) }; if (clear(spec, m, p)) return p; }
+    return { T: Ts[0], P: Ps[0] };
+  }
+
+  LFH.drillNames = {
+    "scale-read": "Gridline values", "axis-read": "Which axis?", "point-find": "Find the point", "uneven-spacing": "Uneven spacing",
+    "trend-read": "Spot the trend", "extrapolate": "Predict what's next", "phase-region": "Phase regions", "phase-trace": "Trace a phase change",
+    "log-read": "Log scales", "table-read": "Read a table", "series-read": "Multi-line graphs", "scale-choose": "Choose a scale",
+  };
+
+  root.LFH = LFH;
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script id="app-js">/* Lab for Hire app v0.1.1: UI layer. All game logic lives in LFH (engine). */
+(function () {
+  "use strict";
+  const C = JSON.parse(document.getElementById("lfh-content").textContent);
+  const M = LFH.load(C);
+  const U = LFH.util;
+  const params = new URLSearchParams(location.search);
+  const PREVIEW = params.get("preview") === "1";
+  const ERRORS = LFH.validate(C);
+  const app = document.getElementById("app");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* ---------------- Progress (per-viewer, browser only) ---------------- */
+  const KEY = "lfh.progress.v1";
+  const blank = () => ({ v: 1, cases: {}, bayCorrect: 0, bayBest: 0 });
+  let P = blank();
+  try { const raw = localStorage.getItem(KEY); if (raw) P = Object.assign(blank(), JSON.parse(raw)); } catch (e) { /* storage unavailable: play without saving */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* ignore */ } };
+  const rep = () => Object.values(P.cases).reduce((a, c) => a + (c.best || 0), 0) + P.bayCorrect;
+  const RANKS = [
+    { at: 0, name: "Lab Intern", item: "🥽", itemName: "Safety goggles" },
+    { at: 25, name: "Lab Tech", item: "🌡️", itemName: "Thermometer" },
+    { at: 60, name: "Data Analyst", item: "🔬", itemName: "Microscope" },
+    { at: 110, name: "Senior Scientist", item: "🔭", itemName: "Telescope" },
+    { at: 170, name: "Lab Director", item: "🛰️", itemName: "Research satellite" },
+  ];
+  const rankOf = (r) => RANKS.filter((k) => r >= k.at).pop();
+  const nextRank = (r) => RANKS.find((k) => k.at > r);
+
+  const visibleCases = () => M.cases.filter((c) => c.status === "Live" || PREVIEW);
+  const unlocked = (c) => {
+    if (PREVIEW) return true;
+    const list = visibleCases(); const i = list.indexOf(c);
+    return i <= 0 || !!(P.cases[list[i - 1].id] && P.cases[list[i - 1].id].done);
+  };
+
+  /* ---------------- State ---------------- */
+  let S = { screen: "hub" };
+  const go = (patch) => { S = Object.assign(S, patch); render(); window.scrollTo({ top: 0 }); };
+
+  /* ---------------- Visual rendering ---------------- */
+  const W = 640, H = 440, MG = { l: 80, r: 24, t: 52, b: 64 };
+  const PW = W - MG.l - MG.r, PH = H - MG.t - MG.b;
+  const COLORS = ["var(--pink)", "var(--sky)", "var(--violet)", "var(--amber)"];
+  const DASH = ["", "7 4", "2 4", "10 3 2 3"];
+  const SHAPES = ["circle", "square", "triangle", "diamond"];
+  function marker(shape, x, y, color, r = 6) {
+    const f = `fill="${color}" stroke="var(--paper)" stroke-width="1.5"`;
+    if (shape === "square") return `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" ${f}/>`;
+    if (shape === "triangle") return `<polygon points="${x},${y - r - 1} ${x - r - 1},${y + r} ${x + r + 1},${y + r}" ${f}/>`;
+    if (shape === "diamond") return `<polygon points="${x},${y - r - 2} ${x + r + 2},${y} ${x},${y + r + 2} ${x - r - 2},${y}" ${f}/>`;
+    return `<circle cx="${x}" cy="${y}" r="${r}" ${f}/>`;
+  }
+  const axTitle = (a) => (a.unit ? `${a.label} (${a.unit})` : a.label);
+
+  function svgVisual(spec, o = {}) {
+    if (spec.type === "Data table") return tableHTML(spec, o);
+    const bar = spec.type === "Bar graph";
+    const X = spec.x, Y = spec.y;
+    const px = (v) => MG.l + LFH.toUnit(X, v) * PW;
+    const py = (v) => MG.t + (1 - LFH.toUnit(Y, v)) * PH;
+    const parts = [];
+    const clipId = "clip" + Math.random().toString(36).slice(2, 8);
+    parts.push(`<defs><clipPath id="${clipId}"><rect x="${MG.l}" y="${MG.t}" width="${PW}" height="${PH}"/></clipPath>
+      <marker id="${clipId}a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>`);
+    parts.push(`<rect x="${MG.l}" y="${MG.t}" width="${PW}" height="${PH}" fill="var(--plot)"/>`);
+    const phase = spec.type === "Phase diagram" ? phaseRegions(spec) : null;
+    if (phase) parts.push(phase.fill);
+    // grid
+    const yt = LFH.ticks(Y);
+    yt.minor.forEach((v) => parts.push(`<line x1="${MG.l}" x2="${MG.l + PW}" y1="${py(v)}" y2="${py(v)}" class="g-minor"/>`));
+    yt.major.forEach((v) => {
+      parts.push(`<line x1="${MG.l}" x2="${MG.l + PW}" y1="${py(v)}" y2="${py(v)}" class="g-major${LFH.isLog(Y) ? " g-decade" : ""}"/>`);
+      parts.push(`<text x="${MG.l - 10}" y="${py(v) + 5}" text-anchor="end" class="tick">${U.fmt(v)}</text>`);
+    });
+    let cats = [];
+    if (bar) {
+      cats = spec.series.map((s) => s.name);
+      const bw = PW / cats.length;
+      cats.forEach((c, i) => parts.push(`<text x="${MG.l + bw * (i + 0.5)}" y="${MG.t + PH + 22}" text-anchor="middle" class="tick">${esc(c)}</text>`));
+    } else {
+      const xt = LFH.ticks(X);
+      const every = xt.major.length > 14 ? 2 : 1;
+      xt.major.forEach((v, i) => {
+        parts.push(`<line y1="${MG.t}" y2="${MG.t + PH}" x1="${px(v)}" x2="${px(v)}" class="g-major"/>`);
+        const lab = spec.xLabels ? spec.xLabels[v] : U.fmt(v);
+        if (lab !== undefined && i % every === 0) parts.push(`<text x="${px(v)}" y="${MG.t + PH + 22}" text-anchor="middle" class="tick">${esc(lab)}</text>`);
+      });
+    }
+    if (phase) parts.push(phase.labels);
+    parts.push(`<rect x="${MG.l}" y="${MG.t}" width="${PW}" height="${PH}" class="frame"/>`);
+    // titles
+    parts.push(`<text x="${MG.l}" y="30" class="v-title">${esc(spec.title)}</text>`);
+    parts.push(`<text x="${MG.l + PW / 2}" y="${H - 14}" text-anchor="middle" class="ax-title">${esc(axTitle(X))}</text>`);
+    parts.push(`<text transform="translate(20 ${MG.t + PH / 2}) rotate(-90)" text-anchor="middle" class="ax-title">${esc(axTitle(Y))}</text>`);
+    // data: g = clipped (lines), mk = unclipped (markers, labels) so edge points aren't cut in half
+    const g = [], mk = [];
+    if (bar) {
+      const bw = PW / cats.length;
+      spec.series.forEach((s, i) => { const v = s.points[0].y; g.push(`<rect x="${MG.l + bw * i + bw * 0.22}" y="${py(v)}" width="${bw * 0.56}" height="${MG.t + PH - py(v)}" class="bar"/>`); });
+    } else if (spec.type === "Line graph") {
+      const showLine = o.showLine !== false && !spec.noLine;
+      const showPts = o.showPoints !== false;
+      spec.series.forEach((s, si) => {
+        const pts = s.points.slice().sort((a, b) => a.x - b.x);
+        if (showLine) g.push(`<polyline points="${pts.map((p) => `${px(p.x)},${py(p.y)}`).join(" ")}" fill="none" stroke="${COLORS[si % 4]}" stroke-width="3" stroke-dasharray="${DASH[si % 4]}" stroke-linejoin="round" class="${o.drawIn ? "draw-in" : ""}"/>`);
+        if (showPts) pts.forEach((p) => mk.push(marker(SHAPES[si % 4], px(p.x), py(p.y), COLORS[si % 4])));
+        if (showPts) pts.filter((p) => p.label && p.label !== "★").forEach((p) => mk.push(`<text x="${px(p.x) + 9}" y="${py(p.y) - 9}" class="pt-label">${esc(p.label)}</text>`));
+      });
+    } else if (spec.type === "Phase diagram") {
+      spec.series.forEach((s) => {
+        const pts = s.points.slice().sort((a, b) => a.y - b.y);
+        g.push(`<polyline points="${pts.map((p) => `${px(p.x)},${py(p.y)}`).join(" ")}" fill="none" class="boundary"/>`);
+      });
+      const seen = new Set();
+      spec.series.flatMap((s) => s.points).filter((p) => p.label).forEach((p) => {
+        const k = p.label + p.x + p.y; if (seen.has(k)) return; seen.add(k);
+        mk.push(`<circle cx="${px(p.x)}" cy="${py(p.y)}" r="5" class="pt-dot"/><text x="${px(p.x) + 9}" y="${py(p.y) - 9}" class="pt-label">${esc(p.label)}</text>`);
+      });
+    }
+    // build-mode placements
+    (o.placed || []).forEach((p) => mk.push(marker("circle", px(p.x), py(p.y), "var(--pink)", 7)));
+    if (o.ghost) mk.push(`<circle cx="${px(o.ghost.x)}" cy="${py(o.ghost.y)}" r="11" class="ghost"/>`);
+    if (o.pending) g.push(`<g class="pending"><line x1="${px(o.pending.x)}" x2="${px(o.pending.x)}" y1="${MG.t}" y2="${MG.t + PH}"/><line y1="${py(o.pending.y)}" y2="${py(o.pending.y)}" x1="${MG.l}" x2="${MG.l + PW}"/><circle cx="${px(o.pending.x)}" cy="${py(o.pending.y)}" r="8"/></g>`);
+    if (spec.arrow) g.push(`<line x1="${px(spec.arrow.from.x)}" y1="${py(spec.arrow.from.y)}" x2="${px(spec.arrow.to.x)}" y2="${py(spec.arrow.to.y)}" class="arrow" marker-end="url(#${clipId}a)"/>`);
+    (spec.highlight || []).forEach((h) => mk.push(`<circle cx="${px(h.x)}" cy="${py(h.y)}" r="11" class="hl-ring"/><circle cx="${px(h.x)}" cy="${py(h.y)}" r="4" class="hl-dot"/>`));
+    parts.push(`<g clip-path="url(#${clipId})">${g.join("")}</g>${mk.join("")}`);
+    if (spec.highlight) parts.push(spec.highlight.map((h) => `<text x="${px(h.x) + 14}" y="${py(h.y) - 12}" class="hl-label">${esc(h.label)}</text>`).join(""));
+    // legend (shapes + dashes, never color alone) on its own row above the plot
+    const hasLegend = spec.type === "Line graph" && spec.series.length > 1;
+    const LEG = hasLegend ? 28 : 0;
+    const title = parts.splice(parts.findIndex((x) => x.includes('class="v-title"')), 1)[0];
+    const body = `<g transform="translate(0 ${LEG})">${parts.join("")}</g>`;
+    parts.length = 0; parts.push(title, body);
+    if (hasLegend) {
+      let lx = MG.l; const ly = 58;
+      const items = spec.series.map((s, si) => {
+        const w = 34 + s.name.length * 7.4;
+        const out = `<g transform="translate(${lx} ${ly})"><line x1="0" x2="22" y1="-4" y2="-4" stroke="${COLORS[si % 4]}" stroke-width="3" stroke-dasharray="${DASH[si % 4]}"/>${marker(SHAPES[si % 4], 11, -4, COLORS[si % 4], 5)}<text x="28" y="0" class="legend">${esc(s.name)}</text></g>`;
+        lx += w; return out;
+      });
+      parts.push(`<g class="legend-row">${items.join("")}</g>`);
+    }
+    const cls = o.interactive ? "viz plot-target" : "viz";
+    return `<svg class="${cls}" viewBox="0 0 ${W} ${H + LEG}" role="img" aria-label="${esc(spec.title)}">${parts.join("")}</svg>`;
+  }
+
+  const phaseCache = new Map();
+  function phaseRegions(spec) {
+    const key = spec.id ? spec.id : null;
+    if (key && phaseCache.has(key)) return phaseCache.get(key);
+    const m = LFH.phaseModel(spec), NX = 160, NY = 110;
+    const cw = PW / NX, ch = PH / NY, grid = [];
+    const rects = [];
+    for (let j = 0; j < NY; j++) {
+      const row = []; const P = LFH.fromUnit(spec.y, 1 - (j + 0.5) / NY);
+      let runStart = 0, cur = null;
+      for (let i = 0; i <= NX; i++) {
+        const st = i < NX ? m.state(LFH.fromUnit(spec.x, (i + 0.5) / NX), P) : null;
+        if (i < NX) row.push(st);
+        if (st !== cur) {
+          if (cur) rects.push(`<rect x="${(MG.l + runStart * cw).toFixed(2)}" y="${(MG.t + j * ch).toFixed(2)}" width="${((i - runStart) * cw + 0.6).toFixed(2)}" height="${(ch + 0.6).toFixed(2)}" class="r-${cur}"/>`);
+          cur = st; runStart = i;
+        }
+      }
+      grid.push(row);
+    }
+    // label each region at its most "inside" cell (coarse distance search)
+    const labels = [];
+    ["solid", "liquid", "gas"].forEach((st) => {
+      let best = null, bestD = -1;
+      for (let j = 4; j < NY - 4; j += 3) for (let i = 4; i < NX - 4; i += 3) {
+        if (grid[j][i] !== st) continue;
+        let d = 99;
+        for (let r = 1; r < 40 && d === 99; r++) {
+          for (const [di, dj] of [[r, 0], [-r, 0], [0, r], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) {
+            const a = i + di, b = j + dj;
+            if (a < 0 || b < 0 || a >= NX || b >= NY || grid[b][a] !== st) { d = r; break; }
+          }
+        }
+        if (d > bestD) { bestD = d; best = [i, j]; }
+      }
+      if (best && bestD >= 3) labels.push(`<text x="${MG.l + (best[0] + 0.5) * cw}" y="${MG.t + (best[1] + 0.5) * ch + 7}" text-anchor="middle" class="region-label">${st[0].toUpperCase() + st.slice(1)}</text>`);
+    });
+    const out = { fill: `<g>${rects.join("")}</g>`, labels: `<g>${labels.join("")}</g>` };
+    if (key) phaseCache.set(key, out);
+    return out;
+  }
+
+  function tableHTML(spec, o = {}) {
+    const t = spec.table;
+    return `<div class="table-wrap"><table class="datatable"><caption>${esc(spec.title)}</caption>
+      <thead><tr>${t.headers.map((h) => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>${t.rows.map((r, i) => `<tr class="${o.rowHighlight === i ? "row-now" : ""}${o.rowDone && o.rowDone(i) ? " row-done" : ""}">${r.map((c, k) => (k === 0 ? `<th scope="row">${esc(c)}</th>` : `<td>${esc(c)}</td>`)).join("")}</tr>`).join("")}</tbody></table></div>`;
+  }
+
+  function visualPanel(vids, activeIdx, extra = "") {
+    const tabs = vids.length > 1 ? `<div class="tabs" role="tablist">${vids.map((v, i) => `<button role="tab" aria-selected="${i === activeIdx}" class="tab" data-tab="${i}">${esc(M.visuals[v].label)}</button>`).join("")}<span class="tab-note">This question uses ${vids.length} visuals</span></div>` : "";
+    return `${tabs}<div class="paper">${svgVisual(M.visuals[vids[activeIdx]])}${extra}</div>`;
+  }
+
+  /* ---------------- Shared pieces ---------------- */
+  function topbar() {
+    const r = rep(), k = rankOf(r), n = nextRank(r);
+    const pct = n ? Math.round(((r - k.at) / (n.at - k.at)) * 100) : 100;
+    return `<header class="topbar"><button class="wordmark" data-act="hub" aria-label="Lab for Hire home">Lab for Hire</button>
+      <div class="rank"><span class="rank-name">${k.item} ${esc(k.name)}</span>
+      <span class="meter" role="img" aria-label="${r} reputation${n ? `, ${n.at - r} to ${n.name}` : ""}"><span style="width:${pct}%"></span></span>
+      <span class="rep">${r} rep</span></div></header>`;
+  }
+  function optionButtons(opts, order, sel, lock, reveal) {
+    return `<div class="options" role="group">${order.map((L) => {
+      const o = opts.find((x) => x.letter === L);
+      const picked = sel.includes(L);
+      let st = "";
+      if (reveal) st = o.correct ? " is-right" : picked ? " is-wrong" : "";
+      return `<button class="opt${picked ? " picked" : ""}${st}" data-opt="${L}" aria-pressed="${picked}" ${lock ? "disabled" : ""}><span class="box" aria-hidden="true"></span><span>${esc(o.text)}</span></button>`;
+    }).join("")}</div>`;
+  }
+  function instruction(type, n) {
+    const r = LFH.required(type);
+    if (r.exact === 1) return "Choose one answer.";
+    if (r.exact) return `Pick exactly ${r.exact === 2 ? "two" : "three"}. <span class="count">${n} of ${r.exact} picked</span>`;
+    return "Select all that apply.";
+  }
+  const canSubmit = (type, n) => { const r = LFH.required(type); return r.exact ? n === r.exact : n >= 1; };
+  function toggle(type, sel, L) {
+    const r = LFH.required(type);
+    if (r.exact === 1) return [L];
+    if (sel.includes(L)) return sel.filter((x) => x !== L);
+    if (r.exact && sel.length >= r.exact) return sel;
+    return sel.concat(L);
+  }
+
+  /* ---------------- Hub ---------------- */
+  function hub() {
+    const list = visibleCases();
+    const nodes = list.map((c, i) => {
+      const pr = P.cases[c.id] || {}, open = unlocked(c);
+      const stars = [1, 2, 3].map((s) => `<span class="${(pr.stars || 0) >= s ? "on" : ""}">★</span>`).join("");
+      return `<li class="node${open ? "" : " locked"}${pr.done ? " done" : ""}">
+        <span class="node-num" aria-hidden="true">${i + 1}</span>
+        <div class="node-body"><h3>${esc(c.title)}${c.status === "Draft" ? ' <span class="badge">Draft</span>' : ""}</h3>
+        <p class="client">${esc(c.client)}</p>
+        ${open ? `<p class="stars" aria-label="${pr.stars || 0} of 3 stars">${stars}</p><button class="btn" data-case="${c.id}">${pr.done ? "Play again" : "Take the case"}</button>` : `<p class="lock-note">Solve the case above to unlock.</p>`}</div></li>`;
+    }).join("");
+    const r = rep();
+    const shelf = RANKS.map((k) => `<li class="${r >= k.at ? "got" : ""}" title="${esc(k.itemName)}"><span class="shelf-item" aria-hidden="true">${r >= k.at ? k.item : "?"}</span><span>${r >= k.at ? esc(k.itemName) : `${k.at} rep`}</span></li>`).join("");
+    const drills = Object.entries(LFH.drillNames).map(([id, name]) => `<button class="chip-btn" data-bay="${id}">${esc(name)}</button>`).join("");
+    const banner = PREVIEW ? `<div class="preview-banner"><strong>Teacher preview.</strong> Drafts are visible and every case is unlocked. ${ERRORS.length ? `<details><summary>${ERRORS.length} content problem(s)</summary><ul>${ERRORS.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></details>` : "Content check: no problems found."}</div>` : "";
+    return `${topbar()}<main class="hub">${banner}
+      <section class="board"><h1>Case board</h1><p class="lede">Clients bring you problems. Their data holds the answers. Solve each case to unlock the next.</p><ol class="path">${nodes}</ol></section>
+      <aside class="side">
+        <section class="bay-card"><h2>Calibration Bay</h2><p>Free practice with brand-new graphs every time. Pick a skill:</p>
+          <div class="chips"><button class="chip-btn strong" data-bay="mixed">Mixed practice</button>${drills}</div>
+          ${P.bayBest ? `<p class="small">Best streak: ${P.bayBest}</p>` : ""}</section>
+        <section class="shelf-card"><h2>Lab shelf</h2><p class="small">Earn reputation to unlock equipment.</p><ul class="shelf">${shelf}</ul></section>
+        <button class="linkish" data-act="reset">Reset my progress</button>
+      </aside></main>`;
+  }
+
+  /* ---------------- Case flow ---------------- */
+  function startCase(id) {
+    const c = M.cases.find((x) => x.id === id);
+    const vids = M.visualsByCase[id] || [];
+    const buildV = vids.find((v) => M.visuals[v].build);
+    const qs = M.main[id] || [];
+    const order = {}; qs.forEach((q) => (order[q.id] = U.shuffle((M.options[q.id] || []).map((o) => o.letter))));
+    go({ screen: "intro", caseId: id, caseObj: c, vids, qs, qi: 0, order, rec: {}, sel: [], fb: null, tab: 0, visited: [], usedChecks: new Set(),
+      build: buildV ? { vid: buildV, step: "axis", i: 0, placed: [], pending: null, tries: 0, fb: null, missioned: {}, scaleOrder: U.shuffle(LFH.buildScaleOptions(M.visuals[buildV])) , axisOrder: U.shuffle(LFH.buildAxisOptions(M.visuals[buildV])) } : null, certified: !buildV });
+  }
+  function intro() {
+    const c = S.caseObj;
+    const steps = S.build ? "First you'll build the graph from the data table. Then you'll use it to answer the client's questions." : `You'll answer ${S.qs.length} questions using the client's data.`;
+    return `${topbar()}<main class="intro"><div class="ticket"><p class="ticket-kicker">New case</p><h1>${esc(c.title)}</h1><p class="client big">${esc(c.client)}</p><p class="pitch">${esc(c.pitch)}</p><p class="small">${esc(steps)} Take your time. There's no timer.</p>
+      <div class="row"><button class="btn primary" data-act="begin">Start the case</button><button class="btn ghost" data-act="hub">Back to the lab</button></div></div></main>`;
+  }
+  function caseHeader() {
+    const n = S.qs.length;
+    const dots = S.qs.map((q, i) => { const r = S.rec[q.id]; return `<span class="dot${i === S.qi && S.screen === "question" ? " now" : ""}${r && r.points ? " did" : ""}"></span>`; }).join("");
+    return `<div class="casebar"><div><h2>${esc(S.caseObj.title)}</h2><p class="client">${esc(S.caseObj.client)}</p></div>
+      <div class="progress" aria-label="Question ${Math.min(S.qi + 1, n)} of ${n}">${S.certified ? dots : '<span class="build-tag">Building the graph</span>'}</div>
+      <button class="btn ghost small-btn" data-act="leave">Leave case</button></div>`;
+  }
+
+  /* ---------------- Build mode ---------------- */
+  function buildScreen() {
+    const b = S.build, spec = M.visuals[b.vid];
+    const pts = spec.series[0].points;
+    const tableSpec = { type: "Data table", title: "The client's data", table: { headers: [axTitle(spec.x), axTitle(spec.y)], rows: pts.map((p) => [U.fmt(p.x), U.fmt(p.y)]) } };
+    let left, right;
+    const blankSpec = Object.assign({}, spec, { series: [{ name: spec.series[0].name, points: [] }] });
+    if (b.step === "axis" || b.step === "scale") {
+      left = `<div class="paper">${tableHTML(tableSpec)}<div class="blank-grid" aria-hidden="true"></div></div>`;
+      const opts = b.step === "axis" ? b.axisOrder : b.scaleOrder;
+      const title = b.step === "axis" ? "Step 1: Label the axes" : "Step 2: Choose a scale";
+      const q = b.step === "axis" ? `Which variable belongs on the x-axis (along the bottom)?` : `The x-axis is set: ${U.fmt(spec.x.min)} to ${U.fmt(spec.x.max)} ${spec.x.unit}, counting by ${U.fmt(spec.x.step)}s. Now choose the y-axis scale for ${spec.y.label.toLowerCase()}.`;
+      right = `<p class="step-name">${title}</p><h3 class="prompt">${esc(q)}</h3>
+        <div class="options">${opts.map((o, i) => `<button class="opt" data-bopt="${i}" ${missionWaiting() ? "disabled" : ""}><span class="box" aria-hidden="true"></span><span>${esc(o.text)}</span></button>`).join("")}</div>${buildFeedback()}`;
+    } else if (b.step === "plot") {
+      const t = pts[b.i];
+      left = `<div class="paper">${svgVisual(blankSpec, { placed: b.placed, pending: b.pending, ghost: b.ghost, interactive: true, showLine: false })}</div><p class="hint">Tap the graph to place the point. Fine-tune with the arrow keys, then press Place point.</p>`;
+      right = `<p class="step-name">Step 3: Plot each data point</p><h3 class="prompt">Point ${b.i + 1} of ${pts.length}: ${esc(U.withUnit(t.x, spec.x.unit))}, ${esc(U.withUnit(t.y, spec.y.unit))}</h3>
+        <p class="small">${esc(spec.x.label)} tells you where to move across. ${esc(spec.y.label)} tells you where to move up.</p>
+        ${tableHTML(tableSpec, { rowHighlight: b.i, rowDone: (i) => i < b.i })}
+        <div class="row"><button class="btn primary" data-act="place" ${b.pending && !missionWaiting() ? "" : "disabled"}>Place point</button></div>${buildFeedback()}`;
+    } else if (b.step === "talk") {
+      left = `<div class="paper">${svgVisual(spec, { showLine: false })}</div>`;
+      const titles = b.titleOrder || (b.titleOrder = U.shuffle([spec.title, spec.series[0].name, "My Graph"]));
+      const got = b.titleOk;
+      right = `<p class="step-name">Step 4: TALK check</p><h3 class="prompt">Every good graph passes TALK before it's certified.</h3>
+        <ul class="talk"><li class="${got ? "ok" : ""}"><strong>T</strong>itle: ${got ? esc(spec.title) : "pick one below"}</li>
+        <li class="ok"><strong>A</strong>ll the data: ${pts.length} of ${pts.length} points plotted</li>
+        <li class="ok"><strong>L</strong>abels: ${esc(axTitle(spec.x))} and ${esc(axTitle(spec.y))}</li>
+        <li class="ok"><strong>K</strong>ey: not needed, because there's only one line</li></ul>
+        ${got ? `<div class="row"><button class="btn primary" data-act="certify">Certify my graph</button></div>` :
+          `<p class="small">Which title fits this graph best?</p><div class="options">${titles.map((t, i) => `<button class="opt" data-title="${i}"><span class="box" aria-hidden="true"></span><span>${esc(t)}</span></button>`).join("")}</div>${b.titleNudge ? `<div class="fb fb-retry" role="status">A title should tell what the graph shows: both of the things being compared.</div>` : ""}`}`;
+    } else {
+      left = `<div class="paper stamped">${svgVisual(spec, { drawIn: true })}<div class="stamp" style="${stampSpot(spec)}" aria-hidden="true">Certified</div></div>`;
+      right = `<p class="step-name">Graph certified</p><h3 class="prompt">Nice building. Your graph is certified and will stay on screen for every question.</h3>
+        <p class="small">Connecting the points makes the pattern of change easier to see.</p><div class="row"><button class="btn primary" data-act="toQuestions">Start the questions</button></div>`;
+    }
+    return `${topbar()}<main class="casewrap">${caseHeader()}<div class="bench"><section class="visual-panel">${left}</section><section class="work-panel">${right}</section></div></main>`;
+  }
+  const missionWaiting = () => !!(S.build && S.build.fb && S.build.fb.kind === "mission");
+  /* Put the stamp in the plot quadrant with the fewest data points, so it never hides data. */
+  function stampSpot(spec) {
+    const q = [0, 0, 0, 0];
+    spec.series.forEach((s) => s.points.forEach((p) => { const u = LFH.toUnit(spec.x, p.x), v = LFH.toUnit(spec.y, p.y); q[(u >= 0.5 ? 1 : 0) + (v >= 0.5 ? 0 : 2)]++; }));
+    const k = q.indexOf(Math.min(...q));
+    const pos = [["top:20%", "left:18%"], ["top:20%", "right:7%"], ["bottom:28%", "left:18%"], ["bottom:28%", "right:7%"]][k];
+    return pos.join(";");
+  }
+  function buildFeedback() {
+    const f = S.build.fb; if (!f) return "";
+    if (f.kind === "mission") return missionCall(f.tag, f.note);
+    return `<div class="fb fb-${f.kind}" role="status">${esc(f.text)}</div>`;
+  }
+  function buildChoice(i) {
+    const b = S.build, opts = b.step === "axis" ? b.axisOrder : b.scaleOrder, o = opts[i];
+    if (o.correct) { b.fb = null; b.tries = 0; b.step = b.step === "axis" ? "scale" : "plot"; if (b.step === "plot") b.pending = null; return render(); }
+    b.tries++;
+    if (!b.missioned[b.step]) { b.missioned[b.step] = true; b.fb = { kind: "mission", tag: o.tag, note: o.why || "The x-axis gets the variable the scientists changed on purpose. The y-axis gets what they measured." }; }
+    else b.fb = { kind: "retry", text: o.why || "Not quite. The x-axis gets the variable the scientists changed on purpose; the y-axis gets what they measured." };
+    render();
+  }
+  function snap(spec, x, y) {
+    const { sx, sy } = LFH.snapUnits(spec);
+    const cl = (v, a) => Math.min(a.max, Math.max(a.min, v));
+    return { x: U.round(cl(Math.round(x / sx) * sx, spec.x)), y: U.round(cl(Math.round(y / sy) * sy, spec.y)) };
+  }
+  function placePoint() {
+    const b = S.build, spec = M.visuals[b.vid], t = spec.series[0].points[b.i];
+    if (!b.pending) return;
+    const res = LFH.checkPlot(spec, b.i, b.pending.x, b.pending.y);
+    if (res.ok) {
+      b.placed.push({ x: t.x, y: t.y }); b.i++; b.tries = 0; b.pending = null; b.ghost = null; b.fb = null;
+      if (b.i >= spec.series[0].points.length) b.step = "talk";
+      return render();
+    }
+    b.tries++;
+    if (b.tries === 1) b.fb = { kind: "mission", tag: res.tag, note: "That point isn't quite where the data says." };
+    else { b.ghost = { x: t.x, y: t.y }; b.fb = { kind: "retry", text: `The point belongs at the ring: ${U.withUnit(t.x, spec.x.unit)} across, ${U.withUnit(t.y, spec.y.unit)} up. Tap there and place it.` }; }
+    render();
+  }
+
+  /* ---------------- Questions ---------------- */
+  function qVisuals(q) { return q.visuals && q.visuals.length ? q.visuals : S.vids; }
+  function questionScreen() {
+    const q = S.qs[S.qi], opts = M.options[q.id], vids = qVisuals(q);
+    const tab = Math.min(S.tab, vids.length - 1);
+    const f = S.fb, rec = S.rec[q.id] || {};
+    const lock = f && (f.kind === "correct" || f.kind === "reveal" || f.kind === "mission");
+    let fbHTML = "";
+    if (f && f.kind === "correct") fbHTML = `<div class="fb fb-correct" role="status"><p class="fb-head">${rec.points === 3 ? "Correct on the first try!" : "Correct. That side mission paid off!"} <span class="earned">+${rec.points} rep</span></p><p>${esc(q.why)}</p><button class="btn primary" data-act="next">${S.qi + 1 < S.qs.length ? "Next question" : "Close the case"}</button></div>`;
+    if (f && f.kind === "reveal") fbHTML = `<div class="fb fb-reveal" role="status"><p class="fb-head">Here's the answer. <span class="earned">+1 rep</span></p><p>${esc(q.why)}</p><button class="btn primary" data-act="next">${S.qi + 1 < S.qs.length ? "Next question" : "Close the case"}</button></div>`;
+    if (f && f.kind === "retry") fbHTML = `<div class="fb fb-retry" role="status">Not quite. Take another careful look at the ${vids.length > 1 ? "visuals" : "graph"} and try again.</div>`;
+    if (f && f.kind === "mission") fbHTML = missionCall(f.tag);
+    const badge = S.build ? `<div class="built-badge">Built by you</div>` : "";
+    return `${topbar()}<main class="casewrap">${caseHeader()}<div class="bench"><section class="visual-panel">${visualPanel(vids, tab, badge)}</section>
+      <section class="work-panel"><p class="skill">${esc(q.skill)}</p><h3 class="prompt">${esc(q.prompt)}</h3><p class="instr">${instruction(q.type, S.sel.length)}</p>
+      ${optionButtons(opts, S.order[q.id], S.sel, lock, f && f.kind === "reveal")}
+      ${lock ? "" : `<div class="row"><button class="btn primary" data-act="submit" ${canSubmit(q.type, S.sel.length) ? "" : "disabled"}>Check answer</button></div>`}
+      ${fbHTML}</section></div></main>`;
+  }
+  function missionCall(tagId, note) {
+    const t = M.tags[tagId], cal = t.kind === "Calibration";
+    return `<div class="fb fb-mission ${cal ? "z-cal" : "z-arc"}" role="status"><p class="fb-where">${cal ? "Calibration Bay" : "The Archive"}</p>
+      <p class="fb-head">Side mission: ${esc(t.title)}</p><p>${esc(note || (cal ? "Your reading needs a quick calibration before you try again." : "Time for a quick trip to the Archive before you try again."))}</p>
+      <button class="btn primary" data-act="mission" data-tag="${t.id}">Start side mission</button></div>`;
+  }
+  function submit() {
+    const q = S.qs[S.qi], opts = M.options[q.id];
+    const rec = S.rec[q.id] = S.rec[q.id] || { tries: 0, helped: false, points: 0 };
+    const g = LFH.grade(opts, S.sel, M.tags);
+    if (g.correct) { rec.points = rec.tries === 0 ? 3 : 2; return go({ fb: { kind: "correct" } }); }
+    rec.tries++;
+    if (rec.tries >= 2) { rec.points = 1; return go({ fb: { kind: "reveal" } }); }
+    if (g.tags.length) return go({ fb: { kind: "mission", tag: g.tags[0] } });
+    go({ fb: { kind: "retry" }, sel: [] });
+  }
+  function nextQ() {
+    if (S.qi + 1 < S.qs.length) return go({ qi: S.qi + 1, sel: [], fb: null, tab: 0 });
+    finishCase();
+  }
+
+  /* ---------------- Side missions ---------------- */
+  function startMission(tagId, from) {
+    const t = M.tags[tagId];
+    if (!S.visited.includes(tagId)) S.visited.push(tagId);
+    go({ screen: "mission", mission: { tag: t, from, practice: makePractice(t), sel: [], result: null } });
+  }
+  function makePractice(t) {
+    if (t.kind === "Calibration") {
+      const d = LFH.makeDrill(t.drill);
+      const letters = "ABCDEF";
+      return { visual: d.visual, prompt: d.prompt, type: "Multiple choice", why: d.why, options: d.options.map((o, i) => ({ letter: letters[i], text: o.text, correct: o.correct })) };
+    }
+    const pool = (M.checks[t.id] || []);
+    const fresh = pool.filter((q) => !S.usedChecks.has(q.id));
+    const q = U.pick(fresh.length ? fresh : pool);
+    S.usedChecks.add(q.id);
+    return { visual: null, prompt: q.prompt, type: q.type, why: q.why, options: U.shuffle(M.options[q.id]) };
+  }
+  function missionScreen() {
+    const m = S.mission, t = m.tag, cal = t.kind === "Calibration", pr = m.practice;
+    const left = cal ? `<div class="paper">${svgVisual(pr.visual)}</div>` :
+      `<div class="archive-card"><p class="fb-where">From the Archive</p><p>${esc(t.explain)}</p></div>`;
+    const done = m.result !== null;
+    const res = !done ? "" : m.result ? `<div class="fb fb-correct" role="status"><p class="fb-head">${cal ? "Calibrated!" : "Got it!"}</p><p>${esc(pr.why)}</p><div class="row"><button class="btn primary" data-act="return">Back to the case</button>${cal ? '<button class="btn ghost" data-act="again">One more practice graph</button>' : ""}</div></div>`
+      : `<div class="fb fb-reveal" role="status"><p class="fb-head">Not quite. Here's how it works:</p><p>${esc(pr.why)}</p><div class="row"><button class="btn primary" data-act="again">Try another</button><button class="btn ghost" data-act="return">Back to the case</button></div></div>`;
+    const order = pr.options.map((o) => o.letter);
+    return `${topbar()}<main class="casewrap zone ${cal ? "z-cal" : "z-arc"}"><div class="zonebar"><div><p class="fb-where">${cal ? "Calibration Bay" : "The Archive"}</p><h2>Side mission: ${esc(t.title)}</h2></div></div>
+      <div class="bench"><section class="visual-panel">${left}</section><section class="work-panel">
+      ${cal ? `<div class="explain">${esc(t.explain)}</div><p class="small">Try it on a brand-new graph:</p>` : `<p class="small">Now use it on a new question:</p>`}
+      <h3 class="prompt">${esc(pr.prompt)}</h3><p class="instr">${instruction(pr.type, m.sel.length)}</p>
+      ${optionButtons(pr.options, order, m.sel, done, done)}
+      ${done ? "" : `<div class="row"><button class="btn primary" data-act="mcheck" ${canSubmit(pr.type, m.sel.length) ? "" : "disabled"}>Check answer</button></div>`}${res}</section></div></main>`;
+  }
+  function returnFromMission() {
+    const from = S.mission.from;
+    if (from === "build") { S.build.fb = null; return go({ screen: "build", mission: null }); }
+    const q = S.qs[S.qi]; (S.rec[q.id] = S.rec[q.id] || { tries: 1 }).helped = true;
+    go({ screen: "question", mission: null, fb: null, sel: [] });
+  }
+
+  /* ---------------- Report ---------------- */
+  function finishCase() {
+    const pts = S.qs.reduce((a, q) => a + ((S.rec[q.id] || {}).points || 0), 0), max = S.qs.length * 3;
+    const pct = pts / max, stars = pct >= 0.85 ? 3 : pct >= 0.6 ? 2 : 1;
+    const before = rep();
+    const pr = P.cases[S.caseId] || { best: 0, stars: 0, plays: 0 };
+    pr.best = Math.max(pr.best || 0, pts); pr.stars = Math.max(pr.stars || 0, stars); pr.done = true; pr.plays = (pr.plays || 0) + 1;
+    P.cases[S.caseId] = pr; save();
+    go({ screen: "report", report: { pts, max, stars, gained: rep() - before, rankBefore: rankOf(before), rankAfter: rankOf(rep()) } });
+  }
+  function reportScreen() {
+    const r = S.report, c = S.caseObj;
+    const rows = S.qs.map((q) => { const x = S.rec[q.id] || {}; const k = x.points === 3 ? ["first", "First try"] : x.points === 2 ? ["helped", "After a side mission"] : ["shown", "Answer shown"];
+      return `<li class="res-${k[0]}"><span class="res-mark" aria-hidden="true"></span><span class="res-skill">${esc(q.skill)}</span><span class="res-how">${k[1]}</span></li>`; }).join("");
+    const vis = S.visited.map((t) => `<li class="${M.tags[t].kind === "Calibration" ? "z-cal" : "z-arc"}">${esc(M.tags[t].title)}</li>`).join("");
+    const promo = r.rankAfter.name !== r.rankBefore.name ? `<div class="promo">Promotion! You're now a ${esc(r.rankAfter.name)} and unlocked the ${esc(r.rankAfter.itemName)} ${r.rankAfter.item}</div>` : "";
+    return `${topbar()}<main class="report"><div class="ticket"><p class="ticket-kicker">Case closed</p><h1>${esc(c.title)}</h1>
+      <p class="bigstars" aria-label="${r.stars} of 3 stars">${[1, 2, 3].map((s) => `<span class="${r.stars >= s ? "on" : ""}">★</span>`).join("")}</p>
+      <p class="pitch">${esc(c.win)}</p><p class="small">${r.pts} of ${r.max} points${r.gained > 0 ? `, +${r.gained} reputation` : " (your best score is saved)"}</p>${promo}
+      <h2>Your evidence report</h2><ul class="results">${rows}</ul>
+      ${vis ? `<h2>Side missions you completed</h2><ul class="visited">${vis}</ul>` : `<p class="small">No side missions needed this time.</p>`}
+      <div class="row"><button class="btn primary" data-act="hub">Back to the lab</button><button class="btn ghost" data-case="${c.id}">Play again</button></div></div></main>`;
+  }
+
+  /* ---------------- Calibration Bay (free practice) ---------------- */
+  function startBay(id) { S = Object.assign(S, { screen: "bay", bay: { id, streak: 0, done: 0, right: 0 } }); newBayItem(); window.scrollTo({ top: 0 }); }
+  function newBayItem() {
+    const b = S.bay, id = b.id === "mixed" ? U.pick(Object.keys(LFH.drills)) : b.id;
+    const d = LFH.makeDrill(id), letters = "ABCDEF";
+    b.item = { id, visual: d.visual, prompt: d.prompt, why: d.why, options: d.options.map((o, i) => ({ letter: letters[i], text: o.text, correct: o.correct })) };
+    b.sel = []; b.result = null; render();
+  }
+  function bayScreen() {
+    const b = S.bay, it = b.item, done = b.result !== null;
+    const res = !done ? "" : `<div class="fb ${b.result ? "fb-correct" : "fb-reveal"}" role="status"><p class="fb-head">${b.result ? `Correct! Streak: ${b.streak}` : "Not quite."}</p><p>${esc(it.why)}</p><div class="row"><button class="btn primary" data-act="bayNext">Next graph</button><button class="btn ghost" data-act="hub">Back to the lab</button></div></div>`;
+    return `${topbar()}<main class="casewrap zone z-cal"><div class="zonebar"><div><p class="fb-where">Calibration Bay</p><h2>${esc(b.id === "mixed" ? "Mixed practice" : LFH.drillNames[b.id])}${b.id === "mixed" ? `: ${esc(LFH.drillNames[it.id])}` : ""}</h2></div><p class="streak">Streak ${b.streak} · ${b.right} of ${b.done} correct</p></div>
+      <div class="bench"><section class="visual-panel"><div class="paper">${svgVisual(it.visual)}</div></section><section class="work-panel">
+      <h3 class="prompt">${esc(it.prompt)}</h3><p class="instr">Choose one answer.</p>${optionButtons(it.options, it.options.map((o) => o.letter), b.sel, done, done)}
+      ${done ? "" : `<div class="row"><button class="btn primary" data-act="bayCheck" ${b.sel.length ? "" : "disabled"}>Check answer</button><button class="btn ghost" data-act="hub">Back to the lab</button></div>`}${res}</section></div></main>`;
+  }
+
+  /* ---------------- Render + events ---------------- */
+  function render() {
+    const s = S.screen;
+    app.innerHTML = s === "hub" ? hub() : s === "intro" ? intro() : s === "build" ? buildScreen() : s === "question" ? questionScreen() : s === "mission" ? missionScreen() : s === "report" ? reportScreen() : bayScreen();
+    const target = app.querySelector(".plot-target");
+    if (target) target.addEventListener("pointerdown", onPlotTap);
+  }
+  function onPlotTap(e) {
+    if (missionWaiting()) return;
+    const svg = e.currentTarget, pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const spec = M.visuals[S.build.vid];
+    const u = (loc.x - MG.l) / PW, v = 1 - (loc.y - MG.t) / PH;
+    if (u < -0.03 || u > 1.03 || v < -0.03 || v > 1.03) return;
+    S.build.pending = snap(spec, LFH.fromUnit(spec.x, u), LFH.fromUnit(spec.y, v));
+    S.build.fb = S.build.fb && S.build.fb.kind === "mission" ? S.build.fb : null;
+    render();
+  }
+  document.addEventListener("keydown", (e) => {
+    if (S.screen !== "build" || !S.build || S.build.step !== "plot") return;
+    const spec = M.visuals[S.build.vid], { sx, sy } = LFH.snapUnits(spec);
+    if (missionWaiting()) return;
+    const p = S.build.pending || snap(spec, (spec.x.min + spec.x.max) / 2, (spec.y.min + spec.y.max) / 2);
+    const moves = { ArrowLeft: [-sx, 0], ArrowRight: [sx, 0], ArrowUp: [0, sy], ArrowDown: [0, -sy] };
+    if (moves[e.key]) { e.preventDefault(); S.build.pending = snap(spec, p.x + moves[e.key][0], p.y + moves[e.key][1]); render(); }
+    else if (e.key === "Enter" && S.build.pending && !(document.activeElement && document.activeElement.tagName === "BUTTON")) { e.preventDefault(); placePoint(); }
+  });
+  app.addEventListener("click", (e) => {
+    const el = e.target.closest("button"); if (!el) return;
+    const d = el.dataset;
+    if (d.case) return startCase(d.case);
+    if (d.bay) return startBay(d.bay);
+    if (d.tab !== undefined) return go({ tab: +d.tab });
+    if (d.bopt !== undefined) return buildChoice(+d.bopt);
+    if (d.title !== undefined) { const spec = M.visuals[S.build.vid]; const ok = S.build.titleOrder[+d.title] === spec.title; S.build.titleOk = ok; S.build.titleNudge = !ok; return render(); }
+    if (d.opt) {
+      if (S.screen === "question") { const q = S.qs[S.qi]; S.sel = toggle(q.type, S.sel, d.opt); if (S.fb && S.fb.kind === "retry") S.fb = null; return render(); }
+      if (S.screen === "mission") { S.mission.sel = toggle(S.mission.practice.type, S.mission.sel, d.opt); return render(); }
+      if (S.screen === "bay") { S.bay.sel = [d.opt]; return render(); }
+    }
+    switch (d.act) {
+      case "hub": return go({ screen: "hub" });
+      case "leave": if (confirm("Leave this case? Your progress on it won't be saved.")) go({ screen: "hub" }); return;
+      case "reset": if (confirm("Reset all your stars, reputation, and equipment?")) { P = blank(); save(); render(); } return;
+      case "begin": return go({ screen: S.build ? "build" : "question" });
+      case "place": return placePoint();
+      case "certify": S.build.step = "done"; return render();
+      case "toQuestions": return go({ screen: "question", certified: true });
+      case "submit": return submit();
+      case "next": return nextQ();
+      case "mission": return startMission(d.tag, S.screen === "build" ? "build" : "question");
+      case "mcheck": { const m = S.mission; m.result = LFH.grade(m.practice.options, m.sel, M.tags).correct; return render(); }
+      case "again": S.mission.practice = makePractice(S.mission.tag); S.mission.sel = []; S.mission.result = null; return render();
+      case "return": return returnFromMission();
+      case "bayCheck": { const b = S.bay; const ok = b.item.options.find((o) => o.letter === b.sel[0]).correct; b.result = ok; b.done++; if (ok) { b.right++; b.streak++; P.bayCorrect++; P.bayBest = Math.max(P.bayBest, b.streak); } else b.streak = 0; save(); return render(); }
+      case "bayNext": return newBayItem();
+    }
+  });
+  render();
+})();
+</script>
+</body>
+</html>
