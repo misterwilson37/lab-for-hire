@@ -6,9 +6,33 @@ The next instance picks a new name. Don't reuse this one.
 ## Shipped this session
 | File | Version | What |
 |---|---|---|
-| `index.html` | game v0.1.1 · engine v0.1.0 | The whole game: one self-contained file, content snapshot embedded |
-| `LabForHire_Content_v0.2.0.xlsx` | schema v0.2.0 | Content seed (supersedes v0.1.0) |
+| `index.html` | game v0.2.0 · engine v0.2.0 | The whole game: one self-contained file, content snapshot embedded |
+| `LabForHire_Content_v0.2.1.xlsx` | schema v0.2.1 | Content seed (supersedes v0.2.0; same columns, content fixes plus one new tag) |
 | `tools/` | n/a | Export, embed, and test tools that operate on `index.html` |
+
+## v0.2.0: Jake's first playtest (all 7 findings fixed)
+1. **Setup forgotten by the axis step.** A "Case brief" toggle is now on every case screen, and the full brief shows in the panel during the axis and scale steps.
+2. **Side mission taught the wrong skill.**
+   - Cause: the build step's axis *choice* used `CAL-AXIS`, which is about *reading* a value off an axis.
+   - Fix: new tag **CAL-AXIS-CHOICE** ("Which Variable Goes Where") with a new drill, **variable-placement**.
+     - 8 experiment scenarios, including ones where temperature is the *measured* y-variable.
+     - Table column order is randomized, so position never gives the answer away.
+   - All Calibration explanations were rewritten as statements. A test now fails any explanation containing "?".
+2.1 **Side mission never showed the answer.** Calibration missions are now **Watch one, then Your turn**: a worked example with the answer stated, then a fresh graph to try.
+3. **Second miss gave only "Not quite."**
+   - Missing a build step again after its side mission reveals the answer and the reason (`LFH.buildReveal`), with a "Next step" button.
+   - A missed practice question now names the answer.
+   - A "Remember:" strip with the mission's lesson stays on screen when the student returns.
+5. **Build-mode question asked for a value the student had just plotted.**
+   - MM-01 now reads backward (650 m/s → 20°C) and MM-02 interpolates (80°C → about 725). Neither temperature was measured.
+   - Regression tests enforce this.
+   - **Rule for future Build-mode cases: never ask for a value the student plotted.**
+6. **"Greatest amount" ignored rate.**
+   - MM-04 is now pick-two, steepest sections: −20→0 and 0→40 tie at 2.5 m/s per °C.
+   - The uneven-spacing drill is now about **steepness**, and its trap requires the long section to rise strictly more in total.
+7. **Ocean question wasn't answerable from the graph.** MM-08 now asks whether THIS graph can answer it. The answer is no, because pressure isn't on the axes, so the graph itself is the evidence.
+- **Found while fixing:** drill contexts could produce absurd values (air temperature rising 150°C). Each context now has realistic gridline steps and a ceiling, and the re-roll wrapper rejects anything over it. A realism test covers this.
+- Item 4 (Jake likes the build → analyze flow) is kept as is.
 
 ## v0.1.1 (iPad pass)
 - Replaced CSS `color-mix()` with plain rgba tokens. `color-mix()` needs iPadOS 16.2+, and on older iPads every gridline would have vanished.
@@ -19,7 +43,7 @@ The next instance picks a new name. Don't reuse this one.
 
 ## Where things stand
 - **Jake's live Sheet** (view link in chat, ID `1D2uX2xzW87ykVcJ5uv3lDvwwdxfmvOOefkTN9QDOSqY`) still holds **v0.1.0**. Nobody has edited it yet.
-  - Jake should re-import v0.2.0 into the SAME file (File → Import → Upload → *Replace spreadsheet*). That keeps the Sheet ID the Apps Script feed will bind to.
+  - Jake should re-import v0.2.1 into the SAME file (File → Import → Upload → *Replace spreadsheet*). That keeps the Sheet ID the Apps Script feed will bind to.
   - After the import, Jake confirms the dropdowns survived. I couldn't verify them from a view-only link.
 - **The demo is not yet wired to the Sheet.** `index.html` carries a content snapshot exported from the xlsx.
   - Rule 9 note: the snapshot is a *generated* copy, never hand-edited, and it is replaced wholesale by `tools/embed_content.py`. The Sheet stays the single source of truth for content. The snapshot goes away when the Apps Script feed lands. Jake can overrule this reading.
