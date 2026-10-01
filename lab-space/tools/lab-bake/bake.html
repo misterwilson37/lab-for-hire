@@ -64,6 +64,11 @@ window.api = {
     renderer.setClearColor(0x000000, 0); renderer.render(scene, cam);
     return shot();
   },
+  // Where a framed award poster's canvas lands on screen, so the module can draw the student's graph onto it.
+  async canvasFor(slot) {
+    const obj = await L.buildItem("poster-frame", slot);
+    return L.canvasCorners(obj).map((v) => L.project(cam, [v.x, v.y, v.z]).map((n) => Math.round(n * 100) / 100));
+  },
   // The truth: the whole lab as one real 3D scene. placed = [[slotId, recipeId], ...]
   async renderFull(paint, placed, bg) {
     const scene = new THREE.Scene(); L.addLights(scene); L.buildRoom(scene, paint);

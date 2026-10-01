@@ -374,6 +374,127 @@
   "description": "Wide floor stripes."
  },
  {
+  "id": "work-table",
+  "name": "Work Table",
+  "slot": "table",
+  "price": 120,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "work-table",
+  "description": "A second table out on the floor. Holds two more pieces of equipment."
+ },
+ {
+  "id": "wall-any",
+  "name": "Any Color Walls",
+  "slot": "paint-wall",
+  "price": 300,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "any",
+  "description": "Pick any color you want for your walls, and change it whenever you like."
+ },
+ {
+  "id": "floor-any",
+  "name": "Any Color Floor",
+  "slot": "paint-floor",
+  "price": 300,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "any",
+  "description": "Pick any color you want for your floor, and change it whenever you like."
+ },
+ {
+  "id": "trim-any",
+  "name": "Any Color Trim",
+  "slot": "paint-trim",
+  "price": 200,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "any",
+  "description": "Pick any color you want for your trim, and change it whenever you like."
+ },
+ {
+  "id": "poster-jackson",
+  "name": "Mary Jackson Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-jackson",
+  "description": "NASA's first Black woman engineer. She tested airplane designs in wind tunnels."
+ },
+ {
+  "id": "poster-tyson",
+  "name": "Neil deGrasse Tyson Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-tyson",
+  "description": "An astrophysicist who makes space science fun, on TV and in books."
+ },
+ {
+  "id": "poster-curie",
+  "name": "Marie Curie Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-curie",
+  "description": "Discovered two new elements and was the first person to win two Nobel Prizes."
+ },
+ {
+  "id": "poster-tesla",
+  "name": "Nikola Tesla Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-tesla",
+  "description": "An inventor who helped bring alternating current (AC) electricity into homes."
+ },
+ {
+  "id": "poster-lovelace",
+  "name": "Ada Lovelace Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-lovelace",
+  "description": "Wrote what many call the first computer program, back in the 1840s."
+ },
+ {
+  "id": "poster-einstein",
+  "name": "Albert Einstein Poster",
+  "slot": "poster",
+  "price": 75,
+  "kind": "Cosmetic",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "portrait-einstein",
+  "description": "A physicist famous for E = mc² and new ideas about space, time, and light."
+ },
+ {
+  "id": "graph-frame",
+  "name": "Your Graph",
+  "slot": "poster",
+  "price": 0,
+  "kind": "Award",
+  "unlocks": "",
+  "rank": 0,
+  "sprite": "poster-frame",
+  "description": "A framed copy of a graph you made yourself. It can't be bought: you earn it by doing great work on a case."
+ },
+ {
   "id": "fk-candles",
   "name": "Candle Cluster",
   "slot": "shelf-top",

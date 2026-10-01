@@ -26,13 +26,14 @@ LABS = {
   "starter": None,  # LabRoom.defaultState
   "upgraded": {"placed": {"rug": "rug-round", "poster-back": "poster-line", "poster-left": "poster-bars", "plant": "plant-potted", "shelf": "shelf-open",
                           "bench": "lab-bench", "bench-1": "beaker", "bench-2": "microscope", "bench-3": "calorimeter", "chair": "chair-desk",
-                          "machine": "grow-cabinet", "pet": "pet-cat", "shelf-top": "books"},
+                          "machine": "grow-cabinet", "pet": "pet-cat", "shelf-top": "books",
+                          "table": "work-table", "table-1": "tube-rack", "table-2": "flask"},
                "paint": {"wall": "wall-lavender", "floor": "floor-periwinkle", "trim": "trim-purple", "tiles": "tiles-checker"}},
-  "designer": {"placed": {"rug": "rug-long", "poster-back": "poster-scatter", "poster-left": "poster-line", "plant": "plant-potted", "shelf": "shelf-closed",
+  "designer": {"placed": {"rug": "rug-long", "poster-back": "poster-scatter", "plant": "plant-potted", "shelf": "shelf-closed",
                           "bench": "desk", "bench-1": "flask", "bench-2": "tube-rack", "bench-3": "beaker", "chair": "chair-cushion",
-                          "machine": "materials-tester", "pet": "pet-dog"},
-               "paint": {"wall": "wall-mint", "floor": "floor-lilac", "trim": "trim-teal", "tiles": "tiles-stripes"}},
-  "frankenstein": {"placed": {"poster-back": "poster-bars", "plant": "plant-potted", "shelf": "shelf-open", "shelf-top": "fk-candles",
+                          "machine": "materials-tester", "pet": "pet-dog", "poster-left": "graph-frame"},
+               "paint": {"wall": "wall-any", "floor": "floor-lilac", "trim": "trim-teal", "tiles": "tiles-stripes"}, "colors": {"wall": "#CFE8D5"}},
+  "frankenstein": {"placed": {"poster-back": "poster-tesla", "poster-left": "poster-lovelace", "plant": "plant-potted", "shelf": "shelf-open", "shelf-top": "fk-candles",
                           "bench": "desk", "bench-1": "beaker", "bench-2": "flask", "chair": "chair-desk",
                           "machine": "fk-coil", "lantern": "fk-lantern", "pet": "pet-bunny"},
                "paint": {"wall": "fk-walls", "floor": "floor-lilac", "trim": "trim-purple", "tiles": "tiles-plain"}},
@@ -50,12 +51,14 @@ with sync_playwright() as p:
             const items = window.__i || (window.__i = JSON.parse(document.getElementById('lab-items').textContent));
             window.__m = window.__m || JSON.parse(document.getElementById('lab-manifest').textContent);
             let s = LabRoom.defaultState(items, window.__m);
-            if (spec) { s.owned = items.map(i => i.id); s.placed = spec.placed; s.paint = spec.paint; }
+            if (spec) { s.owned = items.map(i => i.id); s.rooms.main = { placed: spec.placed, paint: spec.paint, colors: spec.colors || {} }; }
             return LabRoom.normalize(s, items, window.__m);
         }""", spec)
-        placed = [[s["id"], items[st["placed"][s["id"]]]["sprite"]] for s in man["slots"] if st["placed"].get(s["id"])
-                  and (not s.get("parent") or st["placed"].get(s["parent"]))]
-        paint = {k: items[v]["sprite"] for k, v in st["paint"].items()}
+        rm = st["rooms"]["main"]
+        placed = [[s["id"], items[rm["placed"][s["id"]]]["sprite"]] for s in man["slots"] if rm["placed"].get(s["id"])
+                  and (not s.get("parent") or rm["placed"].get(s["parent"]))]
+        anyc = {"wall": "#FFE7A8", "floor": "#CFE8D5", "trim": "#E0413A"}  # ANY_DEFAULT in the module
+        paint = {k: (rm["colors"].get(k) or anyc[k]) if items[v]["sprite"] == "any" else items[v]["sprite"] for k, v in rm["paint"].items()}
         url = ref.evaluate("([p,pl]) => api.renderFull(p, pl, '#EEEAF8')", [paint, placed])
         truth = Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))).convert("RGB")
         bg = "#%02x%02x%02x" % truth.getpixel((2, 2))

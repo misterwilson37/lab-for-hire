@@ -13,7 +13,8 @@ from PIL import Image
 from harness import serve, GL_ARGS
 from playwright.sync_api import sync_playwright
 
-MANIFEST_VERSION = "0.1.0"
+MANIFEST_VERSION = "0.3.0"
+KINDS = ("Equipment", "Cosmetic", "Theme", "Award")
 THUMB = 112  # store thumbnails: 56 CSS px at 2x
 HEAD = ["ItemID", "Name", "Slot", "Price", "Kind", "Unlocks", "Rank required", "Sprite", "Description"]
 KEYS = ["id", "name", "slot", "price", "kind", "unlocks", "rank", "sprite", "description"]
@@ -42,18 +43,19 @@ def validate(items, slot_types, recipes):
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", it["id"]): errs.append(w + "ItemID must be lowercase letters, digits, dashes")
         if it["id"] in seen: errs.append(w + "duplicate ItemID")
         seen.add(it["id"])
-        if it["kind"] not in ("Equipment", "Cosmetic", "Theme"): errs.append(w + f'Kind "{it["kind"]}" is not Equipment/Cosmetic/Theme')
+        if it["kind"] not in KINDS: errs.append(w + f'Kind "{it["kind"]}" is not one of {"/".join(KINDS)}')
+        if it["kind"] == "Award" and it["price"] != 0: errs.append(w + "Awards are earned, never sold: Price must be 0")
         if it["price"] < 0: errs.append(w + "negative price")
         if it["slot"] in PAINT:
             v = it["sprite"]
             if it["slot"] == "paint-tiles":
                 if v not in PATTERNS: errs.append(w + f"floor pattern must be one of {sorted(PATTERNS)}")
-            elif not re.fullmatch(r"#[0-9A-Fa-f]{6}", v): errs.append(w + "paint Sprite must be a #RRGGBB color")
+            elif v != "any" and not re.fullmatch(r"#[0-9A-Fa-f]{6}", v): errs.append(w + 'paint Sprite must be a #RRGGBB color, or "any" for the pick-any-color paint')
         elif it["slot"] not in slot_types: errs.append(w + f'unknown Slot "{it["slot"]}"')
         elif it["sprite"] not in recipes: errs.append(w + f'Sprite recipe "{it["sprite"]}" is not in scene.js RECIPES')
         if it["unlocks"] and it["kind"] != "Equipment": errs.append(w + "only Equipment can unlock case types")
     for pk in PAINT:
-        if not any(i["slot"] == pk and i["price"] == 0 for i in items): errs.append(f"no free starter row for {pk}")
+        if not any(i["slot"] == pk and i["price"] == 0 and i["kind"] != "Award" and i["sprite"] != "any" for i in items): errs.append(f"no free starter row for {pk}")
     if errs: sys.exit("Items tab problems:\n  " + "\n  ".join(errs))
 
 def main(xlsx, out):
@@ -94,6 +96,11 @@ def main(xlsx, out):
             im = im.quantize(colors=128, method=Image.FASTOCTREE)  # thumbs only; room sprites stay full RGBA
             fname = f"thumb__{recipe}.png"; im.save(os.path.join(out, "lab-sprites", fname), optimize=True)
             thumbs[recipe] = fname
+        # framed award posters: canvas corners per poster spot (only if some item uses the frame)
+        canvases = {}
+        if any(it["sprite"] == "poster-frame" for it in items):
+            for s in meta["slots"]:
+                if s["type"] == "poster": canvases[s["id"]] = pg.evaluate("(s) => api.canvasFor(s)", s["id"])
         if errors: sys.exit("page errors: " + "; ".join(errors))
         b.close()
 
@@ -103,7 +110,10 @@ def main(xlsx, out):
         boxes = [v for k, v in sprites.items() if k.endswith("@" + s["id"])]
         x0 = min(v["x"] for v in boxes); y0 = min(v["y"] for v in boxes)
         x1 = max(v["x"] + v["w"] for v in boxes); y1 = max(v["y"] + v["h"] for v in boxes)
-        slots.append({"id": s["id"], "type": s["type"], "label": s["label"], "parent": s.get("parent"), "hit": [x0, y0, x1 - x0, y1 - y0]})
+        e = {"id": s["id"], "type": s["type"], "label": s["label"], "parent": s.get("parent"), "required": bool(s.get("required")),
+             "hit": [x0, y0, x1 - x0, y1 - y0]}
+        if s["id"] in canvases: e["canvas"] = canvases[s["id"]]; e["normal"] = "pz" if s.get("wall") == "back" else "px"
+        slots.append(e)
     pts = [pt for f in room["faces"] for pt in f["points"]]
     xs = [p[0] for p in pts] + [v["x"] for v in sprites.values()] + [v["x"] + v["w"] for v in sprites.values()]
     ys = [p[1] for p in pts] + [v["y"] for v in sprites.values()] + [v["y"] + v["h"] for v in sprites.values()]

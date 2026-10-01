@@ -1,13 +1,15 @@
-# Lab for Hire: lab space (v0.1.0)
+# Lab for Hire: lab space (v0.3.0)
 
-The student-owned lab: an isometric room with 14 spots, a store, paint, and buy / place / take out.
+The student-owned lab: an isometric room with 17 spots, a store, paint (including pick-any-color), a Storage tab,
+an optional Work Table, six scientist portrait posters, and a framed "Your Graph" award the game grants.
 This folder is a **standalone demo** plus everything needed to merge it into the main game (`index.html`) later.
 
 ## Try it
-Open `lab.html`. It is one self-contained file (about 600 KB, every image built in), so it works from GitHub Pages,
+Open `lab.html`. It is one self-contained file (about 1 MB, every image built in), so it works from GitHub Pages,
 from a claude.ai preview, or straight off a disk.
 
 - **Finish a job (+$60)** stands in for real case work: +$60 lab funds and +20 rep.
+- **Ace a case (award)** grants the framed graph award (cycles through three sample graphs).
 - **Reset demo** returns to the starter lab and $100.
 - The demo saves under its own browser key, `lfh.labDemo`. It never reads or writes the real game's `lfh.progress`,
   even though both live on the same `github.io` address.
@@ -19,16 +21,16 @@ from a claude.ai preview, or straight off a disk.
 | `lab-sprites/` | One transparent PNG per item per spot, plus store thumbnails | No: generated |
 | `lab-manifest.json` | Frame, room polygons, shading, slots, sprite positions | No: generated |
 | `lab-items.json` | The Items tab as JSON | No: generated |
-| `LabForHire_Items_v0.1.0.xlsx` | One-time seed for the **Items** tab of the content Sheet | Seed only; the Sheet is the source of truth |
+| `LabForHire_Items_v0.3.0.xlsx` | Seed for the **Items** tab of the content Sheet | Seed only; the Sheet is the source of truth |
 | `src/lab_template.html` | Demo page + the `LabRoom` module (`<script id="lab">`) | **Yes: edit this** |
 | `src/build_lab.py` | Injects items, manifest and sprites into the template, writes `lab.html` | Yes |
-| `tools/lab-bake/` | The bake: `scene.js` (camera, lights, room, slots, recipes), `bake.html`, `bake.py`, checks | Yes |
+| `tools/lab-bake/` | The bake: `scene.js` (camera, lights, room, slots, recipes), `bake.html`, `bake.py`, `smoke.py`, `overlay_check.py`, `fetch_models.sh`, `make_items_xlsx.py`, `portraits/` (poster photos + `CREDITS.md`) | Yes |
 | `overlay-check/` | Rule 10 proof: the real 3D lab vs. the stacked sprites | No: generated |
 | `HANDOFF.md` | State of the work, merge guide, open items | Yes |
 
 ## Rebuilding (needs a Claude session; Jake has no CLI)
-Setup, once per sandbox: in `tools/lab-bake/`, run `npm install`, then download the Kenney models listed in
-`HANDOFF.md` §6 into `tools/lab-bake/models/`. Playwright's Chromium needs
+Setup, once per sandbox: in `tools/lab-bake/`, run `npm install`, then `sh fetch_models.sh` (17 Kenney models
+into `tools/lab-bake/models/`). Playwright's Chromium needs
 `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader` for WebGL (already in `harness.py`).
 
 ```
@@ -44,7 +46,9 @@ Edit the **Items** tab in the Sheet, export it as .xlsx, and rebuild.
 - Changing a name, price, description, rank, or unlock needs **no new art**: rebuild only.
 - A new item can reuse any existing look by putting that look's name in the **Sprite** column.
 - A brand-new look needs a new recipe in `tools/lab-bake/scene.js` and a re-bake.
-- Paint rows put a color (`#RRGGBB`) or a pattern (`none`, `checker`, `stripes`) in **Sprite**. No art needed.
+- Paint rows put a color (`#RRGGBB`), `any` (the student picks), or a pattern (`none`, `checker`, `stripes`) in **Sprite**. No art needed.
+- A new scientist poster = a cropped 3:4 photo in `tools/lab-bake/portraits/`, one `RECIPES` line (`{ prim: "portrait", image: "name.jpg" }`), one Items row. Record the source and license in `CREDITS.md`.
+- Kind **Award** = earned, never sold (Price must be 0). The game grants it; see `HANDOFF.md` §3.
 
 Models: Kenney (kenney.nl) Furniture Kit, Space Kit, Cube Pets, Graveyard Kit, CC0. Lab glassware, microscope,
-calorimeter, lab bench, grow cabinet, materials tester, spark coil and the graph posters are built from primitives.
+calorimeter, lab bench, grow cabinet, materials tester, spark coil, the graph posters and the award frame are built from primitives. Portrait photos: public domain, see `tools/lab-bake/portraits/CREDITS.md`.

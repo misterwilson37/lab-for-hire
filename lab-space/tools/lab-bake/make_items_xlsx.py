@@ -1,4 +1,4 @@
-"""One-time SEED for the Items tab. After Jake pastes it into the content Sheet, the Sheet is the
+"""SEED for the Items tab (v0.3.0). After Jake pastes it into the content Sheet, the Sheet is the
 source of truth (Rule 9) and this file is history. The bake reads an .xlsx export of the Sheet."""
 import sys
 from openpyxl import Workbook
@@ -44,6 +44,19 @@ R = [
  ("trim-teal", "Teal", "paint-trim", 25, "Cosmetic", "", 0, "#1F8FBF", "Trim with a splash of teal."),
  ("tiles-checker", "Checker", "paint-tiles", 50, "Cosmetic", "", 0, "checker", "Big checkerboard tiles."),
  ("tiles-stripes", "Stripes", "paint-tiles", 50, "Cosmetic", "", 0, "stripes", "Wide floor stripes."),
+ # ---- v0.2.0: second table, pick-any-color paint, awards ----
+ ("work-table", "Work Table", "table", 120, "Cosmetic", "", 0, "work-table", "A second table out on the floor. Holds two more pieces of equipment."),
+ ("wall-any", "Any Color Walls", "paint-wall", 300, "Cosmetic", "", 0, "any", "Pick any color you want for your walls, and change it whenever you like."),
+ ("floor-any", "Any Color Floor", "paint-floor", 300, "Cosmetic", "", 0, "any", "Pick any color you want for your floor, and change it whenever you like."),
+ ("trim-any", "Any Color Trim", "paint-trim", 200, "Cosmetic", "", 0, "any", "Pick any color you want for your trim, and change it whenever you like."),
+ # ---- v0.3.0: scientist posters (public-domain portraits; credits in tools/lab-bake/portraits/CREDITS.md) ----
+ ("poster-jackson", "Mary Jackson Poster", "poster", 75, "Cosmetic", "", 0, "portrait-jackson", "NASA's first Black woman engineer. She tested airplane designs in wind tunnels."),
+ ("poster-tyson", "Neil deGrasse Tyson Poster", "poster", 75, "Cosmetic", "", 0, "portrait-tyson", "An astrophysicist who makes space science fun, on TV and in books."),
+ ("poster-curie", "Marie Curie Poster", "poster", 75, "Cosmetic", "", 0, "portrait-curie", "Discovered two new elements and was the first person to win two Nobel Prizes."),
+ ("poster-tesla", "Nikola Tesla Poster", "poster", 75, "Cosmetic", "", 0, "portrait-tesla", "An inventor who helped bring alternating current (AC) electricity into homes."),
+ ("poster-lovelace", "Ada Lovelace Poster", "poster", 75, "Cosmetic", "", 0, "portrait-lovelace", "Wrote what many call the first computer program, back in the 1840s."),
+ ("poster-einstein", "Albert Einstein Poster", "poster", 75, "Cosmetic", "", 0, "portrait-einstein", "A physicist famous for E = mc\u00b2 and new ideas about space, time, and light."),
+ ("graph-frame", "Your Graph", "poster", 0, "Award", "", 0, "poster-frame", "A framed copy of a graph you made yourself. It can't be bought: you earn it by doing great work on a case."),
  # ---- theme pack: Frankenstein ----
  ("fk-candles", "Candle Cluster", "shelf-top", 30, "Theme", "", 0, "candles", "Frankenstein pack. Spooky light for late-night experiments."),
  ("fk-lantern", "Candle Lantern", "lantern", 40, "Theme", "", 0, "lantern", "Frankenstein pack. Lights up the front corner."),
@@ -51,7 +64,7 @@ R = [
  ("fk-coil", "Spark Coil", "machine", 150, "Theme", "", 1, "spark-coil", "Frankenstein pack. Big sparks, no real science. Just for looks."),
  ("fk-walls", "Stormy", "paint-wall", 45, "Theme", "", 0, "#9FAAA2", "Frankenstein pack. A gloomy, stormy-night gray."),
 ]
-SLOTS = ["bench", "bench-item", "chair", "shelf", "shelf-top", "plant", "machine", "rug", "poster", "pet", "lantern", "paint-wall", "paint-floor", "paint-trim", "paint-tiles"]
+SLOTS = ["bench", "bench-item", "table", "chair", "shelf", "shelf-top", "plant", "machine", "rug", "poster", "pet", "lantern", "paint-wall", "paint-floor", "paint-trim", "paint-tiles"]
 
 def build(path):
     wb = Workbook(); ws = wb.active; ws.title = "Items"
@@ -65,7 +78,7 @@ def build(path):
     ws.freeze_panes = "A2"
     n = len(R) + 1
     dv1 = DataValidation(type="list", formula1='"' + ",".join(SLOTS) + '"', allow_blank=False); dv1.add(f"C2:C{n+60}")
-    dv2 = DataValidation(type="list", formula1='"Equipment,Cosmetic,Theme"', allow_blank=False); dv2.add(f"E2:E{n+60}")
+    dv2 = DataValidation(type="list", formula1='"Equipment,Cosmetic,Theme,Award"', allow_blank=False); dv2.add(f"E2:E{n+60}")
     dv3 = DataValidation(type="whole", operator="between", formula1="0", formula2="100000"); dv3.add(f"D2:D{n+60}")
     dv4 = DataValidation(type="whole", operator="between", formula1="0", formula2="20"); dv4.add(f"G2:G{n+60}")
     for d in (dv1, dv2, dv3, dv4): ws.add_data_validation(d)
@@ -75,12 +88,12 @@ def build(path):
      ("Column", "What goes here"),
      ("ItemID", "Unique, lowercase, never renamed once students own it (saved labs store this ID)."),
      ("Name", "What students see."),
-     ("Slot", "Where it goes: " + ", ".join(SLOTS) + ". bench-item fills any of 3 bench spots; poster fills either wall. paint-* rows are recolors."),
-     ("Price", "Lab funds. 0 = part of the starter lab (owned from the start, placed in row order)."),
-     ("Kind", "Equipment (can unlock case types), Cosmetic, or Theme (a seasonal pack)."),
+     ("Slot", "Where it goes: " + ", ".join(SLOTS) + ". bench-item fills any of the 3 bench spots or the 2 Work Table spots; table is the optional second table; poster fills either wall. paint-* rows are recolors."),
+     ("Price", "Lab funds. 0 = part of the starter lab (owned from the start, placed in row order), except Awards."),
+     ("Kind", "Equipment (can unlock case types), Cosmetic, Theme (a seasonal pack), or Award (never sold; the game grants it, Price must be 0)."),
      ("Unlocks", "Optional case type this item unlocks when OWNED (placing it isn't required): cells, plant-growth, materials, reactions."),
      ("Rank required", "Rank number the student must reach before buying. 0 = anyone."),
-     ("Sprite", "Art recipe ID from bake/scene.js (RECIPES). For paint rows: a #hex color, or none / checker / stripes for floor patterns."),
+     ("Sprite", "Art recipe ID from bake/scene.js (RECIPES). For paint rows: a #hex color, any (the student picks any color), or none / checker / stripes for floor patterns."),
      ("Description", "One or two short sentences. Equipment names the case type and standard it unlocks."),
      ("", ""),
      ("Build note", "Sprites and lab-manifest.json are generated from this tab by bake/bake.py. Never hand-edit them. A new Sprite recipe needs code in scene.js; a new item using an existing recipe needs only a row here and a re-bake."),
@@ -93,4 +106,4 @@ def build(path):
     wb.save(path)
 
 if __name__ == "__main__":
-    build(sys.argv[1] if len(sys.argv) > 1 else "LabForHire_Items_v0.1.0.xlsx")
+    build(sys.argv[1] if len(sys.argv) > 1 else "LabForHire_Items_v0.3.0.xlsx")

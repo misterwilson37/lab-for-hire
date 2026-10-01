@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-export const SCENE_VERSION = "0.1.0";
+export const SCENE_VERSION = "0.3.0";
 export const FRAME = { w: 1600, h: 1200 };
 export const S = 4;                 // room size
 export const IN = -S / 2 + 0.06;    // inner face of both walls (-1.94)
@@ -11,6 +11,9 @@ export const TRIM_FRONT = -1.85;     // front face of the baseboard trim
 export const FLUSH = TRIM_FRONT + 0.005; // furniture backs sit against the trim, never inside it
 export const BENCH = { x: -0.25, w: 1.5, d: 0.8, top: 0.78 };
 export const SHELF = { z: 0.45, top: 1.58 };
+// Work Table: optional second table along the right edge of the floor, long side running front to back.
+// dx/dz are its world-space size. Same top height as the bench.
+export const TABLE = { x: 1.45, z: 0.55, dx: 0.6, dz: 1.15, top: 0.78 };
 
 // ---------- renderer / camera / lights ----------
 export function createRenderer() {
@@ -115,16 +118,20 @@ export const SLOTS = [
   { id: "poster-back", type: "poster",     label: "Right wall poster", wall: "back", at: { x: 0.72, y: 2.0 } },
   { id: "poster-left", type: "poster",     label: "Left wall poster",  wall: "left", at: { z: -0.8, y: 2.0 } },
   { id: "plant",       type: "plant",      label: "Corner" },
-  { id: "shelf",       type: "shelf",      label: "Shelf" },
+  { id: "shelf",       type: "shelf",      label: "Shelf", required: true },
   { id: "shelf-top",   type: "shelf-top",  label: "Shelf top", parent: "shelf" },
-  { id: "bench",       type: "bench",      label: "Bench" },
+  { id: "bench",       type: "bench",      label: "Bench", required: true },
   { id: "bench-1",     type: "bench-item", label: "Bench, left",   parent: "bench", f: 0.18 },
   { id: "bench-2",     type: "bench-item", label: "Bench, middle", parent: "bench", f: 0.5 },
   { id: "bench-3",     type: "bench-item", label: "Bench, right",  parent: "bench", f: 0.82 },
   { id: "chair",       type: "chair",      label: "Chair" },
   { id: "machine",     type: "machine",    label: "Floor machine" },
+  // optional: only shows its two spots once a table is placed here
+  { id: "table",       type: "table",      label: "Second table" },
+  { id: "table-1",     type: "bench-item", label: "Second table, back",  parent: "table", f: 0.27 },
+  { id: "table-2",     type: "bench-item", label: "Second table, front", parent: "table", f: 0.73 },
   { id: "lantern",     type: "lantern",    label: "Front corner" },
-  { id: "pet",         type: "pet",        label: "Pet" },
+  { id: "pet",         type: "pet",        label: "Pet", at: { x: 0.1, z: 1.4 } },
 ];
 export const slotById = Object.fromEntries(SLOTS.map((s) => [s.id, s]));
 
@@ -246,6 +253,25 @@ const P = {
     part(g, new THREE.BoxGeometry(0.04, 0.04, 0.01), flat(C.gold), 0.44, 0.2, 0.175);
     return g;
   },
+  // Scientist posters: a public-domain portrait (tools/lab-bake/portraits/, credits in CREDITS.md) in a gilt frame.
+  // Portrait-shaped (3:4), so it hangs a little taller than the graph posters.
+  async portrait(r) {
+    const g = new THREE.Group();
+    part(g, new THREE.BoxGeometry(0.62, 0.8, 0.03), flat(0xB8862F), 0, 0, 0);
+    part(g, new THREE.BoxGeometry(0.58, 0.76, 0.032), flat(0x8F6420), 0, 0, 0);
+    const tex = await loadTexture("portraits/" + r.image);
+    const m = new THREE.MeshLambertMaterial({ map: tex });
+    part(g, new THREE.BoxGeometry(0.52, 0.52 * 4 / 3, 0.034), m, 0, 0, 0);
+    return g;
+  },
+  // Award: an empty frame. The student's own graph is drawn live onto the mesh named "canvas" (see canvasCorners).
+  "poster-frame"() {
+    const g = new THREE.Group();
+    part(g, new THREE.BoxGeometry(0.9, 0.7, 0.03), flat(C.ink), 0, 0, 0);
+    const cv = part(g, new THREE.BoxGeometry(CANVAS.w, CANVAS.h, 0.034), flat(0xFBF7EC), 0, 0.01, 0); cv.name = "canvas";
+    part(g, new THREE.BoxGeometry(0.16, 0.026, 0.01), flat(C.gold), 0, -0.317, 0.018);
+    return g;
+  },
   // Posters are data: little graphs, built facing +z, centered on the origin.
   "poster-line"() { return poster((g, ink) => { plotLine(g, [[-0.28, -0.2], [-0.1, -0.06], [0.07, 0.1], [0.28, 0.18]], C.pink, true); }); },
   "poster-bars"() {
@@ -258,6 +284,15 @@ const P = {
     });
   },
 };
+export const CANVAS = { w: 0.8, h: 0.58 };
+// World-space corners of a framed poster's canvas front face: top-left, top-right, bottom-left.
+export function canvasCorners(obj) {
+  let cv = null; obj.traverse((o) => { if (o.name === "canvas") cv = o; });
+  if (!cv) return null;
+  obj.updateMatrixWorld(true);
+  const z = 0.017;
+  return [[-CANVAS.w / 2, CANVAS.h / 2, z], [CANVAS.w / 2, CANVAS.h / 2, z], [-CANVAS.w / 2, -CANVAS.h / 2, z]].map(([x, y, zz]) => cv.localToWorld(new THREE.Vector3(x, y, zz)));
+}
 function plotLine(g, pts, color, dots) {
   const m = flat(color);
   for (let i = 0; i < pts.length - 1; i++) {
@@ -307,13 +342,36 @@ export const RECIPES = {
   lantern:            { model: "lantern-candle", height: 0.62 },
   pumpkin:            { model: "pumpkin-carved", height: 0.46, rotY: 0.6 },
   "spark-coil":       { prim: "spark-coil", width: 0.8 },
+  "work-table":       { model: "table", fit: "table", rotY: Math.PI / 2 },
+  "poster-frame":     { prim: "poster-frame" },
+  "portrait-jackson":  { prim: "portrait", image: "mary-jackson.jpg" },
+  "portrait-tyson":    { prim: "portrait", image: "tyson.jpg" },
+  "portrait-curie":    { prim: "portrait", image: "curie.jpg" },
+  "portrait-tesla":    { prim: "portrait", image: "tesla.jpg" },
+  "portrait-lovelace": { prim: "portrait", image: "lovelace.jpg" },
+  "portrait-einstein": { prim: "portrait", image: "einstein.jpg" },
 };
 
 const loader = new GLTFLoader();
+const texCache = {};
+function loadTexture(url) {
+  if (!texCache[url]) texCache[url] = new Promise((res, rej) => new THREE.TextureLoader().load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; res(t); }, undefined, () => rej(new Error("missing image " + url))));
+  return texCache[url];
+}
 const glbCache = {};
 async function loadModel(name) {
   if (!glbCache[name]) glbCache[name] = new Promise((res, rej) => loader.load(`models/${name}.glb`, (g) => res(g.scene), undefined, () => rej(new Error("missing model " + name))));
   return (await glbCache[name]).clone(true);
+}
+// What a bench-item sits on: the bench (against the back wall) or the Work Table (out on the floor).
+// Returns the top's world rectangle, its height, and where spot fraction f lands.
+export function surfaceOf(slot) {
+  if (slot.parent === "table") {
+    const x0 = TABLE.x - TABLE.dx / 2, z0 = TABLE.z - TABLE.dz / 2;
+    return { x0, x1: x0 + TABLE.dx, z0, z1: z0 + TABLE.dz, top: TABLE.top, wall: false, at: (f) => [TABLE.x, z0 + TABLE.dz * f] };
+  }
+  const x0 = BENCH.x - BENCH.w / 2;
+  return { x0, x1: x0 + BENCH.w, z0: FLUSH, z1: FLUSH + BENCH.d, top: BENCH.top, wall: true, at: (f) => [x0 + BENCH.w * f, FLUSH + BENCH.d / 2] };
 }
 const bbox = (o) => { o.updateMatrixWorld(true); return new THREE.Box3().setFromObject(o); };
 
@@ -321,7 +379,7 @@ const bbox = (o) => { o.updateMatrixWorld(true); return new THREE.Box3().setFrom
 export async function buildItem(recipeId, slotId) {
   const r = RECIPES[recipeId]; if (!r) throw new Error("unknown recipe " + recipeId);
   const slot = slotById[slotId]; if (!slot) throw new Error("unknown slot " + slotId);
-  const inner = r.model ? await loadModel(r.model) : P[r.prim]();
+  const inner = r.model ? await loadModel(r.model) : await P[r.prim](r);
   const obj = new THREE.Group(); obj.add(inner);
   if (r.scale) inner.scale.multiplyScalar(r.scale);
   if (r.rotY) inner.rotation.y += r.rotY;
@@ -330,6 +388,7 @@ export async function buildItem(recipeId, slotId) {
   if (r.width) obj.scale.multiplyScalar(r.width / sz.x);
   if (r.height) obj.scale.multiplyScalar(r.height / sz.y);
   if (r.fit === "bench") { obj.scale.multiplyScalar(BENCH.w / sz.x); b = bbox(obj); obj.scale.y *= BENCH.top / b.max.y; }
+  if (r.fit === "table") { obj.scale.x *= TABLE.dx / sz.x; obj.scale.z *= TABLE.dz / sz.z; b = bbox(obj); obj.scale.y *= TABLE.top / b.max.y; }
   if (r.fit === "shelf") {
     // Scale so the TOP BOARD (not the post tips) lands at SHELF.top: every bookcase then gives shelf-top items
     // the same surface, so one shelf-top sprite fits all of them.
@@ -343,14 +402,15 @@ export async function buildItem(recipeId, slotId) {
   const benchMinZ = FLUSH;
   switch (slot.type) {
     case "bench": move(BENCH.x - c.x, -b.min.y, benchMinZ - b.min.z); break;
-    case "bench-item": move(BENCH.x - BENCH.w / 2 + BENCH.w * slot.f - c.x, BENCH.top - b.min.y, benchMinZ + BENCH.d / 2 - c.z); break;
+    case "bench-item": { const su = surfaceOf(slot), [ax, az] = su.at(slot.f); move(ax - c.x, su.top - b.min.y, az - c.z); break; }
+    case "table": move(TABLE.x - c.x, -b.min.y, TABLE.z - c.z); break;
     case "shelf": move(FLUSH - b.min.x, -b.min.y, SHELF.z - c.z); break;
     case "shelf-top": move(FLUSH + 0.225 - c.x, SHELF.top - b.min.y, SHELF.z - c.z); break;
     case "plant": move(IN + 0.12 - b.min.x, -b.min.y, IN + 0.12 - b.min.z); break;
     case "machine": move(1.42 - c.x, -b.min.y, FLUSH - b.min.z); break;
     case "chair": move(BENCH.x + 0.05 - c.x, -b.min.y, benchMinZ + BENCH.d + 0.38 - c.z); break;
     case "rug": move(slot.at.x - c.x, -b.min.y, slot.at.z - c.z); break;
-    case "pet": move(0.8 - c.x, -b.min.y, 0.95 - c.z); break;
+    case "pet": move(slot.at.x - c.x, -b.min.y, slot.at.z - c.z); break;
     case "lantern": move(IN + 0.22 - b.min.x, -b.min.y, 1.5 - c.z); break;
     case "poster":
       if (slot.wall === "back") move(slot.at.x - c.x, slot.at.y - c.y, IN + 0.012 - b.min.z);
@@ -386,7 +446,9 @@ export function catchersFor(slotId, opac) {
     flatAt(IN, TF, TF, 2, T + 0.002);            // left trim top
   };
   if (slot.type === "bench-item") {
-    flatAt(BENCH.x - BENCH.w / 2, BENCH.x + BENCH.w / 2, FLUSH, FLUSH + BENCH.d, BENCH.top + 0.002); back(BENCH.top);
+    const su = surfaceOf(slot);
+    flatAt(su.x0, su.x1, su.z0, su.z1, su.top + 0.002);
+    if (su.wall) back(su.top);
   } else if (slot.type === "shelf-top") {
     flatAt(FLUSH, FLUSH + 0.45, SHELF.z - 0.36, SHELF.z + 0.36, SHELF.top + 0.002); left(SHELF.top);
   } else if (slot.type === "poster") {

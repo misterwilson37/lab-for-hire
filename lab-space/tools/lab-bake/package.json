@@ -1,6 +1,6 @@
 {
   "name": "lab-bake",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Lab for Hire lab space: bakes Kenney CC0 models and primitives into stacked sprites through one locked camera. Run with python3 bake.py (see README).",
   "dependencies": {

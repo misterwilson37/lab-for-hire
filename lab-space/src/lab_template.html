@@ -6,7 +6,7 @@
 <title>Lab for Hire: lab space demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap">
-<!-- Lab Space demo v0.1.0 | LabRoom module v0.1.0 | built by bake/build_lab.py. Edit src/lab_template.html, not this file. -->
+<!-- Lab Space demo v0.3.0 | LabRoom module v0.3.0 | built by bake/build_lab.py. Edit src/lab_template.html, not this file. -->
 <style>
   :root {
     --ink: #2A1F4A; --accent: #6547CF; --paper: #FBFAFE; --room: #EEEAF8; --line: #DDD6EF; --muted: #6B6388;
@@ -21,7 +21,7 @@
   .brand p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
   .rankbox { justify-self: end; text-align: right; font-size: 14px; color: var(--muted); }
   .rankbox b { color: var(--ink); font-weight: 600; font-size: 16px; }
-  .demo-strip { grid-column: 1 / -1; display: grid; grid-template-columns: auto auto 1fr; grid-gap: 10px; align-items: center; border: 2px dashed var(--line); border-radius: 12px; padding: 8px 10px; }
+  .demo-strip { grid-column: 1 / -1; display: grid; grid-template-columns: auto auto auto 1fr; grid-gap: 10px; align-items: center; border: 2px dashed var(--line); border-radius: 12px; padding: 8px 10px; }
   .demo-strip small { color: var(--muted); font-size: 13px; }
   .demo-strip button { font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; padding: 9px 14px; border: 2px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; touch-action: manipulation; }
   .demo-strip button.quiet { background: transparent; color: var(--accent); }
@@ -38,12 +38,13 @@
 </head>
 <body>
 <header class="demo-bar">
-  <div class="brand"><h1>Your lab</h1><p>Lab for Hire lab space demo, v0.1.0</p></div>
+  <div class="brand"><h1>Your lab</h1><p>Lab for Hire lab space demo, v0.3.0</p></div>
   <div class="rankbox">Rank <b id="rankName">Intern</b><br><span id="repLine">0 rep</span></div>
   <div class="demo-strip">
     <button id="job" type="button">Finish a job (+$60)</button>
+    <button id="award" type="button" class="quiet">Ace a case (award)</button>
     <button id="reset" type="button" class="quiet">Reset demo</button>
-    <small>Demo only. "Finish a job" stands in for real case work. This lab saves in this browser only.</small>
+    <small>Demo only. These buttons stand in for real case work. This lab saves in this browser only.</small>
   </div>
 </header>
 <main id="lab"></main>
@@ -53,11 +54,11 @@
 <script id="lab-manifest" type="application/json">/*MANIFEST*/</script>
 <script id="lab-sprites" type="application/json">/*SPRITES*/</script>
 
-<!-- ======== LabRoom module v0.1.0: pastes into index.html as-is ======== -->
+<!-- ======== LabRoom module v0.3.0: pastes into index.html as-is ======== -->
 <script id="lab">
 (function () {
   "use strict";
-  var VERSION = "0.1.0";
+  var VERSION = "0.3.0";
   var SVGNS = "http://www.w3.org/2000/svg";
   var PAINT_KEYS = { "paint-wall": "wall", "paint-floor": "floor", "paint-trim": "trim", "paint-tiles": "tiles" };
   var PAINT_LABELS = { wall: "Walls", floor: "Floor", trim: "Trim", tiles: "Floor pattern" };
@@ -84,55 +85,93 @@
   function slotsOfType(man, type) { return man.slots.filter(function (s) { return s.type === type; }); }
 
   // ---------- state helpers (pure: the main game can call these) ----------
-  // Starter lab = every Price 0 item, owned, placed in row order.
+  // Lab state v2 (wing-ready): { v: 2, funds, owned: [itemId], rooms: { main: { placed: {spotId: itemId}, paint: {wall,floor,trim,tiles}, colors: {wall,floor,trim} } }, awards: { itemId: data } }
+  // One of each item. An item is out in at most one room; everything owned but not out is "in storage".
+  var ANY_DEFAULT = { wall: "#FFE7A8", floor: "#CFE8D5", trim: "#E0413A" };
+  function isAward(it) { return it.kind === "Award"; }
+  function isStarter(it) { return it.price === 0 && !isAward(it); }
+  function roomOf(man) { return man.roomId || "main"; }
+  function defaultRoom(items, man) {
+    var rm = { placed: {}, paint: { wall: null, floor: null, trim: null, tiles: null }, colors: {} };
+    items.forEach(function (it) {
+      if (!isStarter(it)) return;
+      var pk = paintKey(it);
+      if (pk) { if (!rm.paint[pk] && it.sprite !== "any") rm.paint[pk] = it.id; return; }
+      var free = slotsOfType(man, it.slot).filter(function (s) { return !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]); })[0];
+      if (free) rm.placed[free.id] = it.id;
+    });
+    return rm;
+  }
+  // Starter lab = every Price 0 row (except Awards), owned, placed in row order.
   function defaultState(items, man) {
     man = man || readJSON("lab-manifest");
-    var st = { funds: 0, owned: [], placed: {}, paint: { wall: null, floor: null, trim: null, tiles: null } };
-    items.forEach(function (it) {
-      if (it.price !== 0) return;
-      st.owned.push(it.id);
-      var pk = paintKey(it);
-      if (pk) { if (!st.paint[pk]) st.paint[pk] = it.id; return; }
-      var free = slotsOfType(man, it.slot).filter(function (s) { return !st.placed[s.id]; })[0];
-      if (free) st.placed[free.id] = it.id;
-    });
+    var st = { v: 2, funds: 0, owned: [], rooms: {}, awards: {} };
+    items.forEach(function (it) { if (isStarter(it)) st.owned.push(it.id); });
+    st.rooms[roomOf(man)] = defaultRoom(items, man);
     return st;
   }
-  // Repairs anything a stale save or an edited Items tab could break. Never throws.
+  function isHex(c) { return typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c); }
+  // Repairs anything a stale save, a v1 save, or an edited Items tab could break. Never throws.
   function normalize(state, items, man) {
     man = man || readJSON("lab-manifest");
-    var byId = indexItems(items), def = defaultState(items, man);
+    var byId = indexItems(items), rid = roomOf(man), def = defaultState(items, man), drm = def.rooms[rid];
     var st = state && typeof state === "object" ? clone(state) : {};
+    // v1 (lab-space v0.1.0): placed and paint sat at the top level
+    if (!st.rooms) { st.rooms = {}; if (st.placed || st.paint) st.rooms[rid] = { placed: st.placed, paint: st.paint }; }
+    delete st.placed; delete st.paint;
+    st.v = 2;
     st.funds = Math.max(0, Math.floor(Number(st.funds) || 0));
     var owned = Array.isArray(st.owned) ? st.owned : [];
     def.owned.forEach(function (id) { if (owned.indexOf(id) < 0) owned.push(id); });
     st.owned = owned.filter(function (id, i) { return byId[id] && owned.indexOf(id) === i; });
-    var placed = {}, used = {};
-    man.slots.forEach(function (s) {
-      var id = st.placed && st.placed[s.id];
-      var it = byId[id];
+    st.awards = st.awards && typeof st.awards === "object" ? st.awards : {};
+    // items already out in OTHER rooms (future wings) stay there; this room can't also use them
+    var used = {};
+    Object.keys(st.rooms).forEach(function (k) { if (k === rid) return; var p = (st.rooms[k] || {}).placed || {}; for (var s in p) used[p[s]] = 1; });
+    var src = st.rooms[rid] && typeof st.rooms[rid] === "object" ? st.rooms[rid] : null;
+    var placed = {};
+    if (!src || !src.placed) placed = clone(drm.placed); // brand-new lab
+    else man.slots.forEach(function (s) {
+      var id = src.placed[s.id], it = byId[id];
       if (it && it.slot === s.type && st.owned.indexOf(id) >= 0 && !used[id]) { placed[s.id] = id; used[id] = 1; }
     });
-    if (!st.placed) placed = def.placed; // brand-new lab
-    man.slots.forEach(function (s) { if (!s.parent && !placed[s.id] && def.placed[s.id] && isRequired(man, s.id)) placed[s.id] = def.placed[s.id]; });
-    st.placed = placed;
-    var paint = st.paint || {};
+    man.slots.forEach(function (s) { if (s.required && !placed[s.id] && drm.placed[s.id]) placed[s.id] = drm.placed[s.id]; });
+    // nothing floats: a spot whose table or shelf is gone goes back to storage
+    man.slots.forEach(function (s) { if (s.parent && !placed[s.parent]) delete placed[s.id]; });
+    var paint = (src && src.paint) || {}, colors = (src && src.colors) || {}, outColors = {};
     ["wall", "floor", "trim", "tiles"].forEach(function (k) {
       var it = byId[paint[k]];
-      if (!it || paintKey(it) !== k || st.owned.indexOf(it.id) < 0) paint[k] = def.paint[k];
+      if (!it || paintKey(it) !== k || st.owned.indexOf(it.id) < 0) paint[k] = drm.paint[k];
     });
-    st.paint = { wall: paint.wall, floor: paint.floor, trim: paint.trim, tiles: paint.tiles };
+    ["wall", "floor", "trim"].forEach(function (k) { if (isHex(colors[k])) outColors[k] = colors[k].toUpperCase(); });
+    st.rooms[rid] = { placed: placed, paint: { wall: paint.wall, floor: paint.floor, trim: paint.trim, tiles: paint.tiles }, colors: outColors };
     return st;
   }
-  // A slot that other slots sit on (bench, shelf) can be swapped but never emptied.
-  function isRequired(man, slotId) { return man.slots.some(function (s) { return s.parent === slotId; }); }
+  // The bench and the shelf can be swapped but never emptied (other spots sit on them). The Work Table is optional.
+  function isRequired(man, slotId) { var s = man.slots.filter(function (x) { return x.id === slotId; })[0]; return !!(s && s.required); }
   // Case types unlocked by OWNED equipment (placing it isn't required).
   function unlocks(state, items) {
     var byId = indexItems(items), out = [];
     (state.owned || []).forEach(function (id) { var it = byId[id]; if (it && it.unlocks && out.indexOf(it.unlocks) < 0) out.push(it.unlocks); });
     return out;
   }
-
+  // The game grants Awards (never sold). For "Your Graph", data = { title, type: "line"|"bar"|"scatter", points: [[x, y], ...] }.
+  // Granting again replaces the data (the newest graph wins). New awards go up in an empty poster spot if there is one.
+  function grant(state, items, itemId, data, man) {
+    man = man || readJSON("lab-manifest");
+    var st = normalize(state, items, man), it = indexItems(items)[itemId];
+    if (!it) return st;
+    var isNew = st.owned.indexOf(itemId) < 0;
+    if (isNew) st.owned.push(itemId);
+    if (data !== undefined) st.awards[itemId] = clone(data);
+    var rm = st.rooms[roomOf(man)], out = false;
+    for (var k in rm.placed) if (rm.placed[k] === itemId) out = true;
+    if (isNew && !out) {
+      var free = slotsOfType(man, it.slot).filter(function (s) { return !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]); })[0];
+      if (free) rm.placed[free.id] = itemId;
+    }
+    return st;
+  }
   // ---------- styles (scoped to .lr) ----------
   var CSS = [
     ".lr{--lr-ink:#2A1F4A;--lr-accent:#6547CF;--lr-room:#EEEAF8;--lr-line:#DDD6EF;--lr-muted:#6B6388;--lr-card:#FFFFFF;--lr-good:#1F7A57;--lr-warn:#B3265A;color:var(--lr-ink);font:inherit;display:grid;grid-template-columns:1fr;grid-gap:16px}",
@@ -153,8 +192,8 @@
     ".lr-unlocks b{font-weight:600}",
     ".lr-chips{display:flex;flex-wrap:wrap;margin:6px -3px 0}",
     ".lr-chip{display:inline-block;margin:3px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--lr-line);font-size:13px;font-weight:500}",
-    ".lr-tabs{display:grid;grid-template-columns:1fr 1fr;margin:14px 0 10px;background:#F4F1FC;border-radius:12px;padding:4px}",
-    ".lr-tabs button{border:0;background:transparent;border-radius:9px;padding:9px 0;font-weight:600;font-size:15px;color:var(--lr-muted)}",
+    ".lr-tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 0 10px;background:#F4F1FC;border-radius:12px;padding:4px}",
+    ".lr-tabs button{border:0;background:transparent;border-radius:9px;padding:9px 2px;white-space:nowrap;font-weight:600;font-size:15px;color:var(--lr-muted)}",
     ".lr-tabs button[aria-selected=true]{background:#fff;color:var(--lr-ink);box-shadow:0 1px 3px rgba(42,31,74,.14)}",
     ".lr-spothead{display:grid;grid-template-columns:auto 1fr;grid-gap:0 10px;align-items:center;margin:14px 0 10px}",
     ".lr-back{border:1px solid var(--lr-line);background:#fff;border-radius:10px;padding:8px 12px;font-weight:600;font-size:15px}",
@@ -175,6 +214,13 @@
     ".lr-tag.price{color:var(--lr-ink)}",
     ".lr-tag.have{color:var(--lr-good)}",
     ".lr-tag.lock{color:var(--lr-muted)}",
+    ".lr-tag.earn{color:var(--lr-accent)}",
+    ".lr-colors{display:grid;grid-template-columns:repeat(8,1fr);grid-gap:8px;margin:4px 0 12px;max-width:340px}",
+    ".lr-color{width:100%;padding:0;padding-bottom:100%;border-radius:50%;border:2px solid rgba(42,31,74,.18);cursor:pointer;touch-action:manipulation}",
+    ".lr-color[aria-pressed=true]{border-color:var(--lr-ink);box-shadow:0 0 0 2px #fff inset}",
+    ".lr-color:focus-visible{outline:3px solid var(--lr-ink);outline-offset:2px}",
+    ".lr-more{display:inline-grid;grid-template-columns:auto auto;grid-gap:8px;align-items:center;font-size:15px;font-weight:600;color:var(--lr-accent)}",
+    ".lr-more input{width:44px;height:36px;border:1px solid var(--lr-line);border-radius:8px;padding:2px;background:#fff}",
     ".lr-unlockline{display:block;font-size:13px;color:#16688F;font-weight:500}",
     ".lr-detail{padding:0 12px 12px 76px}",
     ".lr-detail p{margin:0 0 10px;font-size:14px}",
@@ -206,22 +252,24 @@
     var byId = indexItems(items);
     var slotById = {}; man.slots.forEach(function (s) { slotById[s.id] = s; });
     var state = normalize(opts.state, items, man);
+    var roomId = roomOf(man);
+    function R() { return state.rooms[roomId]; }
 
     var ui = { tab: "store", spot: null, preview: null, status: "" };   // preview: { itemId, slotId | paintKey }
     function spriteUrl(file) { return spriteData[file] || spriteBase + file; }
     function spriteFor(it, slotId) { return man.sprites[it.sprite + "@" + slotId] || null; }
     function owns(id) { return state.owned.indexOf(id) >= 0; }
-    function placedAt(id) { for (var k in state.placed) if (state.placed[k] === id) return k; return null; }
+    function placedAt(id) { for (var k in R().placed) if (R().placed[k] === id) return k; return null; }
 
     // What the room shows right now (placed + preview)
     function effective() {
-      var placed = clone(state.placed), paint = clone(state.paint), p = ui.preview;
+      var placed = clone(R().placed), paint = clone(R().paint), colors = clone(R().colors), p = ui.preview;
       if (p && p.slotId) {
         var was = placedAt(p.itemId); if (was) delete placed[was];
         placed[p.slotId] = p.itemId;
       }
       if (p && p.paintKey) paint[p.paintKey] = p.itemId;
-      return { placed: placed, paint: paint };
+      return { placed: placed, paint: paint, colors: colors };
     }
     function slotVisible(s, placed) { return !s.parent || !!placed[s.parent]; }
 
@@ -253,10 +301,9 @@
     if (!readOnly) { if (window.ResizeObserver) { ro = new ResizeObserver(layout); ro.observe(root); } else window.addEventListener("resize", layout); layout(); }
 
     // ----- room shell: polygons, recolored by code -----
-    function drawRoom(paint) {
-      var col = {
-        wall: byId[paint.wall].sprite, floor: byId[paint.floor].sprite, trim: byId[paint.trim].sprite
-      };
+    function colorOf(paint, colors, k) { var sp = byId[paint[k]].sprite; return sp === "any" ? (colors[k] || ANY_DEFAULT[k]) : sp; }
+    function drawRoom(paint, colors) {
+      var col = { wall: colorOf(paint, colors, "wall"), floor: colorOf(paint, colors, "floor"), trim: colorOf(paint, colors, "trim") };
       col.tiles = darkHex(col.floor, man.room.tileDarken);
       var pattern = byId[paint.tiles].sprite, sh = man.room.shade;
       gRoom.innerHTML = "";
@@ -282,7 +329,40 @@
         var im = sv("image", { x: sp.x, y: sp.y, width: sp.w, height: sp.h, preserveAspectRatio: "none" });
         im.setAttributeNS("http://www.w3.org/1999/xlink", "href", spriteUrl(sp.file)); im.setAttribute("href", spriteUrl(sp.file));
         gItems.appendChild(im);
+        if (s.canvas && isAward(byId[id]) && state.awards[id]) drawGraph(s, state.awards[id]);
       });
+    }
+    // A student's own graph, drawn live onto a framed poster's canvas. The canvas corners come from the bake,
+    // so the graph lands exactly on the 3D canvas; its colors get the same wall shading as the room.
+    function drawGraph(slot, data) {
+      var pts = (data && Array.isArray(data.points) ? data.points : []).filter(function (p) { return Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]); });
+      if (pts.length < 2) return;
+      var c = slot.canvas, W = 100, H = 72.5, sh = man.room.shade[slot.normal] || [1, 1, 1];
+      var m = [(c[1][0] - c[0][0]) / W, (c[1][1] - c[0][1]) / W, (c[2][0] - c[0][0]) / H, (c[2][1] - c[0][1]) / H, c[0][0], c[0][1]];
+      var g = sv("g", { transform: "matrix(" + m.map(function (n) { return n.toFixed(4); }).join(" ") + ")", "pointer-events": "none" });
+      var ink = shadeHex("#2A1F4A", sh), x0 = 15, x1 = 91, y0 = 61, y1 = 10, type = data.type || "line";
+      var xs = pts.map(function (p) { return +p[0]; }), ys = pts.map(function (p) { return +p[1]; });
+      var xa = Math.min.apply(null, xs), xb = Math.max.apply(null, xs), ya = Math.min.apply(null, ys), yb = Math.max.apply(null, ys);
+      if (type === "bar") ya = Math.min(0, ya);
+      if (xb === xa) xb = xa + 1; if (yb === ya) yb = ya + 1;
+      function X(v) { return x0 + 4 + (v - xa) / (xb - xa) * (x1 - x0 - 8); }
+      function Y(v) { return y0 - 3 - (v - ya) / (yb - ya) * (y0 - y1 - 6); }
+      g.appendChild(sv("path", { d: "M" + x0 + " " + y1 + "V" + y0 + "H" + x1, fill: "none", stroke: ink, "stroke-width": 1.6, "stroke-linecap": "square" }));
+      if (type === "bar") {
+        var bw = (x1 - x0 - 8) / pts.length * 0.62, fill = shadeHex("#6547CF", sh);
+        pts.forEach(function (p, i) {
+          var cx = x0 + 4 + (i + 0.5) * (x1 - x0 - 8) / pts.length, top = Y(+p[1]), base = Y(Math.max(ya, 0));
+          g.appendChild(sv("rect", { x: cx - bw / 2, y: Math.min(top, base), width: bw, height: Math.max(0.8, Math.abs(base - top)), fill: fill }));
+        });
+      } else if (type === "scatter") {
+        var dot = shadeHex("#1F8FBF", sh);
+        pts.forEach(function (p) { g.appendChild(sv("circle", { cx: X(+p[0]), cy: Y(+p[1]), r: 2.2, fill: dot })); });
+      } else {
+        var line = shadeHex("#D93A72", sh), sorted = pts.slice().sort(function (a, b) { return a[0] - b[0]; });
+        g.appendChild(sv("polyline", { points: sorted.map(function (p) { return X(+p[0]).toFixed(2) + "," + Y(+p[1]).toFixed(2); }).join(" "), fill: "none", stroke: line, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+        sorted.forEach(function (p) { g.appendChild(sv("circle", { cx: X(+p[0]), cy: Y(+p[1]), r: 2.3, fill: line })); });
+      }
+      gItems.appendChild(g);
     }
 
     // ----- selection outline + empty-spot markers -----
@@ -318,7 +398,7 @@
 
     function render() {
       var e = effective();
-      drawRoom(e.paint); drawItems(e.placed); drawUI(e.placed);
+      drawRoom(e.paint, e.colors); drawItems(e.placed); drawUI(e.placed);
       if (panel) {
         var a = document.activeElement, fk = a && a.getAttribute && panel.contains(a) ? a.getAttribute("data-k") : null;
         drawPanel();
@@ -372,10 +452,10 @@
     function emit(ev) { preloadHits(); onChange(clone(state), ev); }
     function selectSpot(id) { ui.spot = id; ui.preview = null; ui.status = ""; render(); var b = panel && panel.querySelector(".lr-back"); if (b) b.focus(); }
     function targetSlot(it) {
+      if (ui.spot && slotById[ui.spot].type === it.slot) return ui.spot;   // a tapped spot wins, even for things already out
       var here = placedAt(it.id); if (here) return here;
-      if (ui.spot && slotById[ui.spot].type === it.slot) return ui.spot;
-      var slots = slotsOfType(man, it.slot);
-      var empty = slots.filter(function (s) { return !state.placed[s.id]; })[0];
+      var slots = slotsOfType(man, it.slot).filter(function (s) { return slotVisible(s, R().placed); });
+      var empty = slots.filter(function (s) { return !R().placed[s.id]; })[0];
       return (empty || slots[slots.length - 1]).id;
     }
     function preview(it) {
@@ -389,7 +469,7 @@
       if (owns(it.id) || it.price > state.funds || it.rank > rank) return;
       var p = ui.preview; state.funds -= it.price; state.owned.push(it.id);
       var pk = paintKey(it), slotId = null;
-      if (pk) state.paint[pk] = it.id;
+      if (pk) R().paint[pk] = it.id;
       else { slotId = p && p.itemId === it.id ? p.slotId : targetSlot(it); placeIn(it, slotId); }
       ui.preview = null;
       var msg = "Bought the " + it.name + ".";
@@ -397,29 +477,42 @@
       else if (pk) msg = "Bought " + it.name + " for your " + PAINT_LABELS[pk].toLowerCase() + ".";
       ui.status = msg; render(); emit({ type: "buy", itemId: it.id, slotId: slotId, price: it.price });
     }
-    function placeIn(it, slotId) { var was = placedAt(it.id); if (was) delete state.placed[was]; state.placed[slotId] = it.id; }
+    function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+    function setColor(it, hex, quiet) {
+      var k = paintKey(it); R().colors[k] = hex.toUpperCase(); R().paint[k] = it.id;
+      if (quiet) { var e = effective(); drawRoom(e.paint, e.colors); return; }   // while dragging the picker: room only
+      ui.status = PAINT_LABELS[k] + ": your own color."; render(); emit({ type: "paint", itemId: it.id, color: R().colors[k] });
+    }
+    function placeIn(it, slotId) { var was = placedAt(it.id); if (was) delete R().placed[was]; R().placed[slotId] = it.id; }
     function put(it, slotId) {
       var pk = paintKey(it);
-      if (pk) { state.paint[pk] = it.id; ui.status = PAINT_LABELS[pk] + ": " + it.name + "."; }
+      if (pk) { R().paint[pk] = it.id; ui.status = PAINT_LABELS[pk] + ": " + it.name + "."; }
       else { placeIn(it, slotId); ui.status = "Moved the " + it.name + " to " + slotById[slotId].label.toLowerCase() + "."; }
       ui.preview = null; render(); emit({ type: pk ? "paint" : "place", itemId: it.id, slotId: slotId || null });
     }
     function takeOut(slotId) {
-      var id = state.placed[slotId]; if (!id || isRequired(man, slotId)) return;
-      delete state.placed[slotId]; ui.preview = null; ui.status = "Took out the " + byId[id].name + ". It's still yours.";
+      var id = R().placed[slotId]; if (!id || isRequired(man, slotId)) return;
+      delete R().placed[slotId]; ui.preview = null;
+      var riders = man.slots.filter(function (s) { return s.parent === slotId && R().placed[s.id]; }).map(function (s) { var n = byId[R().placed[s.id]].name; delete R().placed[s.id]; return "the " + n; });
+      ui.status = "Took out the " + byId[id].name + ". It's in storage." + (riders.length ? " " + cap(riders.join(" and ")) + " went to storage too." : "");
       render(); emit({ type: "remove", itemId: id, slotId: slotId });
     }
 
     // ----- panel -----
     function card(it, context) {
       var pk = paintKey(it), mine = owns(it.id), where = placedAt(it.id);
-      var inUse = pk ? state.paint[pk] === it.id : !!where;
+      var inUse = pk ? R().paint[pk] === it.id : !!where;
       var on = ui.preview && ui.preview.itemId === it.id;
       var c = el("div", "lr-card" + (on ? " on" : ""));
       var row = el("button", "lr-row"); row.type = "button"; row.setAttribute("aria-expanded", on ? "true" : "false"); row.setAttribute("data-k", it.id);
       var th = el("span", "lr-thumb");
       if (pk === "tiles") th.appendChild(patternSwatch(it.sprite));
-      else if (pk) { var sw = el("span", "lr-swatch"); sw.style.background = it.sprite; th.appendChild(sw); }
+      else if (pk) {
+        var sw = el("span", "lr-swatch");
+        if (it.sprite === "any") { sw.style.background = "#E8D5FF"; sw.style.background = "conic-gradient(#E0413A, #F2A541, #FFE7A8, #3E9C6E, #1F8FBF, #6547CF, #D93A72, #E0413A)"; }
+        else sw.style.background = it.sprite;
+        th.appendChild(sw);
+      }
       else {
         var tf = man.thumbs && man.thumbs[it.sprite];
         if (tf) { var img = el("img"); img.alt = ""; img.src = spriteUrl(tf); th.appendChild(img); }
@@ -434,12 +527,13 @@
       row.appendChild(txt);
       var tag;
       if (inUse) tag = el("span", "lr-tag have", "In your lab");
-      else if (mine) tag = el("span", "lr-tag have", "Yours");
+      else if (mine) tag = el("span", "lr-tag have", isAward(it) ? "Earned" : "Yours");
+      else if (isAward(it)) tag = el("span", "lr-tag earn", "Earn it");
       else if (it.rank > rank) tag = el("span", "lr-tag lock", "Locked");
       else tag = el("span", "lr-tag price", money(it.price));
       row.appendChild(tag);
       row.addEventListener("click", function () {
-        if (pk && mine && !inUse) { put(it); return; }       // owned paint: just use it
+        if (pk && mine && !inUse && it.sprite !== "any") { put(it); return; }       // owned paint: just use it
         preview(it);
       });
       c.appendChild(row);
@@ -447,7 +541,12 @@
         var d = el("div", "lr-detail"); d.appendChild(el("p", null, it.description));
         var slotId = ui.preview.slotId;
         var btn = el("button", "lr-act"); btn.type = "button";
-        if (!mine) {
+        if (pk && it.sprite === "any" && mine) {
+          d.appendChild(colorPicker(it)); c.appendChild(d); return c;
+        }
+        if (pk && it.sprite === "any") d.appendChild(el("p", "lr-meta", "After you buy it, pick any color right here, as often as you like."));
+        if (!mine && isAward(it)) { btn.disabled = true; btn.textContent = "Earned, never bought"; }
+        else if (!mine) {
           if (it.rank > rank) { btn.disabled = true; btn.textContent = "Reach " + rankName(it.rank) + " to buy"; }
           else if (it.price > state.funds) { btn.disabled = true; btn.textContent = "Need " + money(it.price - state.funds) + " more"; }
           else { btn.textContent = "Buy for " + money(it.price); btn.addEventListener("click", function () { buy(it); }); }
@@ -458,6 +557,25 @@
         d.appendChild(btn); c.appendChild(d);
       }
       return c;
+    }
+    var PRESETS = ["#FFE7A8", "#FFD6C2", "#FFC4D6", "#E8D5FF", "#CDE7FF", "#CFE8D5", "#F5F0E6", "#D9D9D9",
+                   "#F2A541", "#E0413A", "#D93A72", "#6547CF", "#1F8FBF", "#3E9C6E", "#2A1F4A", "#4A4A4A"];
+    function colorPicker(it) {
+      var k = paintKey(it), cur = (R().paint[k] === it.id && R().colors[k]) || null, f = document.createDocumentFragment();
+      var grid = el("div", "lr-colors"); grid.setAttribute("role", "group"); grid.setAttribute("aria-label", "Pick a color");
+      PRESETS.forEach(function (hex) {
+        var b = el("button", "lr-color"); b.type = "button"; b.style.background = hex; b.setAttribute("aria-label", hex);
+        b.setAttribute("aria-pressed", cur === hex ? "true" : "false"); b.setAttribute("data-k", it.id + hex);
+        b.addEventListener("click", function () { setColor(it, hex); }); grid.appendChild(b);
+      });
+      f.appendChild(grid);
+      var more = el("label", "lr-more"); more.appendChild(el("span", null, "Or any color at all:"));
+      var inp = el("input"); inp.type = "color"; inp.value = (cur || R().colors[k] || ANY_DEFAULT[k]).toLowerCase();
+      inp.setAttribute("aria-label", "Any color for your " + PAINT_LABELS[k].toLowerCase());
+      inp.addEventListener("input", function () { setColor(it, inp.value, true); });
+      inp.addEventListener("change", function () { setColor(it, inp.value); });
+      more.appendChild(inp); f.appendChild(more);
+      return f;
     }
     function patternSwatch(pat) {
       var s = sv("svg", { width: 40, height: 40, viewBox: "0 0 40 40" });
@@ -496,10 +614,10 @@
         head.appendChild(back); head.appendChild(el("h3", null, s.label));
         head.appendChild(el("p", null, "Tap something to try it here."));
         panel.appendChild(head);
-        var here = items.filter(function (it) { return it.slot === s.type; });
+        var here = items.filter(function (it) { return it.slot === s.type && (!isAward(it) || owns(it.id)); });
         here.sort(function (a, b) { return (owns(b.id) - owns(a.id)) || (a.price - b.price); });
         var list = el("div", "lr-list"); here.forEach(function (it) { list.appendChild(card(it, "spot")); }); panel.appendChild(list);
-        if (state.placed[s.id] && !isRequired(man, s.id)) {
+        if (R().placed[s.id] && !isRequired(man, s.id)) {
           var out = el("button", "lr-act alt", "Leave this spot empty"); out.type = "button"; out.style.marginTop = "10px";
           out.addEventListener("click", function () { takeOut(s.id); }); panel.appendChild(out);
         }
@@ -507,7 +625,8 @@
         return;
       }
       var tabs = el("div", "lr-tabs"); tabs.setAttribute("role", "tablist");
-      [["store", "Store"], ["paint", "Paint"]].forEach(function (t) {
+      var stored = items.filter(function (it) { return owns(it.id) && !paintKey(it) && !placedAt(it.id); });
+      [["store", "Store"], ["paint", "Paint"], ["storage", "Storage" + (stored.length ? " (" + stored.length + ")" : "")]].forEach(function (t) {
         var b = el("button", null, t[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", ui.tab === t[0] ? "true" : "false");
         b.addEventListener("click", function () { ui.tab = t[0]; ui.preview = null; ui.status = ""; render(); });
         tabs.appendChild(b);
@@ -517,11 +636,21 @@
       if (ui.tab === "store") {
         var forSale = items.filter(function (it) { return it.price > 0; });
         var eq = forSale.filter(function (it) { return it.kind === "Equipment"; });
-        var dec = forSale.filter(function (it) { return it.kind === "Cosmetic" && !paintKey(it); });
+        var dec = forSale.filter(function (it) { return it.kind === "Cosmetic" && !paintKey(it) && it.slot !== "poster"; });
+        var posters = forSale.filter(function (it) { return it.kind === "Cosmetic" && it.slot === "poster"; });
         var th = forSale.filter(function (it) { return it.kind === "Theme"; });
         [group("Equipment", "Owning these unlocks new kinds of cases.", eq.map(function (it) { return card(it, "store"); })),
          group("Furniture and decor", null, dec.map(function (it) { return card(it, "store"); })),
+         group("Posters", "Graphs and famous scientists", posters.map(function (it) { return card(it, "store"); })),
          group("Theme packs", "Frankenstein pack", th.map(function (it) { return card(it, "store"); }))].forEach(function (g) { if (g) body.appendChild(g); });
+      } else if (ui.tab === "storage") {
+        var inLab = items.filter(function (it) { return owns(it.id) && !paintKey(it) && placedAt(it.id); });
+        var toEarn = items.filter(function (it) { return isAward(it) && !owns(it.id); });
+        var gs = group("In storage", "Things you own that aren't out. Tap one to put it back.", stored.map(function (it) { return card(it, "storage"); }));
+        if (gs) body.appendChild(gs);
+        else body.appendChild(el("p", "lr-empty", "Nothing in storage. Anything you take out of your lab waits here, and it's still yours."));
+        [group("In your lab", null, inLab.map(function (it) { return card(it, "storage"); })),
+         group("Awards to earn", "These can't be bought.", toEarn.map(function (it) { return card(it, "storage"); }))].forEach(function (g) { if (g) body.appendChild(g); });
       } else {
         ["wall", "floor", "trim", "tiles"].forEach(function (k) {
           var g = group(PAINT_LABELS[k], null, items.filter(function (it) { return paintKey(it) === k; }).map(function (it) { return card(it, "paint"); }));
@@ -538,13 +667,20 @@
       getState: function () { return clone(state); },
       update: function (next) { state = normalize(next, items, man); ui.preview = null; render(); preloadHits(); },
       setRank: function (n) { rank = n || 0; render(); },
+      // The game calls this when a student earns an award. For "graph-frame", data = { title, type, points }.
+      grant: function (itemId, data) {
+        var had = owns(itemId); state = grant(state, items, itemId, data, man); ui.preview = null;
+        var it = byId[itemId], at = placedAt(itemId);
+        if (it) ui.status = (had ? "Updated: " : "Award! ") + it.name + (at ? " is up on the " + slotById[at].label.toLowerCase() + "." : " is waiting in Storage.");
+        render(); emit({ type: "award", itemId: itemId });
+      },
       say: function (msg) { say(msg); },
       unlocks: function () { return unlocks(state, items); },
       destroy: function () { if (ro) ro.disconnect(); root.innerHTML = ""; }
     };
   }
 
-  window.LabRoom = { version: VERSION, mount: mount, defaultState: defaultState, normalize: normalize, unlocks: unlocks };
+  window.LabRoom = { version: VERSION, mount: mount, defaultState: defaultState, normalize: normalize, unlocks: unlocks, grant: grant };
 })();
 </script>
 
@@ -578,6 +714,16 @@
     progress.rep += 20; progress.lab = lab.getState(); progress.lab.funds += 60; save(progress);
     lab.update(progress.lab); lab.setRank(rankOf(progress.rep)); showRank();
     lab.say(rankOf(progress.rep) > before ? "Job done: +$60. You reached " + RANKS[rankOf(progress.rep)][1] + "!" : "Job done: +$60 for solid evidence.");
+  });
+  // In the real game, the case decides when a student earns this, and passes the graph they actually made.
+  var DEMO_GRAPHS = [
+    { title: "Movin' Molecules", type: "line", points: [[0, 21], [2, 30], [4, 41], [6, 49], [8, 60]] },
+    { title: "Winter Bounce", type: "bar", points: [[1, 34], [2, 52], [3, 47], [4, 71]] },
+    { title: "Cold Pack", type: "scatter", points: [[1, 19], [2, 15], [3, 16], [4, 11], [5, 9], [6, 10], [7, 6]] }
+  ];
+  var awardN = 0;
+  document.getElementById("award").addEventListener("click", function () {
+    lab.grant("graph-frame", DEMO_GRAPHS[awardN++ % DEMO_GRAPHS.length]);
   });
   document.getElementById("reset").addEventListener("click", function () {
     progress = fresh(); save(progress); lab.update(progress.lab); lab.setRank(0); showRank(); lab.say("Demo reset. Back to the starter lab.");

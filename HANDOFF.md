@@ -1,6 +1,6 @@
 # HANDOFF: Lab for Hire (main game)
 
-**Updated:** Sept 30, 2026, end of the Playfair sessions (section 6 and session order updated by Hooke, the lab-space instance)
+**Updated:** Sept 30, 2026, end of the Playfair sessions (section 6 and session order updated by Hooke, the lab-space instance, through lab space v0.3.0 on Oct 1)
 **Instance:** Playfair (William Playfair, inventor of the line graph and bar chart; also "play fair"). The next instance picks a new name.
 **People:**
 - **Jake Wilson**: builder and deployer. GitHub Pages via the browser; no CLI.
@@ -96,7 +96,7 @@ Her words, summarized:
 - **Real logins and a teacher dashboard** are deferred. When they come, they bring Firebase, the COPPA/TN privacy work (reusable from TTB), and Rule 11 (student and teacher numbers must match).
 
 ## 6. Lab space: separate conversation, already kicked off
-- **Status: DELIVERED (Hooke session, Sept 30, 2026).** Everything lives in `lab-space/`: the standalone demo `lab.html`, the `LabRoom` module v0.1.0, the generated sprites and manifest, the Items tab seed `LabForHire_Items_v0.1.0.xlsx`, the bake tools, and the Rule 10 overlay proof. **`lab-space/HANDOFF.md` has the merge guide (its §3) and the open items (its §8).** Demo preview: https://claude.ai/artifact/W1e2gm52CSZ64hcQbpPpyx. The kickoff notes below are kept for history.
+- **Status: DELIVERED (Hooke session, Sept 30, 2026).** Everything lives in `lab-space/`: the standalone demo `lab.html`, the `LabRoom` module (now v0.3.0), the generated sprites and manifest, the Items tab seed (now `LabForHire_Items_v0.3.0.xlsx`), the bake tools, and the Rule 10 overlay proof. **`lab-space/HANDOFF.md` has the merge guide (its §3) and the open items (its §8).** v0.3.0 (Oct 1) added the Work Table, a Storage tab, Any Color paint, six scientist portrait posters, the "Your Graph" award, and a wing-ready save shape. Demo preview: https://claude.ai/artifact/W1e2gm52CSZ64hcQbpPpyx. The kickoff notes below are kept for history.
 - **Art pipeline (proven):**
   - Kenney **CC0 3D models**, from the GitHub mirror `Hidencod/tge-assets`, which the sandbox can download: Furniture Kit, Space Kit, Cube Pets, and Graveyard Kit (a Frankenstein theme pack).
   - The missing lab gear (beaker, flask, tube rack, microscope) is built from primitives in the same low-poly style.
@@ -117,9 +117,9 @@ Her words, summarized:
    - The game fetches the feed on GitHub Pages and falls back to the snapshot.
    - The claude.ai artifact can't fetch external URLs (CSP), so the preview stays snapshot-only.
    - After this, Hanson edits the Sheet and the game updates with no re-upload.
-2. **Funds, store stub, and save code.** The real store now exists (`lab-space/`), so this session can wire funds straight into the `LabRoom` state shape `{ funds, owned, placed, paint }` inside `lfh.progress`. The save code must carry the lab too.
+2. **Funds and accounts.** The real store exists (`lab-space/`), so wire funds straight into the `LabRoom` state (v2, see `lab-space/HANDOFF.md` §3) inside `lfh.progress`. **Decided Oct 1: no save code** (a dead device takes the code with it). Saving moves to accounts with the same COPPA setup as Jake's other sites. That design happens in its own conversation, and it changes this file's "no accounts" rule.
 3. **Job templates, Plan stage, and Recommendation (CER) stage.** Rebuild Cold Pack as the first template job; it's her own example.
-4. **Merge the lab-space module.** Delivered; follow `lab-space/HANDOFF.md` §3. The Items tab bumps the content schema to 0.3.0.
+4. **Merge the lab-space module.** Delivered; follow `lab-space/HANDOFF.md` §3. The Items tab bumps the content schema to 0.3.0. Wire the framed-graph award to case results (Hanson decides: first try with no misses, or any successful finish). Unit wings (a Greenhouse for plants, for example) go to Hanson first.
 5. **Content packs by unit with Hanson:** she writes cases and misconceptions in the Sheet, and the engine stays ours.
 
 ## 8. Open items waiting on people
