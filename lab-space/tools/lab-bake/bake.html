@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<style>html,body{margin:0;background:transparent}</style></head>
+<body><script type="module">
+// Bake page: driven by bake.py through headless Chromium. Exposes window.api.
+import * as THREE from "three";
+import * as L from "./scene.js";
+
+const renderer = L.createRenderer(); document.body.appendChild(renderer.domElement);
+const cam = L.createCamera();
+
+function shot() { return renderer.domElement.toDataURL("image/png"); }
+function readPixel(x, y) {
+  const c = document.createElement("canvas"); c.width = L.FRAME.w; c.height = L.FRAME.h;
+  const ctx = c.getContext("2d"); ctx.drawImage(renderer.domElement, 0, 0);
+  return Array.from(ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data);
+}
+
+// Measure how the locked lights shade a flat face for each visible normal, with and without the sun.
+// factor = linear(pixel) / linear(albedo). Albedo 0.2 keeps every reading far from clipping.
+function measureOnce(sun) {
+  const scene = new THREE.Scene(); L.addLights(scene, { sun });
+  const mat = new THREE.MeshLambertMaterial({ flatShading: true }); mat.color.setRGB(0.2, 0.2, 0.2, THREE.LinearSRGBColorSpace);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat); m.position.set(0, 0.9, 0); scene.add(m);
+  renderer.render(scene, cam);
+  const at = { px: [1, 0.9, 0], py: [0, 1.9, 0], pz: [0, 0.9, 1] };
+  const out = {};
+  for (const k in at) { const p = L.project(cam, at[k]); const px = readPixel(p[0], p[1]); out[k] = px.slice(0, 3).map((v) => L.s2l(v / 255) / 0.2); }
+  return out;
+}
+
+window.api = {
+  sceneVersion: L.SCENE_VERSION, frame: L.FRAME, slots: L.SLOTS, recipes: Object.keys(L.RECIPES),
+  measure() {
+    const lit = measureOnce(true), amb = measureOnce(false);
+    const shade = {}, shadowOpacity = {};
+    for (const k of ["px", "py", "pz"]) {
+      shade[k] = lit[k].map((v) => +v.toFixed(5));
+      const ratio = amb[k].reduce((a, v, i) => a + v / lit[k][i], 0) / 3;       // light left in shadow
+      shadowOpacity[k] = +(1 - Math.pow(ratio, 1 / 2.2)).toFixed(4);           // same darkening, as an sRGB overlay
+    }
+    return { shade, shadowOpacity };
+  },
+  faces() {
+    const faces = L.roomFaces().map((f) => ({ group: f.group, normal: f.normal, points: f.pts.map((p) => L.project(cam, p)) }));
+    const tiles = {};
+    for (const pat of ["none", "checker", "stripes"])
+      tiles[pat] = L.tileRects(pat).map(([x0, z0, x1, z1]) => [[x0, L.TILE_Y, z0], [x1, L.TILE_Y, z0], [x1, L.TILE_Y, z1], [x0, L.TILE_Y, z1]].map((p) => L.project(cam, p)));
+    return { faces, tilesAfter: L.TILES_AFTER, tiles, tileDarken: L.TILE_DARKEN };
+  },
+  // One item, alone, in its slot, through the locked camera, with shadow catchers. Transparent PNG, full frame.
+  async bakeItem(recipe, slot, opac) {
+    const scene = new THREE.Scene(); L.addLights(scene);
+    scene.add(await L.buildItem(recipe, slot));
+    L.catchersFor(slot, opac).forEach((m) => scene.add(m));
+    renderer.setClearColor(0x000000, 0); renderer.render(scene, cam);
+    return shot();
+  },
+  // Store thumbnail: same render, no shadow catchers.
+  async bakeThumb(recipe, slot) {
+    const scene = new THREE.Scene(); L.addLights(scene);
+    scene.add(await L.buildItem(recipe, slot));
+    renderer.setClearColor(0x000000, 0); renderer.render(scene, cam);
+    return shot();
+  },
+  // The truth: the whole lab as one real 3D scene. placed = [[slotId, recipeId], ...]
+  async renderFull(paint, placed, bg) {
+    const scene = new THREE.Scene(); L.addLights(scene); L.buildRoom(scene, paint);
+    for (const [slot, recipe] of placed) scene.add(await L.buildItem(recipe, slot));
+    renderer.setClearColor(new THREE.Color(bg), 1); renderer.render(scene, cam);
+    const url = shot(); renderer.setClearColor(0x000000, 0); return url;
+  },
+};
+window.READY = true;
+</script></body></html>

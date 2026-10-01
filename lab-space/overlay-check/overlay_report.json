@@ -1,0 +1,38 @@
+{
+ "starter": {
+  "mean_abs": 0.433,
+  "identical_%": 73.49,
+  "within_2_%": 98.98,
+  "within_8_%": 99.46,
+  "over_32_px": 2532,
+  "over_32_not_edge_px": 0,
+  "max": 128
+ },
+ "upgraded": {
+  "mean_abs": 0.546,
+  "identical_%": 74.58,
+  "within_2_%": 98.55,
+  "within_8_%": 99.12,
+  "over_32_px": 6389,
+  "over_32_not_edge_px": 1160,
+  "max": 131
+ },
+ "designer": {
+  "mean_abs": 0.553,
+  "identical_%": 75.32,
+  "within_2_%": 98.58,
+  "within_8_%": 99.09,
+  "over_32_px": 5725,
+  "over_32_not_edge_px": 185,
+  "max": 167
+ },
+ "frankenstein": {
+  "mean_abs": 0.328,
+  "identical_%": 86.15,
+  "within_2_%": 99.02,
+  "within_8_%": 99.33,
+  "over_32_px": 3696,
+  "over_32_not_edge_px": 12,
+  "max": 117
+ }
+}
