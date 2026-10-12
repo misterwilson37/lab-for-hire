@@ -1,6 +1,6 @@
 # HANDOFF: Lab for Hire (main game)
 
-**Updated:** Sept 30, 2026, end of the Playfair sessions (section 6 and session order updated by Hooke, the lab-space instance, through lab space v0.3.0 on Oct 1)
+**Updated:** Oct 2, 2026, game v0.3.0: the lab shell is BUILT (room, laptop, inbox, shop, ledger, bench, funds, storage adapter)
 **Instance:** Playfair (William Playfair, inventor of the line graph and bar chart; also "play fair"). The next instance picks a new name.
 **People:**
 - **Jake Wilson**: builder and deployer. GitHub Pages via the browser; no CLI.
@@ -11,10 +11,9 @@
 ## 1. Current shipped state
 | File | Version | What |
 |---|---|---|
-| `index.html` | game v0.2.0 · engine v0.2.0 · content schema 0.2.1 | The whole game: one self-contained file with an embedded content snapshot. Deploy by uploading to GitHub Pages. |
-| `LabForHire_Content_v0.2.1.xlsx` | schema v0.2.1 | Content seed for the Google Sheet (the source of truth) |
-| `tools/` | n/a | `export_json.py`, `embed_content.py`, `test_engine.js`, `play.py`. All operate on `index.html`, which stays the only copy of the code. |
-| `lab-space-kickoff/` | n/a | Brief, render test, and concept image for the separate lab-space conversation (section 6) |
+| `index.html` | game v0.3.0 · engine v0.3.0 · content schema 0.3.0 | The whole game in one file: code, a content snapshot, and the baked room art (27 layers, ~130 KB). Deploy by uploading to GitHub Pages. |
+| `LabForHire_Content_v0.3.0.xlsx` | schema v0.3.0 | Content seed. **New:** an Items tab (the shop), Requires item + Pay columns on Cases, and Status Teaser. |
+| `dev/` | n/a | Builder tools only (see `dev/README.md`). `bash dev/check.sh` runs every check. Subfolders: `tests/`, `content/`, `art/`. All tools operate on `index.html`, the only copy of the code. |
 
 - **Preview link** (Jake and Hanson only; students need the GitHub Pages URL): https://claude.ai/artifact/3Dmvj54n6hjBkBSsdE3Egb. Add `?preview=1` to unlock all cases and show content-check results.
 - **Live Sheet ID:** `1D2uX2xzW87ykVcJ5uv3lDvwwdxfmvOOefkTN9QDOSqY` (view link shared). It was last confirmed holding v0.1.0.
@@ -95,8 +94,68 @@ Her words, summarized:
   - (Correction to an earlier note: shared carts are not the main case.)
 - **Real logins and a teacher dashboard** are deferred. When they come, they bring Firebase, the COPPA/TN privacy work (reusable from TTB), and Rule 11 (student and teacher numbers must match).
 
-## 6. Lab space: separate conversation, already kicked off
-- **Status: DELIVERED (Hooke session, Sept 30, 2026).** Everything lives in `lab-space/`: the standalone demo `lab.html`, the `LabRoom` module (now v0.3.0), the generated sprites and manifest, the Items tab seed (now `LabForHire_Items_v0.3.0.xlsx`), the bake tools, and the Rule 10 overlay proof. **`lab-space/HANDOFF.md` has the merge guide (its §3) and the open items (its §8).** v0.3.0 (Oct 1) added the Work Table, a Storage tab, Any Color paint, six scientist portrait posters, the "Your Graph" award, and a wing-ready save shape. Demo preview: https://claude.ai/artifact/W1e2gm52CSZ64hcQbpPpyx. The kickoff notes below are kept for history.
+## 5a. The UX shell (agreed Sept 30, 2026)
+**The room is the home screen. Every activity happens at an object in it.**
+- **The laptop is the business side** (on the desk from day one):
+  - **Inbox:** jobs, client replies, mentor messages.
+  - **Supply shop:** buy gear.
+  - **Training sim:** today's Calibration Bay free practice.
+  - **Ledger:** funds and rep.
+- **The workbench is the science side.** The flow is brief → plan the test → run it and get the data → analyze, with side missions → recommend → get paid.
+  - The analyze view is the current two-panel layout: graph pinned, questions on a clipboard.
+- **One way in to each thing.** Work never happens on the laptop.
+- **Inbox details:**
+  - **Locked jobs are teaser emails** that state the requirement ("🔒 Requires a microscope"). The goal is visible.
+  - **Client replies respond to the student's recommendation.** A strong one gets full pay and a thank-you. A weak one gets partial pay plus a **follow-up job**. This is how "new requirements or new data" arrives: as a story, not a replay button.
+  - **Repeat clients** return with sequels.
+  - **A mentor character** signs the Archive reteaches.
+  - **Teacher release:** a Sheet column releases jobs per unit, so the inbox follows Hanson's pacing. An optional class-wide "featured job" too.
+- **Room details:**
+  - Laptop plus a starter bench from day one.
+  - Empty slots show faint outlines with prices: the room is the wishlist.
+  - The lab is named from a **word builder** (no free text, so no moderation and no PII).
+  - The pet reacts when a job is finished.
+- **Guardrails:**
+  - The room disappears during work.
+  - Three taps max from the room to working.
+  - A job fits in about 15 minutes and **autosaves mid-job**.
+  - **Equipment unlocks job types, never practice.** The training sim and review are always free.
+
+## 5b. Firestore (later, after the game and space work)
+Jake wants Firestore eventually. **Build for it now:**
+- **All progress lives in ONE versioned object.**
+- **All reads and writes go through ONE storage adapter** (`LFH.store.load()` / `LFH.store.save()`). Today it wraps localStorage. Later it swaps to Firestore with no other code changes.
+- Never write localStorage directly anywhere else.
+
+When Firestore lands, it brings:
+- **COPPA/TN privacy work.** Reuse the TTB compliance docs and consent tracking.
+- **Rule 11.** A teacher view of funds, stars, or progress must read the same record through proven-identical readers.
+- **Rule 10 harness first.**
+- **The save code** may then be retired, or kept as an offline backup.
+
+## 6. Lab space: BUILT in v0.3.0 (the separate conversation is no longer needed)
+- **Status:** built and merged in v0.3.0. `LAB_BRIEF.md` and the kickoff folder are retired.
+- **What's in the game now:**
+  - Lab name word builder on first run.
+  - **Room home screen** with tappable Laptop and Workbench hotspots plus labeled buttons.
+  - **Decorate mode:** faded ghosts with price tags on empty slots; tap one to shop that slot.
+  - **Laptop apps:**
+    - Inbox: mentor welcome, job offers, 🔒 teasers, client replies with pay. Phone-style on narrow screens.
+    - Supply shop: 22 items in 5 sections, with buttons that say why you can't buy yet.
+    - Training sim: the old Calibration Bay.
+    - Ledger: funds, rep, rank, jobs table, rename, reset, and a preview-only +$100.
+  - **The bench runs the existing case flow**, with autosave on every step and resume after a reload.
+  - **Pay** goes to funds, and a reply email arrives.
+  - The pet hops and speaks on return; a toast shows if there's no pet.
+- **Rules live in the engine and are Node-tested:** `LFH.payout`, `LFH.jobs`, `LFH.shopState` / `LFH.buy`, `LFH.migrate`, `LFH.validateArt`, `LFH.SLOT_NEEDS` (shelf-top needs a shelf).
+- **Storage adapter:** `LFH.store.load()` / `.save()` (section 5b) is the ONLY code that touches localStorage.
+  - Key `lfh.progress`; v1 saves migrate.
+  - Progress object: `{ v: 2, labName, funds, owned, placed, cases, bayCorrect, bayBest, inbox: { read, arrived, seq }, history[], activeJob }`.
+- **Room art:** `dev/art/bake.py` renders `bake.html` (layout, slots, homemade equipment) to trimmed PNG layers plus a manifest. `dev/art/embed_art.py` swaps the art into `index.html`.
+  - The layout lives in `bake.html`. Slot names there must match the Items tab (`validateArt` enforces this).
+  - Starter layers are slot `fixed`: desk, laptop, chair, bench, starter glassware.
+  - Paint = base layers `base-lavender` / `base-mint` / `base-sky`.
+- **Original design notes (still accurate):**
 - **Art pipeline (proven):**
   - Kenney **CC0 3D models**, from the GitHub mirror `Hidencod/tge-assets`, which the sandbox can download: Furniture Kit, Space Kit, Cube Pets, and Graveyard Kit (a Frankenstein theme pack).
   - The missing lab gear (beaker, flask, tube rack, microscope) is built from primitives in the same low-poly style.
@@ -104,27 +163,36 @@ Her words, summarized:
   - Recolors are code. Posters can be little data graphs.
 - **Recommended build:** bake each item, alone in its slot through the locked camera, to a transparent PNG. The PNGs stack with no anchor math, so the iPad just layers images and needs no WebGL.
 - **Slots, not free placement.**
-- **Contract for merging** (details in `LAB_BRIEF.md`):
+- **The merge contract, as built:**
   - Module `LabRoom.mount(el, { state, items, onChange })` in a `<script id="lab">` block.
   - Lab state `{ funds, owned, placed, paint }` inside `lfh.progress`.
   - New Sheet tab **Items**: `ItemID · Name · Slot · Price · Kind · Unlocks · Rank required · Sprite · Description`.
-- **To start:** upload `LAB_BRIEF.md`, `render_test.html`, the concept image, and this HANDOFF, then say "Build the lab-space skeleton from this brief."
 
 ## 7. Recommended session order (main game)
+0. **Done in v0.3.0:** the storage adapter, funds, shop, lab shell, and merged room (old items 2 and 4).
 1. **Apps Script feed.**
    - `doGet` on the Sheet returns this same JSON shape.
    - Port `LFH.validate` verbatim (it's plain JS) plus a "Check my case" menu.
    - The game fetches the feed on GitHub Pages and falls back to the snapshot.
    - The claude.ai artifact can't fetch external URLs (CSP), so the preview stays snapshot-only.
    - After this, Hanson edits the Sheet and the game updates with no re-upload.
-2. **Funds and accounts.** The real store exists (`lab-space/`), so wire funds straight into the `LabRoom` state (v2, see `lab-space/HANDOFF.md` §3) inside `lfh.progress`. **Decided Oct 1: no save code** (a dead device takes the code with it). Saving moves to accounts with the same COPPA setup as Jake's other sites. That design happens in its own conversation, and it changes this file's "no accounts" rule.
+2. **Storage adapter, funds, store stub, and save code.** The adapter comes first (section 5b). A store stub with emoji or placeholder items keeps this unblocked by the lab-space work.
 3. **Job templates, Plan stage, and Recommendation (CER) stage.** Rebuild Cold Pack as the first template job; it's her own example.
-4. **Merge the lab-space module.** Delivered; follow `lab-space/HANDOFF.md` §3. The Items tab bumps the content schema to 0.3.0. Wire the framed-graph award to case results (Hanson decides: first try with no misses, or any successful finish). Unit wings (a Greenhouse for plants, for example) go to Hanson first.
+4. **Merge the lab-space module** once its conversation delivers.
 5. **Content packs by unit with Hanson:** she writes cases and misconceptions in the Sheet, and the engine stays ours.
+
+## 7a. Known gaps in v0.3.0 (honest list)
+- The **save code** (moving a lab between devices) is not built yet. That's the next small piece.
+- **Job templates, the Plan-the-test stage, and the Recommendation (CER) stage** are not built. Replays reuse the same data (they pay 25%).
+- **Follow-up jobs** after weak work aren't generated. The reply email says so in words only.
+- **The mentor's welcome email text lives in code (`mailBody`)**, not the Sheet. It should move to a Messages tab when the feed lands.
+- **Teacher release per unit** isn't built. Jobs release by path order, and Teasers always show.
+- The Bounce Lab gate means the 5th job needs an $80 purchase. Watch whether that feels like a goal or a wall.
+- Everything is tested in Chromium (desktop, 810×1080 iPad portrait, dark mode). **Real-iPad Safari is still untested.**
 
 ## 8. Open items waiting on people
 - **Jake:**
-  - Re-import `LabForHire_Content_v0.2.1.xlsx` into the SAME Sheet (File → Import → Upload → *Replace spreadsheet*), then confirm the dropdowns survived.
+  - Re-import `LabForHire_Content_v0.3.0.xlsx` into the SAME Sheet (File → Import → Upload → *Replace spreadsheet*), then confirm the dropdowns survived.
   - **One real-iPad Safari playthrough.** Everything so far is emulated Chromium, not WebKit.
   - **Rule 9 ruling:** is the embedded content snapshot OK as a generated build artifact until the feed lands? Playfair's reading: yes.
   - **Apps Script deploy:** can district Workspace deploy as "Anyone" for home access, or is it domain-only?
@@ -146,7 +214,7 @@ Her words, summarized:
 
 ## 10. Architecture (for the next builder)
 - **`index.html` has three script blocks:**
-  - `lfh-content`: a generated JSON snapshot. Never hand-edit it; `tools/embed_content.py` replaces it.
+  - `lfh-content`: a generated JSON snapshot. Never hand-edit it; `dev/content/embed_content.py` replaces it.
   - `engine` (`LFH`): pure logic, Node-testable.
   - `app-js`: UI and SVG rendering.
 - **`LFH.phaseModel` is the ONE state function.** It paints the phase regions and it is what the tests check the answer keys against.
@@ -159,6 +227,7 @@ Her words, summarized:
   - Test at 1366×768, 810/1080 (iPad), 390 (phone), and dark mode.
   - Portrait iPad stacks the graph above the question, so students scroll. **A sticky graph for portrait is a to-do.**
 - **Tests (all green at handoff):**
-  - `node tools/test_engine.js index.html <content.json>`: validation, 31 phase keys plus traced paths, grading, build diagnosis, playtest regressions, and 300 rolls × 13 drills (correctness, uniqueness, honesty, realism).
-  - `python3 tools/play.py index.html`: a full headless playthrough with an Archive detour, 0 JS errors expected.
-- **Content update path until the feed exists:** export the Sheet → `export_json.py` → `embed_content.py` → both tests → upload.
+  - `node dev/tests/test_engine.js index.html <content.json>`: validation, phase keys, grading, build diagnosis, playtest regressions, 300 rolls × 13 drills, **plus** payout math, save migration, job release and gating, shop rules, and art-to-Items agreement.
+  - `python3 dev/tests/play.py index.html`: **the whole loop**. It names the lab, then for every job: inbox, accept, build/answer, paid, celebrate. Funds must equal before + paid. Bounce Lab must stay locked until the gauge is bought. A mid-build reload must resume at point 3. Plus an Archive detour, a reply per job, and a pet appearing in the room. 0 JS errors expected.
+- **Content update path until the feed exists:** export the Sheet → `dev/content/export_json.py` → `dev/content/embed_content.py` → `bash dev/check.sh` → upload.
+- **Art update path:** edit `dev/art/bake.html` → `python3 dev/art/bake.py` → `python3 dev/art/embed_art.py index.html dev/art/sprites` → `bash dev/check.sh`. Add matching Items rows if there's new art.

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<!-- Lab for Hire room bake v0.1.0: renders each layer alone through ONE locked camera + ONE light rig -->
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body style="margin:0;background:transparent"><script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const W = 1200, H = 900, S = 4;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H); renderer.setClearColor(0, 0);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const V = 2.75, aspect = W / H;
+const cam = new THREE.OrthographicCamera(-V * aspect, V * aspect, V, -V, 0.1, 100);
+cam.position.set(8, 7.2, 8); cam.lookAt(0, 0.75, 0);
+
+function rig(scene) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d0ee, 1.35));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(5, 9, 3); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 });
+  sun.shadow.bias = -0.0005; scene.add(sun);
+}
+const flat = (c, extra = {}) => new THREE.MeshLambertMaterial({ color: c, flatShading: true, ...extra });
+const glassMat = () => new THREE.MeshPhongMaterial({ color: 0xDFF3FB, transparent: true, opacity: 0.45, flatShading: true, shininess: 80 });
+const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; return m; };
+const lathe = (pts, mat, seg = 10) => mesh(new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg), mat);
+const bb = (o) => new THREE.Box3().setFromObject(o);
+
+/* ---------- homemade equipment, same low-poly language as Kenney ---------- */
+function beaker(c) { const g = new THREE.Group(); g.add(lathe([[0, 0], [0.16, 0], [0.16, 0.34], [0.175, 0.36]], glassMat())); g.add(lathe([[0, .01], [.15, .01], [.15, .2], [0, .2]], flat(c))); return g; }
+function flask(c) { const g = new THREE.Group(); g.add(lathe([[0, 0], [.2, 0], [.2, .03], [.06, .3], [.06, .42], [.075, .44]], glassMat())); g.add(lathe([[0, .01], [.19, .01], [.19, .03], [.12, .13], [0, .13]], flat(c))); return g; }
+function starterGlass() { const g = new THREE.Group(); const b = beaker(0xD93A72); b.position.x = -0.13; const f = flask(0x1F8FBF); f.position.set(0.17, 0, -0.06); g.add(b, f); return g; }
+function tubeRack() {
+  const g = new THREE.Group(), wood = flat(0x8A6A4A);
+  g.add(mesh(new THREE.BoxGeometry(0.62, 0.05, 0.2), wood, 0, 0.025, 0), mesh(new THREE.BoxGeometry(0.62, 0.04, 0.2), wood, 0, 0.22, 0));
+  [0xD93A72, 0x6547CF, 0x1F8FBF, 0xC98313].forEach((c, i) => { const x = -0.21 + i * 0.14;
+    const t = lathe([[0, 0], [.035, .02], [.035, .34], [.04, .35]], glassMat(), 8); t.position.set(x, .05, 0);
+    const l = lathe([[0, 0], [.032, .02], [.032, .16], [0, .16]], flat(c), 8); l.position.set(x, .05, 0); g.add(t, l); });
+  return g;
+}
+function microscope() {
+  const g = new THREE.Group(), body = flat(0xF1ECFF), dark = flat(0x2A1F4A);
+  const add = (geo, mat, x, y, z, rx = 0) => { const m = mesh(geo, mat, x, y, z); m.rotation.x = rx; g.add(m); };
+  add(new THREE.BoxGeometry(0.34, 0.05, 0.28), dark, 0, 0.025, 0); add(new THREE.BoxGeometry(0.07, 0.42, 0.07), body, 0, 0.26, -0.08);
+  add(new THREE.BoxGeometry(0.24, 0.03, 0.2), body, 0, 0.17, 0.02); add(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8), dark, 0, 0.42, 0.02, -0.5);
+  add(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 8), body, 0, 0.6, -0.06, -0.5);
+  g.scale.setScalar(1.35); return g;
+}
+function pressureGauge() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.BoxGeometry(0.3, 0.08, 0.22), flat(0x5D5480), 0, 0.04, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 6), flat(0x9A93B8), 0, 0.17, 0));
+  const face = new THREE.Group(); face.position.set(0, 0.36, 0); face.rotation.y = Math.PI / 4;
+  const rim = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.06, 16), flat(0x2A1F4A)); rim.rotation.x = Math.PI / 2; face.add(rim);
+  const dial = mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.065, 16), flat(0xFFFFFF)); dial.rotation.x = Math.PI / 2; face.add(dial);
+  const needle = mesh(new THREE.BoxGeometry(0.02, 0.12, 0.02), flat(0xD93A72), 0.03, 0.03, 0.04); needle.rotation.z = -0.8; face.add(needle);
+  for (let i = 0; i < 7; i++) { const a = -2.2 + i * 0.73; const t = mesh(new THREE.BoxGeometry(0.012, 0.03, 0.01), flat(0x2A1F4A), Math.sin(a) * 0.11, Math.cos(a) * 0.11, 0.035); t.rotation.z = -a; face.add(t); }
+  g.add(face); g.scale.setScalar(1.15); return g;
+}
+function materialsTester() {
+  const g = new THREE.Group(), frame = flat(0x6547CF), steel = flat(0xB8B2CF), dark = flat(0x2A1F4A);
+  g.add(mesh(new THREE.BoxGeometry(0.75, 0.12, 0.55), dark, 0, 0.06, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.09, 1.25, 0.09), frame, -0.28, 0.72, 0), mesh(new THREE.BoxGeometry(0.09, 1.25, 0.09), frame, 0.28, 0.72, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.75, 0.14, 0.2), frame, 0, 1.38, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.45, 8), steel, 0, 1.08, 0), mesh(new THREE.BoxGeometry(0.3, 0.06, 0.22), steel, 0, 0.83, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.22, 0.12, 0.16), flat(0xC98313), 0, 0.18, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.16, 0.22, 0.05), flat(0x1F8FBF), 0.42, 0.7, 0.2));
+  return g;
+}
+async function growStation() {
+  const g = new THREE.Group(), wood = flat(0x8A6A4A), lamp = flat(0x6547CF);
+  g.add(mesh(new THREE.BoxGeometry(0.95, 0.32, 0.4), wood, 0, 0.16, 0), mesh(new THREE.BoxGeometry(0.88, 0.04, 0.34), flat(0x4A3628), 0, 0.33, 0));
+  for (const [n, x] of [["plantsmall1", -0.3], ["plantsmall2", 0], ["plantsmall1", 0.3]]) { const p = await load(n); p.scale.multiplyScalar(1.4); const b0 = bb(p); p.position.set(x - (b0.min.x + b0.max.x) / 2, 0.34 - b0.min.y, -(b0.min.z + b0.max.z) / 2); g.add(p); }
+  g.add(mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), lamp, -0.48, 0.5, -0.15), mesh(new THREE.BoxGeometry(0.05, 1.0, 0.05), lamp, 0.48, 0.5, -0.15));
+  g.add(mesh(new THREE.BoxGeometry(1.0, 0.05, 0.12), lamp, 0, 1.0, -0.15));
+  g.add(mesh(new THREE.BoxGeometry(0.9, 0.03, 0.08), new THREE.MeshBasicMaterial({ color: 0xF3B4FF }), 0, 0.97, -0.12));
+  return g;
+}
+function poster(kind) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.BoxGeometry(0.95, 0.72, 0.03), flat(0xFFFFFF)));
+  if (kind === "speed") {
+    const pts = [[-0.34, -0.22], [-0.14, -0.08], [0.06, 0.12], [0.32, 0.2]].map(([a, b]) => new THREE.Vector3(a, b, 0.025));
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xD93A72 })));
+    pts.forEach((p) => { const d = mesh(new THREE.SphereGeometry(0.032, 6, 4), flat(0xD93A72)); d.position.copy(p); g.add(d); });
+  } else {
+    const reg = (pts, c) => { const s = new THREE.Shape(pts.map(([a, b]) => new THREE.Vector2(a, b))); const m = new THREE.Mesh(new THREE.ShapeGeometry(s), new THREE.MeshBasicMaterial({ color: c })); m.position.z = 0.02; g.add(m); };
+    reg([[-0.42, -0.31], [-0.1, -0.31], [-0.1, 0.31], [-0.42, 0.31]], 0xC9D6F6);
+    reg([[-0.1, -0.31], [0.42, -0.31], [0.42, 0.31], [-0.1, 0.31]], 0xFADBE6);
+    reg([[-0.1, -0.05], [0.0, 0.05], [0.18, 0.15], [0.42, 0.31], [-0.1, 0.31]], 0xB9E4F2);
+  }
+  return g;
+}
+
+/* ---------- loading ---------- */
+const loader = new GLTFLoader(), cache = {};
+async function load(name) {
+  if (!cache[name]) cache[name] = await new Promise((res, rej) => loader.load(`models/${name}.glb`, (g) => res(g.scene), undefined, rej));
+  const c = cache[name].clone(true); c.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); return c;
+}
+function snap(obj, { cx, cz, minX, maxX, minZ, maxZ, y }) {   // move obj so its bbox meets the target
+  const b = bb(obj);
+  if (cx !== undefined) obj.position.x += cx - (b.min.x + b.max.x) / 2;
+  if (cz !== undefined) obj.position.z += cz - (b.min.z + b.max.z) / 2;
+  if (minX !== undefined) obj.position.x += minX - b.min.x;
+  if (maxX !== undefined) obj.position.x += maxX - b.max.x;
+  if (minZ !== undefined) obj.position.z += minZ - b.min.z;
+  if (maxZ !== undefined) obj.position.z += maxZ - b.max.z;
+  obj.position.y += (y ?? 0) - b.min.y;
+  return obj;
+}
+
+/* ---------- the layout: fixed furniture first, so slots can snap to it ---------- */
+const L = {};
+async function layout() {
+  // bench: two lab cabinets against the back wall (-z)
+  const benchG = new THREE.Group();
+  for (const [i, n] of [[0, "kitchencabinetdrawer"], [1, "kitchencabinet"]]) {
+    const c = await load(n); c.scale.multiplyScalar(1.5); snap(c, {}); const b = bb(c); c.position.x += i * (b.max.x - b.min.x) - b.min.x; benchG.add(c);
+  }
+  snap(benchG, { minZ: -S / 2 + 0.06, cx: 0.15 });
+  const B = bb(benchG); L.bench = { obj: benchG, top: B.max.y, x0: B.min.x, x1: B.max.x, cz: (B.min.z + B.max.z) / 2 - 0.05, z0: B.min.z, z1: B.max.z };
+  // desk: against the left wall (-x), toward the back
+  const desk = await load("desk"); desk.scale.multiplyScalar(1.7); desk.rotation.y = Math.PI / 2; snap(desk, { minX: -S / 2 + 0.06, cz: -0.55 });
+  const D = bb(desk); L.desk = { obj: desk, top: D.max.y, cx: (D.min.x + D.max.x) / 2, z0: D.min.z, z1: D.max.z, x0: D.min.x, x1: D.max.x };
+  L.ready = true;
+}
+const benchAt = (f) => ({ x: L.bench.x0 + (L.bench.x1 - L.bench.x0) * f, y: L.bench.top, z: L.bench.cz });
+const deskAt = (f) => ({ x: L.desk.cx - 0.05, y: L.desk.top, z: L.desk.z0 + (L.desk.z1 - L.desk.z0) * f });
+const onTop = (obj, p, rotY = 0) => { obj.rotation.y = rotY; snap(obj, { cx: p.x, cz: p.z, y: p.y }); return obj; };
+
+/* Each layer: build() returns the object; catch = where its shadow may land. Order = back to front. */
+const LAYERS = [
+  { key: "rug", slot: "rug", build: async () => { const r = await load("rugrounded"); r.scale.multiplyScalar(1.45); return snap(r, { cx: -0.05, cz: 0.55 }); } },
+  { key: "poster-speed", slot: "wall-a", build: async () => { const p = poster("speed"); p.position.set(0.95, 2.05, -S / 2 + 0.08); return p; } },
+  { key: "poster-phase", slot: "wall-b", build: async () => { const p = poster("phase"); p.rotation.y = Math.PI / 2; p.position.set(-S / 2 + 0.08, 2.05, -0.55); return p; } },
+  { key: "plant", slot: "plant", build: async () => { const p = await load("pottedplant"); p.scale.multiplyScalar(1.6); return snap(p, { minX: -S / 2 + 0.12, minZ: -S / 2 + 0.12 }); } },
+  { key: "bench", slot: "fixed", catchTop: false, build: async () => L.bench.obj },
+  { key: "starter-glass", slot: "fixed", onBench: true, build: async () => onTop(starterGlass(), benchAt(0.14)) },
+  { key: "microscope", slot: "bench-1", onBench: true, build: async () => onTop(microscope(), benchAt(0.41), 0.35) },
+  { key: "tube-rack", slot: "bench-2", onBench: true, build: async () => onTop(tubeRack(), benchAt(0.64)) },
+  { key: "pressure-gauge", slot: "bench-3", onBench: true, build: async () => onTop(pressureGauge(), benchAt(0.88)) },
+  { key: "materials-tester", slot: "machine", build: async () => snap(materialsTester(), { maxX: S / 2 - 0.12, minZ: -S / 2 + 0.12 }) },
+  { key: "desk", slot: "fixed", build: async () => L.desk.obj },
+  { key: "desk-lamp", slot: "desk-lamp", onDesk: true, build: async () => { const l = await load("lampsquaretable"); l.scale.multiplyScalar(1.6); return onTop(l, deskAt(0.12)); } },
+  { key: "laptop", slot: "fixed", onDesk: true, build: async () => { const l = await load("laptop"); l.scale.multiplyScalar(1.9); return onTop(l, deskAt(0.55), Math.PI / 2); } },
+  { key: "chair", slot: "fixed", build: async () => { const c = await load("chairdesk"); c.scale.multiplyScalar(1.6); c.rotation.y = -Math.PI / 2; return snap(c, { cx: L.desk.x1 + 0.45, cz: -0.45 }); } },
+  { key: "bookcase", slot: "shelf", build: async () => { const b = await load("bookcaseopen"); b.scale.multiplyScalar(1.7); b.rotation.y = Math.PI / 2; return snap(b, { minX: -S / 2 + 0.08, cz: 0.95 }); } },
+  { key: "candles", slot: "shelf-top", build: async () => { const c = await load("candle-multiple"); c.scale.multiplyScalar(0.8); const top = shelfTop(); return snap(c, { cx: top.cx, cz: top.cz, y: top.y }); } },
+  { key: "books", slot: "shelf-top", build: async () => { const c = await load("books"); c.scale.multiplyScalar(1.6); const top = shelfTop(); return snap(c, { cx: top.cx, cz: top.cz, y: top.y }); } },
+  { key: "grow-station", slot: "grow", build: async () => snap(await growStation(), { maxX: S / 2 - 0.12, cz: 0.75 }) },
+  { key: "lantern", slot: "corner", build: async () => { const l = await load("lantern-candle"); l.scale.multiplyScalar(0.85); return snap(l, { minX: -S / 2 + 0.2, maxZ: S / 2 - 0.2 }); } },
+  { key: "skeleton", slot: "corner", build: async () => { const l = await load("character-skeleton"); l.scale.multiplyScalar(0.55); l.rotation.y = Math.PI / 4; return snap(l, { minX: -S / 2 + 0.15, maxZ: S / 2 - 0.15 }); } },
+  { key: "pumpkin", slot: "corner", build: async () => { const l = await load("pumpkin-carved"); l.scale.multiplyScalar(0.9); l.rotation.y = Math.PI / 4; return snap(l, { minX: -S / 2 + 0.25, maxZ: S / 2 - 0.25 }); } },
+  { key: "pet-cat", slot: "pet", build: async () => { const c = await load("animal-cat"); c.scale.multiplyScalar(0.28); c.rotation.y = 0.5; return snap(c, { cx: 0.15, cz: 1.15 }); } },
+  { key: "pet-penguin", slot: "pet", build: async () => { const c = await load("animal-penguin"); c.scale.multiplyScalar(0.3); c.rotation.y = 0.5; return snap(c, { cx: 0.15, cz: 1.15 }); } },
+  { key: "pet-dog", slot: "pet", build: async () => { const c = await load("animal-dog"); c.scale.multiplyScalar(0.3); c.rotation.y = 0.5; return snap(c, { cx: 0.15, cz: 1.15 }); } },
+];
+let bookcaseBox = null;
+function shelfTop() { return bookcaseBox; }
+
+const PAINTS = {
+  lavender: { wall: 0xF3EEFF, floor: 0xD8D3E3, trim: 0x6547CF, tiles: null },
+  mint: { wall: 0xE6F6EE, floor: 0xCDE8DA, trim: 0x25845A, tiles: 0xB9DEC9 },
+  sky: { wall: 0xE4F2FA, floor: 0xC9D6F6, trim: 0x1F8FBF, tiles: 0xB9CBF2 },
+};
+function shell(p) {
+  const g = new THREE.Group();
+  const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(c, { emissive: new THREE.Color(c).multiplyScalar(h > 1 ? 0.42 : 0.12) })); m.position.set(x, y, z); m.receiveShadow = true; g.add(m); };
+  box(S, 0.15, S, p.floor, 0, -0.075, 0);
+  if (p.tiles) for (let i = -2; i < 2; i++) for (let j = -2; j < 2; j++) if ((i + j) % 2 === 0) box(0.98, 0.012, 0.98, p.tiles, i + 0.5, 0.006, j + 0.5);
+  box(S, 3, 0.12, p.wall, 0, 1.5, -S / 2); box(0.12, 3, S, p.wall, -S / 2, 1.5, 0);
+  box(S, 0.12, 0.14, p.trim, 0, 0.06, -S / 2 + 0.08); box(0.14, 0.12, S, p.trim, -S / 2 + 0.08, 0.06, 0);
+  return g;
+}
+function catcher(scene, y, x0, x1, z0, z1) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.ShadowMaterial({ opacity: 0.2 }));
+  m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y + 0.002, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m);
+}
+
+window.LAYERS = LAYERS.map((l) => ({ key: l.key, slot: l.slot }));
+window.PAINTS = Object.keys(PAINTS);
+window.bake = async function (what) {
+  if (!L.ready) { await layout(); const bc = await LAYERS.find((l) => l.key === "bookcase").build(); const b = bb(bc); bookcaseBox = { cx: (b.min.x + b.max.x) / 2, cz: (b.min.z + b.max.z) / 2, y: b.max.y }; }
+  const scene = new THREE.Scene(); rig(scene);
+  if (what.startsWith("base-")) scene.add(shell(PAINTS[what.slice(5)]));
+  else {
+    const l = LAYERS.find((x) => x.key === what);
+    const obj = await l.build(); scene.add(obj);
+    if (l.onBench) catcher(scene, L.bench.top, L.bench.x0, L.bench.x1, L.bench.z0, L.bench.z1);
+    else if (l.onDesk) catcher(scene, L.desk.top, L.desk.x0, L.desk.x1, L.desk.z0, L.desk.z1);
+    else if (l.slot === "shelf-top") { const t = bookcaseBox; catcher(scene, t.y, t.cx - 0.3, t.cx + 0.3, t.cz - 0.6, t.cz + 0.6); }
+    else if (!l.key.startsWith("poster") && l.key !== "rug") catcher(scene, 0, -S / 2, S / 2, -S / 2, S / 2);
+  }
+  renderer.render(scene, cam);
+  return renderer.domElement.toDataURL("image/png");
+};
+window.READY = true;
+</script></body></html>
