@@ -8,13 +8,14 @@ Wrong answers are diagnosed, not just marked wrong:
 
 After either side mission, the student returns and retries. There is no timer anywhere.
 
-## How it plays (v0.3.0)
+## How it plays (v0.4.0)
 1. A student names their lab.
 2. They tap the **laptop** to read job emails from clients.
 3. They accept a job and do the science at the **workbench**: build graphs, read data, and answer, with side missions when they're stuck.
 4. They get paid.
 5. They spend the money in the **Supply shop**. Equipment unlocks new jobs; decor, pets, and paint make the lab theirs.
 6. **Decorate mode** shows every empty spot and its price.
+7. **Backups:** Ledger → *Save my lab* puts a backup file in the student's Google Drive. On a new or wiped iPad, *Load my lab* (on the first screen, or in the Ledger) brings the lab back.
 
 ## What's in this folder
 - `index.html`: **the game.** This is the only file to upload.
@@ -26,7 +27,12 @@ After either side mission, the student returns and retries. There is no timer an
 ## Deploy
 - **GitHub Pages:** upload `index.html`. That's the whole game, with no other files needed. Share the URL in Google Classroom.
 - **Teacher preview:** add `?preview=1` to the URL. This shows drafts, unlocks every case, and runs the content check.
-- **Progress** is saved in each student's own browser (`localStorage`). There are no logins and no student data. Clearing browser data resets progress.
+- **Progress** is saved in each student's own browser (`localStorage`). There are no logins and no student data. Clearing browser data resets progress, unless the student saved a backup file.
+- **Backup files** (`<LabName>-lab-backup-<date>.json`) hold only game progress: the word-builder lab name, funds, items, stars, and emails read. No names, IDs, or accounts.
+  - **Saving on iPad:** Ledger → *Save my lab* opens the share sheet. Pick *Save to Files* → *Google Drive*, or the Drive app. (On a computer, it downloads instead.)
+  - **Loading:** *Load my lab* opens the file picker; choose the file from Google Drive. The game shows what's in the file and asks before replacing the lab on this device.
+  - Loading **replaces** the device's lab; it never merges two labs. A file that was hand-edited or damaged is refused with a plain message.
+  - Students need the Google Drive app installed and signed in for Drive to appear in the share sheet and file picker.
 
 ## Content lives in the Google Sheet
 Content comes from the Sheet (schema v0.3.0). Its tabs are:
@@ -69,8 +75,10 @@ Visual types:
   - `phaseModel`, which is used by both the renderer and the answer-key tests;
   - `grade` and `validate`;
   - build-mode checks;
-  - 13 drill generators behind `makeDrill`, which re-rolls any bad random draw.
-- `<script id="app-js">` holds the UI (side missions run as "Watch one", then "Your turn"):
+  - 13 drill generators behind `makeDrill`, which re-rolls any bad random draw;
+  - economy and progress: `payout`, `jobs`, `shopState`/`buy`, `migrate`;
+  - save files: `exportSave` / `importSave` (format check, checksum, version check, then `migrate`).
+- `<script id="app-js">` holds the UI (side missions run as "Watch one", then "Your turn"). `LFH.store` here is the only code that touches `localStorage`; the save-file buttons go through it too.
   - SVG renderer;
   - hub (case path, Calibration Bay, lab shelf);
   - case flow, Build mode, side missions, report card, free practice.

@@ -1,7 +1,10 @@
 # HANDOFF: Lab for Hire (main game)
 
-**Updated:** Oct 2, 2026, game v0.3.0: the lab shell is BUILT (room, laptop, inbox, shop, ledger, bench, funds, storage adapter)
-**Instance:** Playfair (William Playfair, inventor of the line graph and bar chart; also "play fair"). The next instance picks a new name.
+**Updated:** Oct 12, 2026, game v0.4.0: backup **save file** to Google Drive is BUILT (save, load, wiped-device restore)
+**Instances:**
+- Playfair (William Playfair, inventor of the line graph and bar chart; also "play fair"): v0.1.0–v0.3.0.
+- **Minard** (Charles Joseph Minard, whose 1869 Napoleon's-march chart puts six variables on one page): v0.4.0.
+- The next instance picks a new name.
 **People:**
 - **Jake Wilson**: builder and deployer. GitHub Pages via the browser; no CLI.
 - **Hanson**: 7th-grade science teacher and client. Offers content, standards alignment, misconceptions, and student feedback. Open to an in-person planning chat with Jake.
@@ -11,8 +14,8 @@
 ## 1. Current shipped state
 | File | Version | What |
 |---|---|---|
-| `index.html` | game v0.3.0 · engine v0.3.0 · content schema 0.3.0 | The whole game in one file: code, a content snapshot, and the baked room art (27 layers, ~130 KB). Deploy by uploading to GitHub Pages. |
-| `LabForHire_Content_v0.3.0.xlsx` | schema v0.3.0 | Content seed. **New:** an Items tab (the shop), Requires item + Pay columns on Cases, and Status Teaser. |
+| `index.html` | game v0.4.0 · engine v0.4.0 · content schema 0.3.0 | The whole game in one file: code, a content snapshot, and the baked room art (27 layers, ~130 KB). Deploy by uploading to GitHub Pages. |
+| `LabForHire_Content_v0.3.0.xlsx` | schema v0.3.0 | Content seed (unchanged in v0.4.0). Has the Items tab (the shop), Requires item + Pay columns on Cases, and Status Teaser. |
 | `dev/` | n/a | Builder tools only (see `dev/README.md`). `bash dev/check.sh` runs every check. Subfolders: `tests/`, `content/`, `art/`. All tools operate on `index.html`, the only copy of the code. |
 
 - **Preview link** (Jake and Hanson only; students need the GitHub Pages URL): https://claude.ai/artifact/3Dmvj54n6hjBkBSsdE3Egb. Add `?preview=1` to unlock all cases and show content-check results.
@@ -36,7 +39,7 @@ A 7th-grade science data-reading game. Students run a "Lab for Hire," and client
   - Calibration is prioritized over Archive.
 - **Calibration Bay free practice:** 13 skills, unlimited new graphs, streaks.
 - **Rank, rep, and a lab shelf** of emoji equipment. Placeholder: to be replaced by the real lab (section 5).
-- **Progress** is stored in `localStorage` only. No accounts, no PII.
+- **Progress** is stored in `localStorage` only. No accounts, no PII. A **backup file** in the student's Google Drive carries it between devices (section 6a).
 
 ## 3. Playtest history (all fixed)
 - **v0.1.1 iPad pass:**
@@ -89,8 +92,9 @@ Her words, summarized:
 - **Job templates** (a new engine piece and the key to real replay): the same client and investigation, with requirement parameters that vary per play and data **generated from a simple model** instead of fixed rows.
 - **"Plan the test" stage** before the data appears. Students choose what to change, what to keep the same, and how many trials to run. New diagnostic tags cover changing two things, no comparison or control, and one trial. An optional twist: tests cost lab funds, so a sloppy plan wastes budget but is never fatal.
 - **"Recommendation" stage at the end of each job:** claim, then evidence, then reasoning, which is her CER structure and what the client pays for.
-- **Save code:** a short copy/paste or QR code that carries a student's lab between devices, with no accounts and no PII.
-  - Ellis is **1:1 iPad**, so per-device saving mostly works. The save code covers device swaps, home play, and wiped devices.
+- **Save file** (BUILT in v0.4.0; replaces the earlier "save code" idea): a backup file the student keeps in Google Drive. No accounts and no PII.
+  - Ellis is **1:1 iPad**, so per-device saving mostly works. The backup covers device swaps, home play, and wiped devices.
+  - **Jake ruled out QR codes:** when the iPads die, they die hard, so anything stored only on the device is gone. Drive survives.
   - (Correction to an earlier note: shared carts are not the main case.)
 - **Real logins and a teacher dashboard** are deferred. When they come, they bring Firebase, the COPPA/TN privacy work (reusable from TTB), and Rule 11 (student and teacher numbers must match).
 
@@ -131,7 +135,7 @@ When Firestore lands, it brings:
 - **COPPA/TN privacy work.** Reuse the TTB compliance docs and consent tracking.
 - **Rule 11.** A teacher view of funds, stars, or progress must read the same record through proven-identical readers.
 - **Rule 10 harness first.**
-- **The save code** may then be retired, or kept as an offline backup.
+- **The save file** may then be retired, or kept as an offline backup.
 
 ## 6. Lab space: BUILT in v0.3.0 (the separate conversation is no longer needed)
 - **Status:** built and merged in v0.3.0. `LAB_BRIEF.md` and the kickoff folder are retired.
@@ -168,6 +172,18 @@ When Firestore lands, it brings:
   - Lab state `{ funds, owned, placed, paint }` inside `lfh.progress`.
   - New Sheet tab **Items**: `ItemID · Name · Slot · Price · Kind · Unlocks · Rank required · Sprite · Description`.
 
+## 6a. Save file: BUILT in v0.4.0 (Minard)
+- **Where:** Ledger → *Back up your lab* (Save / Load, plus "Last backup: today / 3 days ago / never"). The first-run name screen also has *Load my lab from a backup file*, because a wiped iPad lands there first.
+- **Save:** on iPad it opens the **share sheet** (`navigator.share` with a file), where the student picks *Save to Files → Google Drive* or the Drive app. Anywhere the share sheet can't take files, it **downloads** instead. "Last backup" only updates when the save goes through (a cancelled share sheet doesn't count).
+- **Load:** the file picker (`accept=.json`). The game shows what's in the file (lab name, funds, jobs done, backup date) and, if this device already has a lab, says plainly that it will be **replaced**. Then it confirms.
+- **File:** `<LabName>-lab-backup-YYYY-MM-DD.json` = `{ "lab-for-hire-save": 1, game, savedAt, lab, check, progress }`. `progress` is the whole progress object (including a mid-job `activeJob`) plus `backedUpAt`.
+- **Refused files, each with a kid-readable reason:** not a save, hand-edited or damaged (FNV-1a checksum over `progress`), from a newer game version, truncated. The checksum is a speed bump against editing your funds, not security.
+- **Rule 9:** the file is a snapshot, not a second live record. Loading **replaces** the device's progress through `LFH.store` and never merges, so there is still exactly one record the game reads.
+- **Engine:** `LFH.exportSave`, `LFH.importSave`, `LFH.checksum`, `LFH.saveSummary`, `LFH.hasProgress`, `LFH.backupAge`. New progress field: `backedUpAt` (still `v: 2`; `migrate` fills it in for old saves).
+- **Proof (Rule 10 style):** `play.py` takes the lab the full five-job loop just built, saves it through the real button, wipes `localStorage`, reloads, and is refused an edited copy, then restores from the real file and asserts `labName, funds, owned, placed, cases, history, inbox, bayCorrect, bayBest` are identical, and the cat is still in the room. A deliberately broken restore (funds zeroed) was confirmed to **fail** this harness before shipping.
+- **The claude.ai preview link can't save files** (artifact pages block downloads and file sharing), and it still shows v0.3.0. Test the save file on the GitHub Pages URL.
+- **Not tested:** the iPad share sheet and the Drive file picker themselves. Headless Chromium has no share sheet, so the harness exercises the download fallback. This is part of Jake's real-iPad check (section 8).
+
 ## 7. Recommended session order (main game)
 0. **Done in v0.3.0:** the storage adapter, funds, shop, lab shell, and merged room (old items 2 and 4).
 1. **Apps Script feed.**
@@ -176,13 +192,15 @@ When Firestore lands, it brings:
    - The game fetches the feed on GitHub Pages and falls back to the snapshot.
    - The claude.ai artifact can't fetch external URLs (CSP), so the preview stays snapshot-only.
    - After this, Hanson edits the Sheet and the game updates with no re-upload.
-2. **Storage adapter, funds, store stub, and save code.** The adapter comes first (section 5b). A store stub with emoji or placeholder items keeps this unblocked by the lab-space work.
+2. **Done in v0.4.0:** the save file (section 6a). Storage adapter, funds, and store were already done in v0.3.0.
 3. **Job templates, Plan stage, and Recommendation (CER) stage.** Rebuild Cold Pack as the first template job; it's her own example.
 4. **Merge the lab-space module** once its conversation delivers.
 5. **Content packs by unit with Hanson:** she writes cases and misconceptions in the Sheet, and the engine stays ours.
 
-## 7a. Known gaps in v0.3.0 (honest list)
-- The **save code** (moving a lab between devices) is not built yet. That's the next small piece.
+## 7a. Known gaps in v0.4.0 (honest list)
+- **Next up (agreed with Jake Oct 12):** the Cold Pack job template + Plan stage + CER Recommendation (item 3), then the Apps Script feed when Hanson is ready to author. **Hanson is overwhelmed: ease of use is priority one.** Build from her own example and ask her only yes/no questions.
+- The save file's **iPad share sheet + Drive picker** path is untested on real hardware (section 6a).
+- Students who never tap *Save my lab* still lose their lab when an iPad dies. A gentle nudge (e.g., after every 2nd paid job, if the last backup is older than a week) would help; not built.
 - **Job templates, the Plan-the-test stage, and the Recommendation (CER) stage** are not built. Replays reuse the same data (they pay 25%).
 - **Follow-up jobs** after weak work aren't generated. The reply email says so in words only.
 - **The mentor's welcome email text lives in code (`mailBody`)**, not the Sheet. It should move to a Messages tab when the feed lands.
@@ -192,9 +210,10 @@ When Firestore lands, it brings:
 
 ## 8. Open items waiting on people
 - **Jake:**
+  - **Drive check on a student iPad** (blocks trusting the save file): in Safari, open the game, Ledger → *Save my lab*. Does the share sheet offer *Save to Files → Google Drive* (or the Drive app)? Then *Load my lab*: does the picker show Google Drive? If Drive is missing, the Drive app needs installing/signing in (a tech-office question).
   - Re-import `LabForHire_Content_v0.3.0.xlsx` into the SAME Sheet (File → Import → Upload → *Replace spreadsheet*), then confirm the dropdowns survived.
   - **One real-iPad Safari playthrough.** Everything so far is emulated Chromium, not WebKit.
-  - **Rule 9 ruling:** is the embedded content snapshot OK as a generated build artifact until the feed lands? Playfair's reading: yes.
+  - **Rule 9 ruling:** is the embedded content snapshot OK as a generated build artifact until the feed lands? Playfair's and Minard's reading: yes. Jake asked for context Oct 12 and was told this is only needed when the feed is built. (Jake didn't recognize "Rule 9" by number: say "Single Source of Truth, your rule" when raising it.)
   - **Apps Script deploy:** can district Workspace deploy as "Anyone" for home access, or is it domain-only?
   - Check that the district content filter allows `*.github.io` (Google Fonts is optional; the game falls back).
 - **Hanson:**
@@ -228,6 +247,6 @@ When Firestore lands, it brings:
   - Portrait iPad stacks the graph above the question, so students scroll. **A sticky graph for portrait is a to-do.**
 - **Tests (all green at handoff):**
   - `node dev/tests/test_engine.js index.html <content.json>`: validation, phase keys, grading, build diagnosis, playtest regressions, 300 rolls × 13 drills, **plus** payout math, save migration, job release and gating, shop rules, and art-to-Items agreement.
-  - `python3 dev/tests/play.py index.html`: **the whole loop**. It names the lab, then for every job: inbox, accept, build/answer, paid, celebrate. Funds must equal before + paid. Bounce Lab must stay locked until the gauge is bought. A mid-build reload must resume at point 3. Plus an Archive detour, a reply per job, and a pet appearing in the room. 0 JS errors expected.
+  - `python3 dev/tests/play.py index.html`: **the whole loop**, ending with the backup → wipe → restore proof (section 6a). It names the lab, then for every job: inbox, accept, build/answer, paid, celebrate. Funds must equal before + paid. Bounce Lab must stay locked until the gauge is bought. A mid-build reload must resume at point 3. Plus an Archive detour, a reply per job, and a pet appearing in the room. 0 JS errors expected.
 - **Content update path until the feed exists:** export the Sheet → `dev/content/export_json.py` → `dev/content/embed_content.py` → `bash dev/check.sh` → upload.
 - **Art update path:** edit `dev/art/bake.html` → `python3 dev/art/bake.py` → `python3 dev/art/embed_art.py index.html dev/art/sprites` → `bash dev/check.sh`. Add matching Items rows if there's new art.

@@ -1,8 +1,9 @@
-"""Headless playthrough of the whole Lab for Hire loop (v0.3.0).
+"""Headless playthrough of the whole Lab for Hire loop (v0.4.0).
 Usage: python3 dev/tests/play.py index.html (or just: bash dev/check.sh)
 Name the lab -> laptop -> inbox -> accept each job -> do the work (answers from the embedded key)
 -> paid -> reply email -> shop. Also proves: Bounce Lab stays locked until the pressure gauge is bought,
-a mid-job reload resumes where the student left off, and an Archive detour works."""
+a mid-job reload resumes where the student left off, an Archive detour works, and (v0.4.0) the lab the
+loop just built survives a wiped device via the backup file: identical progress, and a hand-edited file is refused."""
 import json, os, re, sys
 from playwright.sync_api import sync_playwright
 HTML = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "index.html")
@@ -69,5 +70,35 @@ with sync_playwright() as p:
     assert len(replies) == len(jobs), "a reply email per finished job"
     pg.click("[data-app=shop]"); pg.click("[data-buy='pet-cat']"); pg.click("[data-act=room]")
     assert len(pg.query_selector_all(".room .layer")) >= 7, "cat should be in the room"
-    pg.screenshot(path="play_end_room.png"); br.close()
+    pg.screenshot(path="play_end_room.png")
+    # ---- Save file: back up the REAL lab this loop built, wipe the device, restore from the file ----
+    store = lambda: json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))
+    before = store(); before_funds = funds(pg)
+    pg.click("[data-act=laptop]"); pg.click("[data-app=ledger]")
+    assert "Last backup: never" in pg.inner_text(".backup"), "fresh lab should say never backed up"
+    with pg.expect_download() as dl: pg.click("[data-act=saveFile]")
+    save_path = "/tmp/lfh_play_backup.json"; dl.value.save_as(save_path)
+    assert dl.value.suggested_filename.startswith("Curious-Comet-lab-backup-"), dl.value.suggested_filename
+    assert "Last backup: today" in pg.inner_text(".backup"), "ledger should show today's backup"
+    pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(200)
+    assert pg.query_selector("[data-act=nameDone]"), "wiped device should start at the name screen"
+    # hand-edited file is refused, and nothing changes
+    bad = json.load(open(save_path)); bad["progress"]["funds"] = 99999; json.dump(bad, open("/tmp/lfh_bad.json", "w"))
+    with pg.expect_file_chooser() as fc: pg.click("[data-act=loadFile]")
+    fc.value.set_files("/tmp/lfh_bad.json"); pg.wait_for_timeout(200)
+    assert "changed or damaged" in pg.inner_text("main"), "edited save should be refused"
+    assert pg.query_selector("[data-act=nameDone]"), "refused file must leave the device untouched"
+    # the real file restores the lab
+    dialogs = []
+    pg.once("dialog", lambda d: (dialogs.append(d.message), d.accept()))
+    with pg.expect_file_chooser() as fc: pg.click("[data-act=loadFile]")
+    fc.value.set_files(save_path); pg.wait_for_timeout(300)
+    assert dialogs and "The Curious Comet Lab" in dialogs[0] and f"${before_funds}" in dialogs[0], dialogs
+    after = store()
+    for k in ("labName", "funds", "owned", "placed", "cases", "history", "inbox", "bayCorrect", "bayBest"):
+        assert after[k] == before[k], f"restore changed {k}: {before[k]!r} -> {after[k]!r}"
+    assert funds(pg) == before_funds and "The Curious Comet Lab" in pg.inner_text(".wordmark"), "room shows the restored lab"
+    assert len(pg.query_selector_all(".room .layer")) >= 7, "restored room still has the cat"
+    log.append(f"backup -> wipe -> restore: OK ({before_funds} funds, {sum(1 for c in after['cases'].values() if c.get('done'))} jobs, edited file refused)")
+    br.close()
 print("\n".join(log)); print("JS errors:", errs)

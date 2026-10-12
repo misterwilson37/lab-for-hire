@@ -129,5 +129,26 @@ const artBlock = src.match(/<script id="lfh-art" type="application\/json">([\s\S
 if (artBlock) { const AE = L.validateArt(C, JSON.parse(artBlock[1])); AE.forEach((e) => console.log("ART", e)); ok(AE.length === 0, "every item has art in the right slot"); }
 const bad = L.validateArt({ items: [{ id: "x", sprite: "nope", slot: "pet" }] }, { layers: { desk: {}, laptop: {}, bench: {} } });
 ok(bad.length === 1, "art validator catches a missing sprite");
+// 8. Save file (backup to Drive). The real-data proof is in play.py (a lab built by the full loop survives a wipe).
+{
+  const Ps = L.freshProgress(); Ps.labName = "The Curious Comet Lab"; Ps.funds = 215;
+  ["MOVIN-MOLECULES", "COLD-PACK"].forEach((id) => (Ps.cases[id] = { done: true, best: 20, stars: 3 }));
+  Ps.owned["pet-cat"] = true; Ps.placed.pet = "pet-cat"; Ps.history.push({ caseId: "COLD-PACK", pay: 70 });
+  Ps.activeJob = { caseId: "PHASE-PROBE", qi: 3 };
+  const now = "2026-10-12T15:00:00.000Z", text = L.exportSave(Ps, now), r = L.importSave(text);
+  ok(r.ok, "a fresh save file loads");
+  const want = JSON.parse(JSON.stringify(Object.assign({}, Ps, { backedUpAt: now })));
+  ok(r.ok && JSON.stringify(r.progress) === JSON.stringify(L.migrate(want)), "save file round-trips every field (funds, items, stars, mid-job)");
+  ok(Ps.backedUpAt === "", "exporting does not change the live lab until the save succeeds");
+  const f = JSON.parse(text); f.progress.funds = 99999;
+  ok(!L.importSave(JSON.stringify(f)).ok, "an edited save (funds changed by hand) is refused");
+  const g = JSON.parse(text); g.progress.v = 3; g.check = L.checksum(JSON.stringify(g.progress));
+  ok(/newer version/.test(L.importSave(JSON.stringify(g)).error), "a save from a newer game version is refused with a reason");
+  ok(!L.importSave("hello").ok && !L.importSave("{\"a\":1}").ok && !L.importSave("").ok, "non-save files are refused");
+  ok(!L.importSave(text.slice(0, text.length - 40)).ok, "a truncated file is refused");
+  ok(L.backupAge({ backedUpAt: "" }, Date.parse(now)) === "never" && L.backupAge({ backedUpAt: now }, Date.parse(now) + 3 * 86400000) === "3 days ago", "backup age reads plainly");
+  ok(!L.hasProgress(L.freshProgress()) && L.hasProgress(Ps), "fresh device has nothing to overwrite");
+  ok(!/"(name|email|student|id)"\s*:/i.test(text.replace(/"(caseId|id)":"[A-Z-]+"/g, "")), "save file carries no identity fields");
+}
 console.log(fails ? `${fails} FAILURES` : "ALL TESTS PASSED");
 process.exit(fails ? 1 : 0);
