@@ -43,7 +43,8 @@ ok(M.tags["CAL-AXIS-CHOICE"] && M.tags["CAL-AXIS-CHOICE"].drill === "variable-pl
 Object.values(M.tags).filter((x) => x.kind === "Calibration").forEach((x) => ok(!/\?/.test(x.explain), `${x.id} explanation should state, not ask`));
 const g1 = L.grade(O["MM-06"], ["A", "B"], T); ok(g1.correct, "pick two correct");
 const g2 = L.grade(O["MM-06"], ["A", "D"], T); ok(!g2.correct && g2.tags[0] === "SCI-KE-TEMP", "pick two wrong -> tag");
-const g3 = L.grade(O["CP-04"], ["A", "C"], T); ok(!g3.correct && g3.tags[0].startsWith("CAL"), "SATA miss+wrong -> Calibration first");
+const CPQ = L.instance("COLD-PACK", { n: 1, variant: "classic", seed: 1 }).qs.find((q) => q.type === "Select all that apply" && q.stage === "analyze");   // successor of CP-04
+const g3 = L.grade(CPQ.options, ["A", "C"], T); ok(!g3.correct && g3.tags[0].startsWith("CAL"), "SATA miss+wrong -> Calibration first");
 const g4 = L.grade(O["MM-07"], ["A", "B", "E", "D"], T); ok(g4.tags.includes("SCI-EVIDENCE"), "SATA extra wrong -> evidence tag");
 const g5 = L.grade(O["BL-03"], ["B", "D"].slice(0,1), T); ok(g5.tags[0] === "SCI-PARTICLES-CHANGE", "MC wrong tag");
 
@@ -103,6 +104,8 @@ ok(L.payout({ pay: 60, pts: 24, max: 24 }) === 60, "perfect first run pays full"
 ok(L.payout({ pay: 60, pts: 0, max: 24 }) === 25, "rough work still pays ~40%");
 ok(L.payout({ pay: 60, pts: 24, max: 24, missions: 2 }) === 70, "side missions add $5 each");
 ok(L.payout({ pay: 60, pts: 24, max: 24, replay: true }) === 15, "replay pays 25%");
+ok(L.payout({ pay: 70, pts: 23, max: 24, weak: true }) === 55 && L.payout({ pay: 70, pts: 23, max: 24 }) === 70, "a weak recommendation is capped at part of the fee");
+ok(L.payout({ pay: 70, pts: 23, max: 24, weak: true, missions: 2 }) === 65, "side missions still pay on a weak recommendation");
 const P0 = L.migrate({ v: 1, cases: { "MOVIN-MOLECULES": { best: 20, stars: 3, done: true } }, bayCorrect: 4 });
 ok(P0.v === 2 && P0.cases["MOVIN-MOLECULES"].done && P0.bayCorrect === 4 && P0.funds === 0 && P0.placed.room === "paint-lavender", "v1 save migrates");
 ok(JSON.stringify(L.migrate(JSON.parse(JSON.stringify(P0)))) === JSON.stringify(P0), "v2 save round-trips unchanged");
@@ -149,6 +152,78 @@ ok(bad.length === 1, "art validator catches a missing sprite");
   ok(L.backupAge({ backedUpAt: "" }, Date.parse(now)) === "never" && L.backupAge({ backedUpAt: now }, Date.parse(now) + 3 * 86400000) === "3 days ago", "backup age reads plainly");
   ok(!L.hasProgress(L.freshProgress()) && L.hasProgress(Ps), "fresh device has nothing to overwrite");
   ok(!/"(name|email|student|id)"\s*:/i.test(text.replace(/"(caseId|id)":"[A-Z-]+"/g, "")), "save file carries no identity fields");
+}
+// 9. Job templates: Cold Pack. Rule 10 anchor = Hanson's sample data from the v0.3.0 Sheet (the rows this template replaced).
+{
+  const HANSON = { "ammonium-nitrate": [22, 6, 3, 4, 6, 8], "urea": [22, 9, 7, 7, 8, 10], "sodium-chloride": [22, 21, 21, 21, 21, 22], "calcium-chloride": [22, 38, 44, 42, 39, 36] };
+  const HANSON_COST = { "ammonium-nitrate": 1.2, "urea": 0.85, "sodium-chloride": 0.1, "calcium-chloride": 0.6 };
+  const c = L.instance("COLD-PACK", { n: 1, variant: "classic", seed: 1 });
+  Object.entries(HANSON).forEach(([s, want]) => {
+    const got = c.readings.read[s], exact = s !== "calcium-chloride";
+    ok(got.every((v, i) => (exact ? v === want[i] : Math.abs(v - want[i]) <= 1)), `classic ${s}: model ${got} vs Hanson ${want} (${exact ? "exact" : "within 1°C"})`);
+    ok(c.params.prices[s] === HANSON_COST[s], `classic ${s} price matches her cost table`);
+  });
+  ok(c.claim === "urea" && c.pass.join() === "ammonium-nitrate,urea", "classic key = her key: AN and urea pass (old CP-04); urea wins on cost (old CP-05)");
+  ok(JSON.stringify(L.instance("COLD-PACK", { n: 1, variant: "classic", seed: 99 }).readings) === JSON.stringify(c.readings), "classic first play is always her example");
+  const readQ = c.qs.find((q) => q.skill === "Read a value");
+  ok(readQ && readQ.options.map((o) => o.text).join() === "7°C,3°C,9°C,5°C", "classic read-a-value matches her old CP-01 (urea at 4 min = 7°C)");
+
+  // Independent answer-key checker: reads ONLY the student-facing graph points and cost-table text, never the generator's internals.
+  const keyFromVisuals = (inst) => {
+    const g = inst.visuals["CPT-GRAPH"], cost = {}; inst.visuals["CPT-COST"].table.rows.forEach(([n, p]) => (cost[n] = parseFloat(p.slice(1))));
+    const P = inst.params, hot = inst.kind === "hot";
+    const val = (s, t) => s.points.find((p) => p.x === t).y;
+    const pass = g.series.filter((s) => !s.control).filter((s) => [P.t1, P.t2].every((t) => (hot ? val(s, t) > P.th : val(s, t) < P.th))).map((s) => s.name);
+    return { pass, claim: pass.slice().sort((a, b) => cost[a] - cost[b])[0], cost };
+  };
+  const variants = ["hot", "longer", "colder", "prices", "followup"];
+  const seen = { claim: new Set(), th: new Set(), t: new Set() };
+  let n = 0;
+  variants.forEach((variant) => { for (let seed = 1; seed <= 400; seed++) {
+    const i = L.instance("COLD-PACK", { n: 2, variant, seed }), k = keyFromVisuals(i), tag = `${variant}#${seed}`; n++;
+    ok(!i.fallback, `${tag}: generator had to fall back`);
+    ok(k.claim === i.claimName, `${tag}: claim ${i.claimName} but the visuals say ${k.claim}`);
+    ok(k.pass.length >= 2 && k.pass.length < 4, `${tag}: needs 2-3 passing substances, got ${k.pass.length}`);
+    const sorted = Object.entries(k.cost).filter(([nm]) => k.pass.includes(nm)).map(([, p]) => p).sort((a, b) => a - b);
+    ok(sorted[1] - sorted[0] >= 0.095, `${tag}: cheapest passer must be clear`);
+    const g = i.visuals["CPT-GRAPH"];
+    g.series.forEach((s) => s.points.forEach((p) => ok(p.y >= 1 && p.y <= 49 && Number.isInteger(p.y), `${tag}: ${s.name} ${p.y}°C must be a whole number on the graph`)));
+    const ctl = g.series.find((s) => s.control); ok(ctl && ctl.points.every((p) => Math.abs(p.y - i.params.T0) <= 1), `${tag}: plain water stays at room temperature`);
+    g.series.filter((s) => !s.control).forEach((s) => [i.params.t1, i.params.t2].forEach((t) => ok(Math.abs(s.points.find((p) => p.x === t).y - i.params.th) >= 2, `${tag}: ${s.name} too close to the ${i.params.th}° line`)));
+    const sp = i.params.subs.map((s) => L.SUBSTANCES[s]);
+    g.series.filter((s) => !s.control).forEach((s, j) => { const D = sp[j].D, ext = D < 0 ? Math.min(...s.points.map((p) => p.y)) : Math.max(...s.points.map((p) => p.y));
+      if (Math.abs(D) > 5) ok(D < 0 ? ext < i.params.T0 - 5 : ext > i.params.T0 + 5, `${tag}: ${s.name} must clearly ${D < 0 ? "cool" : "warm"} the water`); });
+    i.qs.forEach((q) => {
+      const nc = q.options.filter((o) => o.correct).length, r = L.required(q.type);
+      ok(r.exact ? nc === r.exact : nc >= 1, `${tag} ${q.skill}: ${q.type} has ${nc} correct`);
+      ok(new Set(q.options.map((o) => o.text)).size === q.options.length, `${tag} ${q.skill}: duplicate option text`);
+      q.options.forEach((o) => { ok(o.correct || o.tag, `${tag} ${q.skill}: wrong option '${o.text}' has no tag`); if (o.tag) ok(!!M.tags[o.tag], `${tag}: unknown tag ${o.tag}`); });
+      ok(!/\?/.test(q.why), `${tag} ${q.skill}: explanation should state, not ask`);
+    });
+    // read-a-value: the keyed number must be what the graph shows
+    const rq = i.qs.find((q) => q.skill === "Read a value");
+    if (rq) { const m = rq.prompt.match(/with (.+) at (\d+) minutes/), s = g.series.find((x) => x.name === m[1]);
+      ok(rq.options.find((o) => o.correct).text === `${s.points.find((p) => p.x === +m[2]).y}°C`, `${tag}: read-a-value key disagrees with the graph`); }
+    // evidence: every number in the correct statements must match the visuals
+    const ev = i.qs.find((q) => q.label === "Evidence"), s0 = g.series.find((x) => x.name === i.claimName);
+    const e1 = ev.options[0].text.match(/at (\d+) minutes \((\d+)°C\) and at (\d+) minutes \((\d+)°C\)/);
+    ok(e1 && s0.points.find((p) => p.x === +e1[1]).y === +e1[2] && s0.points.find((p) => p.x === +e1[3]).y === +e1[4], `${tag}: evidence statement numbers disagree with the graph`);
+    ok(ev.options[1].text.includes(`$${k.cost[i.claimName].toFixed(2)}`), `${tag}: evidence statement price disagrees with the cost table`);
+    const fq = ev.options[3].text.match(/^(.+) was /); ok(fq && !k.pass.includes(fq[1]), `${tag}: the 'false' evidence statement is actually true`);
+    ok(i.qs.filter((q) => q.stage === "plan").length === 2 && i.qs.filter((q) => q.stage === "recommend").length === 3, `${tag}: 2 plan + 3 recommendation questions`);
+    seen.claim.add(i.claimName); seen.th.add(i.params.th); seen.t.add(i.params.t1 + "-" + i.params.t2);
+    ok(JSON.stringify(L.instance("COLD-PACK", { n: 2, variant, seed }).readings) === JSON.stringify(i.readings), `${tag}: same seed must rebuild the same job (resume)`);
+  } });
+  ok(seen.claim.size >= 4 && seen.th.size >= 8 && seen.t.size >= 4, `replays really vary: ${seen.claim.size} winners, ${seen.th.size} rule lines, ${seen.t.size} time pairs`);
+  ok(L.instance("COLD-PACK", { n: 2, variant: "hot", seed: 3 }).kind === "hot" && L.instance("COLD-PACK", { n: 2, variant: "hot", seed: 3 }).qs.some((q) => /HOT|hot packs/.test(q.prompt)), "hot variant asks about hot packs");
+  ok(c.qs.filter((q) => q.stage === "plan").length === 4, "first play plans the whole test (4 plan questions)");
+  ["PLAN-ONE-CHANGE", "PLAN-CONTROL", "PLAN-TRIALS", "PLAN-MEASURE", "CER-CRITERIA"].forEach((t) => ok(M.tags[t] && M.tags[t].kind === "Archive" && (M.checks[t] || []).length, `${t}: Archive tag with a check question in the Sheet`));
+  const VT = L.validateTemplates(C); VT.forEach((e) => console.log("TEMPLATE", e)); ok(VT.length === 0, "template tags all exist in the Sheet");
+  // the economy of follow-ups
+  ok(L.nextOffer("COLD-PACK", 1, true, 5).variant === "hot" && L.nextOffer("COLD-PACK", 1, false, 5).variant === "followup", "strong work -> sequel (hot packs); weak work -> follow-up with fresh data");
+  const rec = (c3, e, r) => { const o = {}; c.qs.forEach((q) => (o[q.id] = { points: q.label === "Claim" ? c3 : q.label === "Evidence" ? e : q.label === "Reasoning" ? r : 3 })); return o; };
+  ok(L.recommendationStrong(c.qs, rec(3, 3, 2)) && !L.recommendationStrong(c.qs, rec(2, 3, 3)) && !L.recommendationStrong(c.qs, rec(3, 2, 2)), "strong = claim first try, at most one retry on evidence + reasoning");
+  console.log(`  template harness: ${n} generated jobs checked against their own visuals`);
 }
 console.log(fails ? `${fails} FAILURES` : "ALL TESTS PASSED");
 process.exit(fails ? 1 : 0);

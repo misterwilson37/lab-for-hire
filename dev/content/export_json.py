@@ -26,7 +26,7 @@ def axis(label, unit, mn, mx, step, scale):
     return {"label": s(label), "unit": s(unit), "min": n(mn), "max": n(mx), "step": n(step),
             "scale": (s(scale) or "Linear")}
 
-C = {"schema": "0.3.0", "source": src.split("/")[-1]}
+C = {"schema": "0.4.0", "source": src.split("/")[-1]}
 C["cases"] = [{"id": s(r[0]), "status": s(r[1]), "order": int(r[2] or 99), "title": s(r[3]), "client": s(r[4]),
                "pitch": s(r[5]), "win": s(r[6]), "requires": s(r[7]), "pay": int(r[8] or 0), "standard": s(r[9])} for r in rows("Cases")]
 C["items"] = [{"id": s(r[0]), "name": s(r[1]), "slot": s(r[2]), "price": int(r[3] or 0), "kind": s(r[4]), "unlocks": s(r[5]),
