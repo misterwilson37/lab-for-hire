@@ -8,6 +8,7 @@ v0.5.0: Cold Pack is a JOB TEMPLATE. The first play is Hanson's example: plan (w
 its Archive detour), run (with a reload that must resume at the Run step), analyze, and a strong CER recommendation,
 which must bring a sequel email. A deliberately weak sequel must bring a follow-up email with fresh data."""
 import json, os, re, sys
+import tempfile
 from playwright.sync_api import sync_playwright
 HTML = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else "index.html")
 src = open(HTML, encoding="utf-8").read()
@@ -128,22 +129,23 @@ with sync_playwright() as p:
     pg.click("[data-mail='offer-COLD-PACK-3']"); assert "fresh batch" in pg.inner_text(".mail-view"), "follow-up explains the fresh data"
     pg.click("[data-app=shop]"); pg.click("[data-buy='pet-cat']"); pg.click("[data-act=room]")
     assert len(pg.query_selector_all(".room .layer")) >= 7, "cat should be in the room"
-    pg.screenshot(path="play_end_room.png")
+    pg.screenshot(path=os.path.join(tempfile.gettempdir(), "lfh_play_end_room.png"))   # never write into the repo
     # ---- Save file: back up the REAL lab this loop built, wipe the device, restore from the file ----
     store = lambda: json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))
     before = store(); before_funds = funds(pg)
     pg.click("[data-act=laptop]"); pg.click("[data-app=ledger]")
     assert "Last backup: never" in pg.inner_text(".backup"), "fresh lab should say never backed up"
     with pg.expect_download() as dl: pg.click("[data-act=saveFile]")
-    save_path = "/tmp/lfh_play_backup.json"; dl.value.save_as(save_path)
+    save_path = os.path.join(tempfile.gettempdir(), "lfh_play_backup.json"); dl.value.save_as(save_path)
     assert dl.value.suggested_filename.startswith("Curious-Comet-lab-backup-"), dl.value.suggested_filename
     assert "Last backup: today" in pg.inner_text(".backup"), "ledger should show today's backup"
     pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(200)
     assert pg.query_selector("[data-act=nameDone]"), "wiped device should start at the name screen"
     # hand-edited file is refused, and nothing changes
-    bad = json.load(open(save_path)); bad["progress"]["funds"] = 99999; json.dump(bad, open("/tmp/lfh_bad.json", "w"))
+    BAD = os.path.join(tempfile.gettempdir(), "lfh_bad.json")
+    bad = json.load(open(save_path)); bad["progress"]["funds"] = 99999; json.dump(bad, open(BAD, "w"))
     with pg.expect_file_chooser() as fc: pg.click("[data-act=loadFile]")
-    fc.value.set_files("/tmp/lfh_bad.json"); pg.wait_for_timeout(200)
+    fc.value.set_files(BAD); pg.wait_for_timeout(200)
     assert "changed or damaged" in pg.inner_text("main"), "edited save should be refused"
     assert pg.query_selector("[data-act=nameDone]"), "refused file must leave the device untouched"
     # the real file restores the lab

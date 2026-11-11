@@ -1,273 +1,67 @@
-# HANDOFF: Lab for Hire (main game)
+# HANDOFF: Lab for Hire
 
-**Updated:** Oct 12, 2026, game v0.5.0: **Cold Pack job template** is BUILT (Plan → Run → Analyze → CER Recommendation; sequels and follow-ups with new data). v0.4.0 earlier the same day: backup save file to Google Drive.
-**Instances:**
-- Playfair (William Playfair, inventor of the line graph and bar chart; also "play fair"): v0.1.0–v0.3.0.
-- **Minard** (Charles Joseph Minard, whose 1869 Napoleon's-march chart puts six variables on one page): v0.4.0 and v0.5.0.
-- The next instance picks a new name.
-**People:**
-- **Jake Wilson**: builder and deployer. GitHub Pages via the browser; no CLI.
-- **Hanson**: 7th-grade science teacher and client. Offers content, standards alignment, misconceptions, and student feedback. Open to an in-person planning chat with Jake.
+**Updated:** Nov 10, 2026 · **Game v0.4.1** (engine 0.4.0, content schema 0.3.0, Sheet script 0.1.0) · **Repo baseline commit, tag `v0.4.1`**
+**Session names so far:** Playfair (the claude.ai conversation that built everything up to here). The next session picks a new one (rule 7).
+**People:** **Jake Wilson**: builder and deployer (GitHub Pages). **Hanson**: 7th-grade science teacher and client; owns content, standards, misconceptions, and student feedback.
 
----
+This file is the *state of the world*. Rules and commands: `CLAUDE.md`. Why things are the way they are: `docs/DECISIONS.md`. What to build next: `docs/ROADMAP.md`. Setup for Jake: `docs/START-HERE.md`.
 
-## 1. Current shipped state
-| File | Version | What |
-|---|---|---|
-| `index.html` | game v0.5.0 · engine v0.5.0 · content schema 0.4.0 | The whole game in one file: code, a content snapshot, and the baked room art (27 layers, ~130 KB). Deploy by uploading to GitHub Pages. |
-| `LabForHire_Content_v0.4.0.xlsx` | schema v0.4.0 | Content seed. **v0.4.0:** Cold Pack's fixed Visuals/Data/Tables/Questions/Options rows are **removed** (the template's model replaced them: Single Source of Truth); new SideMissions tags `PLAN-ONE-CHANGE`, `PLAN-CONTROL`, `PLAN-TRIALS`, `PLAN-MEASURE`, `CER-CRITERIA` with 6 Check questions; new Cold Pack pitch and teacher note; Start Here explains templates. The v0.3.0 file is deleted. |
-| `dev/` | n/a | Builder tools only (see `dev/README.md`). `bash dev/check.sh` runs every check. Subfolders: `tests/`, `content/`, `art/`. All tools operate on `index.html`, the only copy of the code. |
+## 0. The move to Claude Code (what changed in v0.4.1)
+The project moved from a claude.ai conversation into this git repo. **No behavior changed.** The rebuilt `index.html` differs from v0.4.0 in two comment lines only (proved by diff). What changed is the *shape*:
+- `index.html` was a 390 KB generated file with everything embedded. It is now built from `src/` by `python3 build.py`. **Edit `src/`, never the generated files** (a hook and `build.py --check` enforce this).
+- One command runs every check: `bash dev/check.sh` (6 steps).
+- `CLAUDE.md`, `.claude/` (permissions, a guard hook, slash commands), and `docs/` carry the context that used to live in conversation.
+- The Python Sheet reader was already retired (Apps Script is the one reader).
 
-- **Preview link** (Jake and Hanson only; students need the GitHub Pages URL): https://claude.ai/artifact/3Dmvj54n6hjBkBSsdE3Egb. Add `?preview=1` to unlock all cases and show content-check results.
-- **Live Sheet ID:** `1D2uX2xzW87ykVcJ5uv3lDvwwdxfmvOOefkTN9QDOSqY` (view link shared). It was last confirmed holding v0.1.0.
+## 1. State at a glance
+| Thing | State |
+|---|---|
+| Game (5 live jobs, 3 teasers, lab room, laptop, shop, ledger, Build mode, branching help) | **Built and tested.** Preview: https://claude.ai/artifact/3Dmvj54n6hjBkBSsdE3Egb (built-in content only; claude.ai blocks the live feed) |
+| Live Sheet feed (Apps Script, quarantine, safe resume) | **Built and tested against a stand-in. NOT deployed.** `apps-script/INSTALL.md` |
+| The live Sheet itself | On the **old v0.2.1 layout**; needs upgrading (`sheet/UPGRADE-LIVE-SHEET.md`). The game correctly refuses it, so students are unaffected |
+| Items catalog | **Two competing catalogs. Jake decides.** (1a) |
+| Real iPad Safari | **Not tested** |
+| Real students | Not yet |
 
-## 2. What the game is today
-A 7th-grade science data-reading game. Students run a "Lab for Hire," and clients bring cases built on graphs and tables.
-- **Five cases:**
-  - Movin' Molecules: **Build mode** (choose axes, choose a scale, plot, TALK check, certify, then analyze)
-  - Cold Pack: a **job template** (section 6b). Plan the test, run it, analyze, then claim/evidence/reasoning. Coach Rivera keeps coming back with new rules and new data.
-  - Water phase diagram (real data)
-  - Frankenstein fog (real CO₂ data, log pressure axis)
-  - Winter Bounce (text table plus a bar graph)
-- **Question types:** multiple choice, pick two, pick three, select all.
-- **Branching** (Hanson calls it "awesome"; it must survive every future change):
-  - Every wrong option carries an error tag.
-  - **Calibration Bay** handles graph-reading errors. It runs **"Watch one"** (a worked example with the answer stated) and then **"Your turn"** (a freshly generated graph), using 13 drill generators.
-  - **The Archive** handles science errors: a reteach plus a Sheet-authored check question.
-  - After either, the student returns to the case with a "Remember:" strip showing, and retries.
-  - A second miss reveals the answer with the reason.
-  - Calibration is prioritized over Archive.
-- **Calibration Bay free practice:** 13 skills, unlimited new graphs, streaks.
-- **Rank, rep, and a lab shelf** of emoji equipment. Placeholder: to be replaced by the real lab (section 5).
-- **Progress** is stored in `localStorage` only. No accounts, no PII. A **backup file** in the student's Google Drive carries it between devices (section 6a).
+**The live content Sheet:** "Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`, owned by one of Jake's **tertiary** Google accounts. The Sheets connector attached to Claude is account-wide for that account, so it must never be pointed at an account that owns student data. (An older Sheet, ID `1D2uX2xzW87ykVcJ5uv3lDvwwdxfmvOOefkTN9QDOSqY`, is superseded.)
 
-## 3. Playtest history (all fixed)
-- **v0.1.1 iPad pass:**
-  - `color-mix()` replaced with rgba tokens. On pre-16.2 iPadOS, every gridline would have vanished.
-  - Buttons use `touch-action: manipulation`.
-- **v0.2.0 Jake playtest, 7 findings:**
-  1. The case brief is now always available.
-  2. Axis *choice* got its own tag and drill (`CAL-AXIS-CHOICE` / `variable-placement`). It had been sharing `CAL-AXIS`, which is about *reading* an axis.
-  3. Side missions now show before they ask ("Watch one" first).
-  4. A second miss states the answer and the reason.
-  5. **Build-mode questions never ask for a value the student just plotted.** MM-01 reads backward (650 m/s → 20°C) and MM-02 interpolates (80°C → about 725). Keep this rule.
-  6. **Steepness, not "greatest amount":** MM-04 is a pick-two with a steepness tie. The drill's trap requires a long section that rises strictly more in total but is not steepest.
-  7. MM-08 asks whether *this* graph can answer a pressure question (no: pressure isn't on the axes).
-- **Found while fixing:** drill contexts could produce absurd values. Each context now has realistic y-steps and a ceiling, and the re-roll wrapper rejects violations.
+## 1a. READ FIRST: the open decision (Rule 9)
+The room and shop were built in two places at once. This game has a 22-item catalog and a baked 27-layer room. A parallel "lab-space" conversation built a different 39-item catalog, a different slot system, and a different art pipeline, and wrote an `Items` tab and an `Items Legend` tab into the live Sheet. **Its code and art have never been seen by this project.** Two catalogs for one shop violate Rule 9, so one must go. Nothing has been overwritten or merged.
 
-**Standing content rules learned from playtests:**
-- No question may be answerable by copying student input.
-- A question must be answerable from its visual, or be explicitly *about* what the visual can't show.
-- Side-mission explanations are statements, never questions (a test enforces this).
-- Every drill value must be physically believable.
+**Recommendation:** adopt the lab-space catalog's data model (starter lab defined in the Sheet, bench items that fit any of 3 spots, split paint, unlock-by-case-type) and keep this game's economy, inbox, shop rules, and storage. That needs Jake to upload that conversation's zip to `incoming/lab-space/`. Options and the merge plan: `docs/ITEMS-CONFLICT.md`.
+**Until decided:** nothing breaks (the game refuses the old-layout Sheet and uses its built-in content, and `?preview=1` says why).
 
-## 4. Hanson's feedback (the new direction)
-Her words, summarized:
-- **"Please don't abandon it!"** Keep the branching support. The opening is an incredible starting point.
-- **Ownership is her idea for the "one more round" feeling.** Students build and run their own lab: accept client jobs, earn money from investigations, buy equipment, customize the space, and unlock new case types. Something that belongs to them and keeps growing.
-- **Instructional priority, from the updated standards:** plan investigations, analyze evidence, develop models, apply understanding. Planning is the gap the current game doesn't touch.
-- **Her job pattern:**
-  - A client needs a material for a purpose.
-  - Students decide how to compare the options fairly.
-  - They examine the resulting data and answer several connected questions.
-  - They make an evidence-backed recommendation, and completion earns something for their lab.
-  - A later client brings **different requirements or new data**, so students work the evidence again.
-- **Her year-long content ideas:**
-  - Medical design cases (**7.ETS1.1**)
-  - Reaction investigations (**7.PS3.1**)
-  - Plant-growth investigations (**7.LS1.4**)
-  - Plus the earlier unit list: cells 7.LS1.1–1.3, sensory 7.LS1.5, respiration and photosynthesis 7.LS1.7 / 7.PS3.2 / 7.LS2.1, genes and mutations 7.LS3.1–3.2.
+## 2. What the game is
+A 7th-grade science data-reading game. Students run a "lab for hire". Full detail: `docs/ARCHITECTURE.md`.
+- **Five live jobs:** Movin' Molecules (**Build mode**: choose axes, choose a scale, plot, TALK check, certify, then analyze), The Cold Pack Challenge (multi-line graph + cost table; the coldest option isn't the best), Mission to Kestrel-b (real water phase diagram), Fog for Frankenstein (real CO2 phase diagram on a **log** axis), The Winter Bounce Test (text table + bar graph). **Three locked teaser jobs** advertise the year ahead (cells, plant growth, medical design).
+- **Branching help** (Hanson: "awesome"; sacred): every wrong option is tagged; Calibration (graph-reading) before Archive (science); Calibration side missions run "Watch one" then "Your turn" on freshly generated graphs; a second miss reveals the answer with the reason; getting help never costs money.
+- **The lab:** a baked isometric room (27 layers); the laptop holds Inbox (jobs, locked teasers, client replies), Supply shop (22 items), Training sim (13 skills, unlimited fresh graphs), Ledger. The workbench runs the jobs. Pay rewards evidence quality and finished side missions, never speed.
+- **Safe live editing:** a bad case is held back, the rest play; an unreadable or old-layout Sheet is refused (last good copy, then built-in content); a student mid-job keeps their place when content changes; drafts never reach students.
+- **Storage:** browser only (`localStorage` via `LFH.store`). No accounts, no student data.
 
-## 5. Agreed design for the next phase
-- **Two currencies:**
-  - `rep` is never spent and drives rank (it exists today).
-  - `funds` are earned and spent in the store.
-  - Funds pay for **evidence quality and completed side missions**, never for speed, so getting help is never a loss.
-  - A replay with the same data pays a little; **new requirements or new data pay full**.
-- **Purchases unlock content**, so her year becomes the store catalog. Cosmetics sit on top (paint, posters, pets, theme packs).
-  - Microscope → cell cases
-  - Greenhouse → plant growth
-  - Materials tester → 7.ETS1.1 design
-  - Calorimeter → 7.PS3.1 reactions
-- **Job templates** (BUILT in v0.5.0 for Cold Pack, section 6b; a new engine piece and the key to real replay): the same client and investigation, with requirement parameters that vary per play and data **generated from a simple model** instead of fixed rows.
-- **"Plan the test" stage** (BUILT in v0.5.0; the funds-cost twist is NOT built) before the data appears. Students choose what to change, what to keep the same, and how many trials to run. New diagnostic tags cover changing two things, no comparison or control, and one trial. An optional twist: tests cost lab funds, so a sloppy plan wastes budget but is never fatal.
-- **"Recommendation" stage at the end of each job** (BUILT in v0.5.0 for template jobs): claim, then evidence, then reasoning, which is her CER structure and what the client pays for.
-- **Save file** (BUILT in v0.4.0; replaces the earlier "save code" idea): a backup file the student keeps in Google Drive. No accounts and no PII.
-  - Ellis is **1:1 iPad**, so per-device saving mostly works. The backup covers device swaps, home play, and wiped devices.
-  - **Jake ruled out QR codes:** when the iPads die, they die hard, so anything stored only on the device is gone. Drive survives.
-  - (Correction to an earlier note: shared carts are not the main case.)
-- **Real logins and a teacher dashboard** are deferred. When they come, they bring Firebase, the COPPA/TN privacy work (reusable from TTB), and Rule 11 (student and teacher numbers must match).
+## 3. Verified, and NOT verified
+**Verified** (`bash dev/check.sh`): the engine's rules; the Apps Script reader against the real seed workbook (exact parity with the shipped snapshot) and a reconstruction of the live Sheet, including blank rows, reversed or missing columns, held-back cases, caching, expiry, chunking, and the menu; the whole game and every Sheet-to-browser scenario in real Chromium (desktop, 810x1080 iPad portrait, 390 phone, dark mode).
+**NOT verified:**
+- **Google's real servers.** `getActiveSpreadsheet()` in a web app, `CacheService` gzip round-trips, the authorization prompt, and CORS from GitHub Pages to `script.google.com` were exercised only against a stand-in. **The first deploy is a real test.** If the feed fails, the game silently uses its built-in content, so it never breaks, but it won't show Sheet edits.
+- **Real-iPad Safari.** Everything is emulated Chromium.
+- **District content filter** may block `script.google.com`; students would keep playing with built-in content.
+- Real students.
 
-## 5a. The UX shell (agreed Sept 30, 2026)
-**The room is the home screen. Every activity happens at an object in it.**
-- **The laptop is the business side** (on the desk from day one):
-  - **Inbox:** jobs, client replies, mentor messages.
-  - **Supply shop:** buy gear.
-  - **Training sim:** today's Calibration Bay free practice.
-  - **Ledger:** funds and rep.
-- **The workbench is the science side.** The flow is brief → plan the test → run it and get the data → analyze, with side missions → recommend → get paid.
-  - The analyze view is the current two-panel layout: graph pinned, questions on a clipboard.
-- **One way in to each thing.** Work never happens on the laptop.
-- **Inbox details:**
-  - **Locked jobs are teaser emails** that state the requirement ("🔒 Requires a microscope"). The goal is visible.
-  - **Client replies respond to the student's recommendation.** A strong one gets full pay and a thank-you. A weak one gets partial pay plus a **follow-up job**. This is how "new requirements or new data" arrives: as a story, not a replay button.
-  - **Repeat clients** return with sequels.
-  - **A mentor character** signs the Archive reteaches.
-  - **Teacher release:** a Sheet column releases jobs per unit, so the inbox follows Hanson's pacing. An optional class-wide "featured job" too.
-- **Room details:**
-  - Laptop plus a starter bench from day one.
-  - Empty slots show faint outlines with prices: the room is the wishlist.
-  - The lab is named from a **word builder** (no free text, so no moderation and no PII).
-  - The pet reacts when a job is finished.
-- **Guardrails:**
-  - The room disappears during work.
-  - Three taps max from the room to working.
-  - A job fits in about 15 minutes and **autosaves mid-job**.
-  - **Equipment unlocks job types, never practice.** The training sim and review are always free.
+## 4. What to do next, in order (details: `docs/ROADMAP.md`)
+1. **Jake decides the Items catalog** (1a).
+2. **Upgrade the live Sheet** to schema 0.3.0 (`sheet/UPGRADE-LIVE-SHEET.md`; every write asks Jake first).
+3. **Deploy the feed** (`apps-script/INSTALL.md`), then `python3 build.py --feed-url <the /exec URL>`, and verify on Google's servers.
+4. **A real-iPad Safari playthrough** (Jake), and fix what breaks.
+5. Save code, sticky graph in portrait, mentor text into the Sheet, teacher release per unit.
+6. The investigation loop: job templates (real replay), Plan-the-test, Recommendation (CER), then Build mode for bar graphs and phase diagrams.
+7. Content by unit with Hanson (`/new-case`). Later: Firestore (Rules 10 and 11).
 
-## 5b. Firestore (later, after the game and space work)
-Jake wants Firestore eventually. **Build for it now:**
-- **All progress lives in ONE versioned object.**
-- **All reads and writes go through ONE storage adapter** (`LFH.store.load()` / `LFH.store.save()`). Today it wraps localStorage. Later it swaps to Firestore with no other code changes.
-- Never write localStorage directly anywhere else.
+## 5. Open items by person
+**Jake:** decide Items; say "go" on the Sheet upgrade; deploy the feed (can the tertiary account deploy a web app as "Anyone"? and does the district filter allow `script.google.com` and `*.github.io`?); one real-iPad playthrough; choose a license before publishing the repo publicly; confirm the embedded content snapshot is acceptable under Rule 9 as an *explicit offline cache* of the live feed (my reading: yes; overrule if not).
+**Hanson:** play the preview, ideally with a few students; rule on the real-water diagram disagreeing with her worksheet key, on the sample data, and on "dissolves" vs "reacts"; is 7 to 8 questions per case right; which unit first.
 
-When Firestore lands, it brings:
-- **COPPA/TN privacy work.** Reuse the TTB compliance docs and consent tracking.
-- **Rule 11.** A teacher view of funds, stars, or progress must read the same record through proven-identical readers.
-- **Rule 10 harness first.**
-- **The save file** may then be retired, or kept as an offline backup.
+## 6. Where things are
+`CLAUDE.md` (rules and commands) · `docs/ARCHITECTURE.md` (engine API, Sheet schema, tests) · `docs/DECISIONS.md` (25 decisions, with costs) · `docs/ROADMAP.md` (backlog with acceptance criteria) · `docs/CONTENT-GUIDE.md` (writing cases) · `docs/CLIENT-BRIEF.md` (Hanson's words, verbatim) · `docs/PLAYTEST-LOG.md` · `docs/ITEMS-CONFLICT.md` · `docs/PROVENANCE.md` · `docs/START-HERE.md` · `sheet/` (seed workbook + upgrade runbook) · `apps-script/` (generated script + `INSTALL.md`) · `dev/` (tests and tools) · `incoming/` (drop zone).
 
-## 6. Lab space: BUILT in v0.3.0 (the separate conversation is no longer needed)
-- **Status:** built and merged in v0.3.0. `LAB_BRIEF.md` and the kickoff folder are retired.
-- **What's in the game now:**
-  - Lab name word builder on first run.
-  - **Room home screen** with tappable Laptop and Workbench hotspots plus labeled buttons.
-  - **Decorate mode:** faded ghosts with price tags on empty slots; tap one to shop that slot.
-  - **Laptop apps:**
-    - Inbox: mentor welcome, job offers, 🔒 teasers, client replies with pay. Phone-style on narrow screens.
-    - Supply shop: 22 items in 5 sections, with buttons that say why you can't buy yet.
-    - Training sim: the old Calibration Bay.
-    - Ledger: funds, rep, rank, jobs table, rename, reset, and a preview-only +$100.
-  - **The bench runs the existing case flow**, with autosave on every step and resume after a reload.
-  - **Pay** goes to funds, and a reply email arrives.
-  - The pet hops and speaks on return; a toast shows if there's no pet.
-- **Rules live in the engine and are Node-tested:** `LFH.payout`, `LFH.jobs`, `LFH.shopState` / `LFH.buy`, `LFH.migrate`, `LFH.validateArt`, `LFH.SLOT_NEEDS` (shelf-top needs a shelf).
-- **Storage adapter:** `LFH.store.load()` / `.save()` (section 5b) is the ONLY code that touches localStorage.
-  - Key `lfh.progress`; v1 saves migrate.
-  - Progress object: `{ v: 2, labName, funds, owned, placed, cases, bayCorrect, bayBest, inbox: { read, arrived, seq }, history[], activeJob }`.
-- **Room art:** `dev/art/bake.py` renders `bake.html` (layout, slots, homemade equipment) to trimmed PNG layers plus a manifest. `dev/art/embed_art.py` swaps the art into `index.html`.
-  - The layout lives in `bake.html`. Slot names there must match the Items tab (`validateArt` enforces this).
-  - Starter layers are slot `fixed`: desk, laptop, chair, bench, starter glassware.
-  - Paint = base layers `base-lavender` / `base-mint` / `base-sky`.
-- **Original design notes (still accurate):**
-- **Art pipeline (proven):**
-  - Kenney **CC0 3D models**, from the GitHub mirror `Hidencod/tge-assets`, which the sandbox can download: Furniture Kit, Space Kit, Cube Pets, and Graveyard Kit (a Frankenstein theme pack).
-  - The missing lab gear (beaker, flask, tube rack, microscope) is built from primitives in the same low-poly style.
-  - **One locked isometric camera plus one lighting rig** makes everything match with no hand-curation.
-  - Recolors are code. Posters can be little data graphs.
-- **Recommended build:** bake each item, alone in its slot through the locked camera, to a transparent PNG. The PNGs stack with no anchor math, so the iPad just layers images and needs no WebGL.
-- **Slots, not free placement.**
-- **The merge contract, as built:**
-  - Module `LabRoom.mount(el, { state, items, onChange })` in a `<script id="lab">` block.
-  - Lab state `{ funds, owned, placed, paint }` inside `lfh.progress`.
-  - New Sheet tab **Items**: `ItemID · Name · Slot · Price · Kind · Unlocks · Rank required · Sprite · Description`.
-
-## 6a. Save file: BUILT in v0.4.0 (Minard)
-- **Where:** Ledger → *Back up your lab* (Save / Load, plus "Last backup: today / 3 days ago / never"). The first-run name screen also has *Load my lab from a backup file*, because a wiped iPad lands there first.
-- **Save:** on iPad it opens the **share sheet** (`navigator.share` with a file), where the student picks *Save to Files → Google Drive* or the Drive app. Anywhere the share sheet can't take files, it **downloads** instead. "Last backup" only updates when the save goes through (a cancelled share sheet doesn't count).
-- **Load:** the file picker (`accept=.json`). The game shows what's in the file (lab name, funds, jobs done, backup date) and, if this device already has a lab, says plainly that it will be **replaced**. Then it confirms.
-- **File:** `<LabName>-lab-backup-YYYY-MM-DD.json` = `{ "lab-for-hire-save": 1, game, savedAt, lab, check, progress }`. `progress` is the whole progress object (including a mid-job `activeJob`) plus `backedUpAt`.
-- **Refused files, each with a kid-readable reason:** not a save, hand-edited or damaged (FNV-1a checksum over `progress`), from a newer game version, truncated. The checksum is a speed bump against editing your funds, not security.
-- **Rule 9:** the file is a snapshot, not a second live record. Loading **replaces** the device's progress through `LFH.store` and never merges, so there is still exactly one record the game reads.
-- **Engine:** `LFH.exportSave`, `LFH.importSave`, `LFH.checksum`, `LFH.saveSummary`, `LFH.hasProgress`, `LFH.backupAge`. New progress field: `backedUpAt` (still `v: 2`; `migrate` fills it in for old saves).
-- **Proof (Rule 10 style):** `play.py` takes the lab the full five-job loop just built, saves it through the real button, wipes `localStorage`, reloads, and is refused an edited copy, then restores from the real file and asserts `labName, funds, owned, placed, cases, history, inbox, bayCorrect, bayBest` are identical, and the cat is still in the room. A deliberately broken restore (funds zeroed) was confirmed to **fail** this harness before shipping.
-- **The claude.ai preview link can't save files** (artifact pages block downloads and file sharing), and it still shows v0.3.0. Test the save file on the GitHub Pages URL.
-- **Not tested:** the iPad share sheet and the Drive file picker themselves. Headless Chromium has no share sheet, so the harness exercises the download fallback. This is part of Jake's real-iPad check (section 8).
-
-## 6b. Cold Pack job template: BUILT in v0.5.0 (Minard)
-- **The flow** (all inside the existing question/grading/side-mission machinery, so branching works everywhere):
-  1. **Plan the test** (Step 1): the left panel shows the lab setup (one cup per substance) and **"Your plan so far,"** which fills in as decisions are made. No data is shown yet.
-  2. **Run the test** (Step 2): the graph draws in, with 4 substances plus a **plain-water control** (a grey line with no markers). Each point is the average of 3 trials.
-  3. **Analyze** (Step 3): read a value, trend, compare to the control, the opposite pack, and "which meet both rules" (always last). Coach's rules stay pinned on screen.
-  4. **Recommendation** (Step 4): **Claim** (MC), **Evidence** (select all), **Reasoning** (MC), with a Claim · Evidence · Reasoning step bar.
-- **First play = Hanson's example, exactly:** her substances and prices, below 10°C at 2 and 8 min, urea wins on cost. 4 plan + 4 analyze + 3 CER = 11 items. Her old CP-01 (urea at 4 min = 7°C) and CP-04/CP-05 keys come back out of the generator unchanged.
-- **Later plays** are 2 plan + 3 analyze + 3 CER = 8 items, with new numbers every time.
-- **The client answers the recommendation:**
-  - **Strong** (claim right the first try, and evidence + reasoning needed at most one retry): full pay, a thank-you, and a **sequel** with new rules. The order is hot packs, then longer bus rides (4 and 10 min), colder (7–9°C), new prices, hot packs again…
-  - **Weak:** partial pay (base capped at 80%; side missions still pay +$5 each) and a **follow-up** ("Double-Check the Cold Packs") with a fresh batch of data.
-  - Either way, new data pays full price, never the 25% replay rate. One open offer per template, stored in `P.offers[caseId] = { n, variant, seed, kind }`; it shows in the inbox as a job email.
-- **Model:** `T(t) = T0 + k·D·shape(td, tw, t)`, a fast dissolve that fades back to room temperature. It is fitted to Hanson's v0.3.0 sample data: exact for ammonium nitrate, urea, and sodium chloride; calcium chloride within 1°C (her 38/44 at 2/4 min isn't reachable by a smooth curve). Ammonium chloride, potassium chloride, and magnesium sulfate are sample values in the same style.
-- **Per play:** room temperature 20–24°C, batch strength ±10%, ±0.8°C trial noise (3 trials averaged), supplier prices within ranges, and the rule line and check times. The generator **re-rolls** until the job is fair: 2–3 substances pass, at least one fails, nothing within 2°C of the rule line at check times, a clear cheapest passer ($0.10+ gap), and everything on the 0–50°C graph. Worst case is about 60 re-rolls. The fallback to the classic data has never fired in testing.
-- **Resume:** the offer `{ n, variant, seed }` rebuilds the identical job. `activeJob.offer` is saved, and a reload on the Run screen comes back to the Run screen.
-- **Where things live (Single Source of Truth):** the template's text, model, and variants live **only** in the engine (`LFH.TEMPLATES`, `LFH.instance`). Cold Pack's case row and its side-mission tags and check questions live **only** in the Sheet. `LFH.validateTemplates` checks that every tag the template can hand out exists in the Sheet (and Archive tags have checks); it also runs in teacher preview.
-- **Proof:** `test_engine.js` checks the classic play against Hanson's data, then checks **2,000 generated jobs** against an independent answer-key checker that reads only the student-facing graph points and cost-table text. It also covers: read-a-value keys and evidence-statement numbers against the graph, a "false" evidence statement that must really be false, believable temperatures, the control at room temperature, tags existing, explanations as statements, determinism, and real variety (winners, rule lines, time pairs). Two deliberate mutations (crowning the most expensive passer; graph points off by one reading) were confirmed to fail it: 2,001 and 6,977 failures. `play.py` drives the classic job (forced plan mistake → PLAN Archive mission → Remember strip; reload at the Run step) and a deliberately weak hot-pack sequel → follow-up #3.
-- **Not built:** the funds-cost twist on running tests; templates for other cases; moving template text into the Sheet (only if Hanson ever wants to edit it); a dedicated plan-stage drill (plan errors use Archive missions).
-
-## 7. Recommended session order (main game)
-0. **Done in v0.3.0:** the storage adapter, funds, shop, lab shell, and merged room (old items 2 and 4).
-1. **Apps Script feed.**
-   - `doGet` on the Sheet returns this same JSON shape.
-   - Port `LFH.validate` verbatim (it's plain JS) plus a "Check my case" menu.
-   - The game fetches the feed on GitHub Pages and falls back to the snapshot.
-   - The claude.ai artifact can't fetch external URLs (CSP), so the preview stays snapshot-only.
-   - After this, Hanson edits the Sheet and the game updates with no re-upload.
-2. **Done in v0.4.0:** the save file (section 6a). Storage adapter, funds, and store were already done in v0.3.0.
-3. **Done in v0.5.0:** the job template engine, Plan stage, and Recommendation (CER) stage, with Cold Pack rebuilt as the first template (section 6b). **Next template candidates:** the 7.ETS1.1 brace design and 7.LS1.4 greenhouse teasers fit the same plan → run → recommend shape.
-4. **Merge the lab-space module** once its conversation delivers.
-5. **Content packs by unit with Hanson:** she writes cases and misconceptions in the Sheet, and the engine stays ours.
-
-## 7a. Known gaps in v0.5.0 (honest list)
-- **Hanson is overwhelmed: ease of use is priority one.** Build from her own examples and ask her only yes/no questions. The Apps Script feed waits until she's ready to author.
-- The first Cold Pack play is 11 items (plan 4 + analyze 4 + CER 3), up from 7. Watch whether it fits about 15 minutes; dropping the trend question is the easy trim.
-- The save file's **iPad share sheet + Drive picker** path is untested on real hardware (section 6a).
-- Students who never tap *Save my lab* still lose their lab when an iPad dies. A gentle nudge (e.g., after every 2nd paid job, if the last backup is older than a week) would help; not built.
-- Non-template cases still replay the same data at 25% pay.
-- **The mentor's welcome email text lives in code (`mailBody`)**, not the Sheet. It should move to a Messages tab when the feed lands.
-- **Teacher release per unit** isn't built. Jobs release by path order, and Teasers always show.
-- The Bounce Lab gate means the 5th job needs an $80 purchase. Watch whether that feels like a goal or a wall.
-- Everything is tested in Chromium (desktop, 810×1080 iPad portrait, dark mode). **Real-iPad Safari is still untested.**
-
-## 8. Open items waiting on people
-- **Jake:**
-  - **Drive check on a student iPad** (blocks trusting the save file): in Safari, open the game, Ledger → *Save my lab*. Does the share sheet offer *Save to Files → Google Drive* (or the Drive app)? Then *Load my lab*: does the picker show Google Drive? If Drive is missing, the Drive app needs installing/signing in (a tech-office question).
-  - Re-import `LabForHire_Content_v0.4.0.xlsx` (replaces the v0.3.0 request) into the SAME Sheet (File → Import → Upload → *Replace spreadsheet*), then confirm the dropdowns survived.
-  - **One real-iPad Safari playthrough.** Everything so far is emulated Chromium, not WebKit.
-  - **Rule 9 ruling:** is the embedded content snapshot OK as a generated build artifact until the feed lands? Playfair's and Minard's reading: yes. Jake asked for context Oct 12 and was told this is only needed when the feed is built. (Jake didn't recognize "Rule 9" by number: say "Single Source of Truth, your rule" when raising it.)
-  - **Apps Script deploy:** can district Workspace deploy as "Anyone" for home access, or is it domain-only?
-  - Check that the district content filter allows `*.github.io` (Google Fonts is optional; the game falls back).
-- **Hanson:**
-  - Play the preview, ideally with a few students.
-  - Rulings needed: the real water diagram disagreeing with her worksheet key; sample data; "dissolves" vs "reacts."
-  - Case length (7–8 questions): OK? (Cold Pack's first play is now 11 short items.)
-  - **Yes/no checks on Cold Pack** (play it once in the preview): Do the plan questions match how she teaches fair tests? Is "a weak recommendation pays at most 80%" OK? Are hot packs a good first sequel?
-  - Which unit to build first.
-
-## 9. Content provenance (tell Hanson)
-- **MOVIN-MOLECULES:** her Lesson 5 data points; original questions.
-- **COLD-PACK:** her example, now a job template. **Sample data** from a model fitted to her numbers (exact for 3 of 4 substances; calcium chloride within 1°C). Coldest ≠ best: urea wins on cost on the first play. Sequels use sample values for ammonium chloride, potassium chloride, and magnesium sulfate. Their direction matches real dissolving (cold, cold, warm), but the sizes are illustrative.
-- **PHASE-PROBE:** **real water data**. Her worksheet's phase table was never available. On real water, her worksheet Q1 has two right answers.
-- **DRY-ICE:** **real CO₂ data**, rounded, on a log axis. It fills the unit test's log-scale gap.
-- **BOUNCE-LAB:** sample data following the gas law.
-- **No unit-test items are used**, even paraphrased (test security plus copyright). STEMscopes worksheet items are a blueprint only.
-- Unit test Table 2 has a physically inconsistent "vacuum" at 120 kPa, above atmospheric. Not reused.
-
-## 10. Architecture (for the next builder)
-- **`index.html` has three script blocks:**
-  - `lfh-content`: a generated JSON snapshot. Never hand-edit it; `dev/content/embed_content.py` replaces it.
-  - `engine` (`LFH`): pure logic, Node-testable. Includes the job-template section (`LFH.TEMPLATES`, `instance`, `nextOffer`, `recommendationStrong`, `validateTemplates`).
-  - `app-js`: UI and SVG rendering.
-- **`LFH.phaseModel` is the ONE state function.** It paints the phase regions and it is what the tests check the answer keys against.
-- **Drills:**
-  - All go through `LFH.makeDrill`, which re-rolls bad draws (duplicates, NaN, unbelievable values).
-  - Drill contexts declare their allowed trend directions, realistic y-steps, and ceilings.
-- **iPad rules:**
-  - No `color-mix()`.
-  - `touch-action: manipulation`.
-  - Test at 1366×768, 810/1080 (iPad), 390 (phone), and dark mode.
-  - Portrait iPad stacks the graph above the question, so students scroll. **A sticky graph for portrait is a to-do.**
-- **Tests (all green at handoff):**
-  - `node dev/tests/test_engine.js index.html <content.json>`: validation, phase keys, grading, build diagnosis, playtest regressions, 300 rolls × 13 drills, **plus** payout math, save migration, job release and gating, shop rules, art-to-Items agreement, the save file, and the **Cold Pack template harness** (section 6b).
-  - `python3 dev/tests/play.py index.html`: **the whole loop**, including Cold Pack as a template (section 6b) and ending with the backup → wipe → restore proof (section 6a). It names the lab, then for every job: inbox, accept, build/answer, paid, celebrate. Funds must equal before + paid. Bounce Lab must stay locked until the gauge is bought. A mid-build reload must resume at point 3. Plus an Archive detour, a reply per job, and a pet appearing in the room. 0 JS errors expected.
-- **Template jobs don't render like Sheet cases:** questions with a `stage` go through `templateQuestion()` (plan panel, rules card, CER bar); the Run step is screen `run`. A series with `control: true` draws as the grey markerless control line. The legend wraps.
-- **Content update path until the feed exists:** export the Sheet → `dev/content/export_json.py` → `dev/content/embed_content.py` → `bash dev/check.sh` → upload.
-- **Art update path:** edit `dev/art/bake.html` → `python3 dev/art/bake.py` → `python3 dev/art/embed_art.py index.html dev/art/sprites` → `bash dev/check.sh`. Add matching Items rows if there's new art.
+## 7. Session log
+- **Playfair** (claude.ai): built the game, the lab shell, the Sheet feed; found the seed bug and the Items conflict; moved the project into this repo.

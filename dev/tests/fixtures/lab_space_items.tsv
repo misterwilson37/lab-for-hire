@@ -1,0 +1,39 @@
+desk	Starter Desk	bench	0	Cosmetic		0	desk
+chair-desk	Desk Chair	chair	0	Cosmetic		0	chairdesk
+shelf-open	Open Shelf	shelf	0	Cosmetic		0	bookcaseopen
+plant-potted	Potted Plant	plant	0	Cosmetic		0	pottedplant
+beaker	Beaker	bench-item	0	Equipment		0	beaker
+flask	Flask	bench-item	0	Equipment		0	flask
+poster-line	Line Graph Poster	poster	0	Cosmetic		0	poster-line
+wall-white	Lab White	paint-wall	0	Cosmetic		0	#F7F5FA
+floor-lilac	Lilac Gray	paint-floor	0	Cosmetic		0	#D8D3E3
+trim-purple	Purple	paint-trim	0	Cosmetic		0	#6547CF
+tiles-plain	Plain	paint-tiles	0	Cosmetic		0	none
+microscope	Microscope	bench-item	150	Equipment	cells	0	microscope
+grow-cabinet	Grow Cabinet	machine	200	Equipment	plant-growth	1	grow-cabinet
+materials-tester	Materials Tester	machine	250	Equipment	materials	1	materials-tester
+calorimeter	Calorimeter	bench-item	200	Equipment	reactions	2	calorimeter
+tube-rack	Test Tube Rack	bench-item	40	Equipment		0	tube-rack
+lab-bench	Lab Bench	bench	180	Cosmetic		1	lab-bench
+generator	Power Generator	machine	120	Cosmetic		0	generator
+rug-round	Round Rug	rug	40	Cosmetic		0	ruground
+rug-long	Long Rug	rug	45	Cosmetic		0	rugrectangle
+poster-bars	Bar Graph Poster	poster	30	Cosmetic		0	poster-bars
+poster-scatter	Scatter Plot Poster	poster	30	Cosmetic		1	poster-scatter
+shelf-closed	Bookcase	shelf	60	Cosmetic		0	bookcaseclosed
+chair-cushion	Cushion Chair	chair	50	Cosmetic		0	chaircushion
+books	Stack of Books	shelf-top	20	Cosmetic		0	books
+pet-cat	Lab Cat	pet	80	Cosmetic		0	pet-cat
+pet-dog	Lab Dog	pet	80	Cosmetic		0	pet-dog
+pet-bunny	Lab Bunny	pet	80	Cosmetic		1	pet-bunny
+wall-lavender	Lavender	paint-wall	40	Cosmetic		0	#F3EEFF
+wall-mint	Mint	paint-wall	40	Cosmetic		0	#E1F3EA
+floor-periwinkle	Periwinkle	paint-floor	40	Cosmetic		0	#C9D6F6
+trim-teal	Teal	paint-trim	25	Cosmetic		0	#1F8FBF
+tiles-checker	Checker	paint-tiles	50	Cosmetic		0	checker
+tiles-stripes	Stripes	paint-tiles	50	Cosmetic		0	stripes
+work-table	Work Table	table	120	Cosmetic		0	work-table
+wall-any	Any Color Walls	paint-wall	300	Cosmetic		0	any
+floor-any	Any Color Floor	paint-floor	300	Cosmetic		0	any
+trim-any	Any Color Trim	paint-trim	200	Cosmetic		0	any
+poster-jackson	Mary Jackson Poster	poster	75	Cosmetic		0	portrait-jackson

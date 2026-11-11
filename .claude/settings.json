@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash dev/check.sh)",
+      "Bash(bash dev/setup.sh)",
+      "Bash(python3 build.py)",
+      "Bash(python3 build.py --check)",
+      "Bash(node dev/tests/*)",
+      "Bash(python3 dev/tests/*)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "ask": [
+      "mcp__Google_Sheets__update_values",
+      "mcp__Google_Sheets__append_values",
+      "mcp__Google_Sheets__batch_clear_values",
+      "mcp__Google_Sheets__update_formulas",
+      "mcp__Google_Sheets__update_spreadsheet",
+      "mcp__Google_Sheets__insert_dimension",
+      "mcp__Google_Sheets__copy_sheet_to_another_spreadsheet",
+      "mcp__sheets__update_values",
+      "mcp__sheets__append_values",
+      "mcp__sheets__batch_clear_values",
+      "mcp__sheets__update_formulas",
+      "mcp__sheets__update_spreadsheet",
+      "mcp__sheets__insert_dimension",
+      "mcp__sheets__copy_sheet_to_another_spreadsheet",
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect_generated.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

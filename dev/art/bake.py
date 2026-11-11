@@ -1,5 +1,5 @@
 """Bake the Lab for Hire room: every layer rendered alone through ONE locked camera + ONE light rig,
-trimmed to its pixels, plus manifest.json with positions. Then run: python3 dev/art/embed_art.py index.html dev/art/sprites
+trimmed to its pixels, plus manifest.json with positions. Then run: python3 dev/art/embed_art.py
 Needs: node/npm (three.js), Playwright Chromium. Models come from the Kenney CC0 mirror on GitHub."""
 import os, subprocess, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__)); os.chdir(HERE)

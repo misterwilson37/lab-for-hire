@@ -1,102 +1,45 @@
 # Lab for Hire
 
-A science data-reading game for 7th grade. Students run a lab for hire. Clients bring problems, and the evidence is in graphs and tables.
+A game that teaches 7th graders to read tables, graphs, and phase diagrams. Students run a "lab for hire": clients email jobs, students do the science at a workbench, get paid, and spend the money on a lab that is theirs. Wrong answers are *diagnosed*, not just marked wrong: a graph-reading mistake sends the student to practice on a freshly generated graph; a science mistake sends them to a short reteach and a new question. There is no timer anywhere.
 
-Wrong answers are diagnosed, not just marked wrong:
-- A graph-**reading** error sends the student to **Calibration Bay** for practice on a freshly generated graph.
-- A **science** error sends them to **the Archive** for a reteach and a new question.
+Built for Hanson's science classes at Jake Wilson's school. One static page, content in a Google Sheet, no accounts, no student data.
 
-After either side mission, the student returns and retries. There is no timer anywhere.
+## Play it
+Open `index.html` in a browser. Add `?preview=1` to release every job, show drafts, and see where the content came from. Progress is saved in the browser only.
 
-## How it plays (v0.5.0)
-1. A student names their lab.
-2. They tap the **laptop** to read job emails from clients.
-3. They accept a job and do the science at the **workbench**: build graphs, read data, and answer, with side missions when they're stuck.
-4. They get paid.
-5. They spend the money in the **Supply shop**. Equipment unlocks new jobs; decor, pets, and paint make the lab theirs.
-6. **Decorate mode** shows every empty spot and its price.
-7. **Job templates (Cold Pack):** the client keeps coming back. Each job is **Plan** a fair test → **Run** it → **Analyze** the data → **Recommend** (claim, evidence, reasoning). Strong recommendations bring a sequel with new rules (hot packs, longer bus rides, tighter limits, new prices). Weak ones bring a follow-up with a fresh batch of data. Every play has new numbers, so it pays full price.
-8. **Backups:** Ledger → *Save my lab* puts a backup file in the student's Google Drive. On a new or wiped iPad, *Load my lab* (on the first screen, or in the Ledger) brings the lab back.
+## For students
+Deploy `index.html` (GitHub Pages) and share the link in Google Classroom. That one file is the whole game.
 
-## What's in this folder
-- `index.html`: **the game.** This is the only file to upload.
-- `LabForHire_Content_v0.4.0.xlsx`: the content seed for the Google Sheet.
-- `HANDOFF.md`: where the project stands, for the next build session.
-- `README.md`: this file.
-- `dev/`: builder tools and tests. You never need to open it; see `dev/README.md`.
+## For teachers (content)
+Content lives in a Google Sheet. After the one-time setup in `apps-script/INSTALL.md`, edit the Sheet and students get it within about a minute. The Sheet's **Lab for Hire > Check my content** menu says what students will see and why anything is held back. Writing guide: `docs/CONTENT-GUIDE.md`.
 
-## Deploy
-- **GitHub Pages:** upload `index.html`. That's the whole game, with no other files needed. Share the URL in Google Classroom.
-- **Teacher preview:** add `?preview=1` to the URL. This shows drafts, unlocks every case, and runs the content check.
-- **Progress** is saved in each student's own browser (`localStorage`). There are no logins and no student data. Clearing browser data resets progress, unless the student saved a backup file.
-- **Backup files** (`<LabName>-lab-backup-<date>.json`) hold only game progress: the word-builder lab name, funds, items, stars, and emails read. No names, IDs, or accounts.
-  - **Saving on iPad:** Ledger → *Save my lab* opens the share sheet. Pick *Save to Files* → *Google Drive*, or the Drive app. (On a computer, it downloads instead.)
-  - **Loading:** *Load my lab* opens the file picker; choose the file from Google Drive. The game shows what's in the file and asks before replacing the lab on this device.
-  - Loading **replaces** the device's lab; it never merges two labs. A file that was hand-edited or damaged is refused with a plain message.
-  - Students need the Google Drive app installed and signed in for Drive to appear in the share sheet and file picker.
+While you edit during class: one bad case is held back and the rest keep working; if the whole Sheet is unreadable the game keeps its last good copy; students mid-job keep their place; drafts never reach students.
 
-## Content lives in the Google Sheet
-Content comes from the Sheet (schema v0.4.0). Its tabs are:
-- **Cases:** one row per case.
-- **Visuals:** graphs and tables; set **Student builds it?** = Yes on a line graph to turn on Build mode.
-- **Data:** the plotted points.
-- **Tables:** the table cells.
-- **Questions**
-- **Options:** one row per choice. A wrong choice needs an **Error tag**.
-- **SideMissions:** one row per tag.
-- **Lists:** dropdown vocabulary. Don't edit it.
+## For developers
+```
+bash dev/setup.sh        one-time: node, python3, openpyxl, playwright + Chromium
+python3 build.py         rebuild index.html and apps-script/LabForHire.gs after editing src/
+bash dev/check.sh        run all six checks
+```
+**Edit `src/`; never hand-edit generated files** (`index.html`, `apps-script/LabForHire.gs`, `src/content.json`, `src/art.json`).
 
-The Sheet's *Start Here* tab explains every rule.
+```
+src/            sources: shell.html, engine.js (all game logic), app.js (UI), sheet-script.gs, config.json
+                + generated inputs: content.json (offline copy of the Sheet), art.json (baked room)
+index.html      GENERATED game (committed: GitHub Pages serves it)
+apps-script/    GENERATED Sheet script, plus INSTALL.md for the ten-minute setup
+sheet/          seed workbook (a one-time import) and the live-Sheet upgrade runbook
+docs/           architecture, decisions, roadmap, content guide, client brief, playtest log, provenance
+dev/            tests (engine, Sheet reader, browser playthroughs) and tools (content refresh, art baking)
+.claude/        Claude Code settings, a guard hook, slash commands
+incoming/       drop zone for files from outside (git-ignored)
+```
 
-**One exception: job templates.** Cold Pack has a Cases row (title, client, pitch, win message, pay) and its side-mission tags live in SideMissions, but its graphs, data, and questions are generated by the engine (`LFH.TEMPLATES` / `LFH.instance` in `index.html`). There are deliberately **no** Cold Pack rows in Visuals, Data, Tables, Questions, or Options: the model is the one source of that data.
-- First play = Hanson's original example: her four substances, her prices, "below 10°C at 2 and 8 minutes," urea wins on cost. The model was fitted to her sample data and reproduces it exactly for ammonium nitrate, urea, and sodium chloride, and within 1°C for calcium chloride.
-- Later plays come from `{ n, variant, seed }` offers stored in the student's progress. The same offer always rebuilds the same job, which is how a reload resumes mid-job.
-- To change wording, rules, substances, or prices, edit the template block in the engine and run `bash dev/check.sh`. The template harness checks 2,000 generated jobs against their own graphs.
+Point the game at the live Sheet: `python3 build.py --feed-url "https://script.google.com/macros/s/.../exec"`.
+Refresh the built-in offline copy from the live feed: `python3 dev/content/embed_content.py "<feed URL>"`.
+Re-bake the room art: edit `dev/art/bake.html`, then `python3 dev/art/bake.py` and `python3 dev/art/embed_art.py`.
 
-Question types:
-- Multiple choice
-- Pick two
-- Pick three
-- Select all that apply
+**Start with `HANDOFF.md`** (state, blockers, next steps) and `CLAUDE.md` (rules for working on this). Design reasoning: `docs/DECISIONS.md`. Backlog: `docs/ROADMAP.md`.
 
-Visual types:
-- Line graph (linear or log axes, multi-series)
-- Bar graph
-- Data table (text allowed)
-- Phase diagram (Melting / Boiling / Sublimation lines; regions are computed)
-
-## Updating the game's content (until the live feed exists)
-1. Export the Sheet as .xlsx and put it next to `index.html`.
-2. `python3 dev/content/export_json.py LabForHire_Content_vX.Y.Z.xlsx /tmp/content.json`
-3. `python3 dev/content/embed_content.py index.html /tmp/content.json`
-4. `bash dev/check.sh` must end with **ALL CHECKS PASSED**. It needs Node and Playwright. If a phase diagram's data changed, add its answer-key checkpoints to `dev/tests/test_engine.js` first.
-5. Upload `index.html`.
-
-## Code layout (inside index.html)
-- `<script id="lfh-content">` holds the content JSON (generated; never hand-edit).
-- `<script id="lfh-art">` holds the baked room art: PNG layers plus positions (generated by `dev/art/`; never hand-edit).
-- `<script id="engine">` holds `LFH`, the pure logic:
-  - content model;
-  - axes (linear and log);
-  - `phaseModel`, which is used by both the renderer and the answer-key tests;
-  - `grade` and `validate`;
-  - build-mode checks;
-  - 13 drill generators behind `makeDrill`, which re-rolls any bad random draw;
-  - economy and progress: `payout`, `jobs`, `shopState`/`buy`, `migrate`;
-  - save files: `exportSave` / `importSave` (format check, checksum, version check, then `migrate`);
-  - job templates: `instance` (seeded model → visuals + questions), `recommendationStrong`, `nextOffer`, `validateTemplates`.
-- `<script id="app-js">` holds the UI (side missions run as "Watch one", then "Your turn"). `LFH.store` here is the only code that touches `localStorage`; the save-file buttons go through it too.
-  - SVG renderer;
-  - hub (case path, Calibration Bay, lab shelf);
-  - case flow, Build mode, side missions, report card, free practice.
-
-## Design
-- **Palette:** borrowed from Hanson's lesson decks (pink, violet, sky) on lavender paper.
-  - Calibration Bay is sky blue; the Archive is violet.
-  - Every token is redefined for dark mode.
-- **Type:** Fredoka (display) and Atkinson Hyperlegible (everything students read).
-- **Accessibility:**
-  - Multi-series graphs use marker shapes *and* dash patterns, never color alone.
-  - Keyboard plotting works (arrow keys + Enter).
-  - Visible focus rings.
-  - Reduced motion is respected.
+## Privacy
+No accounts, no tracking, no student data. Progress stays in each browser. The content Sheet and the public feed contain only questions, data, and shop items.

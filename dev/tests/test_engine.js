@@ -1,10 +1,12 @@
-// Headless tests. Usage: node dev/tests/test_engine.js index.html <content.json>   (or just: bash dev/check.sh)
+// Headless tests. Usage: node dev/tests/test_engine.js index.html [content.json]   (or just: bash dev/check.sh)
+// With no content.json, the snapshot embedded in index.html is tested (that is what ships).
 const fs = require("fs"), vm = require("vm");
 const src = fs.readFileSync(process.argv[2], "utf8");
 const code = src.includes("<script") ? src.match(/<script id="engine">([\s\S]*?)<\/script>/)[1] : src;
 const ctx = { console, Math, JSON, Set, Number, String, Object, Array }; ctx.globalThis = ctx; vm.createContext(ctx);
 vm.runInContext(code, ctx);
-const L = ctx.LFH, C = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
+const embedded = src.includes("<script") ? JSON.parse(src.match(/<script id="lfh-content"[^>]*>([\s\S]*?)<\/script>/)[1].replace(/<\\\//g, "</")) : null;
+const L = ctx.LFH, C = process.argv[3] && process.argv[3] !== "-" ? JSON.parse(fs.readFileSync(process.argv[3], "utf8")) : embedded;
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log("FAIL", m); } };
 
 // 1. Content validation
@@ -225,5 +227,68 @@ ok(bad.length === 1, "art validator catches a missing sprite");
   ok(L.recommendationStrong(c.qs, rec(3, 3, 2)) && !L.recommendationStrong(c.qs, rec(2, 3, 3)) && !L.recommendationStrong(c.qs, rec(3, 2, 2)), "strong = claim first try, at most one retry on evidence + reasoning");
   console.log(`  template harness: ${n} generated jobs checked against their own visuals`);
 }
-console.log(fails ? `${fails} FAILURES` : "ALL TESTS PASSED");
-process.exit(fails ? 1 : 0);
+// 10. Content: vocabulary, quarantine, art fitting, the chooser, and saved progress meeting changed content
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const ART = artBlock ? JSON.parse(artBlock[1]) : null;
+{ const V = L.vocab();
+  ok(V.Drill.length === Object.keys(L.drills).length && V.Drill.length === 13, "vocabulary: the Drill list IS the engine's drills");
+  ok(V.Rank.join() === L.RANKS.map((r) => r.name).join(), "vocabulary: the Rank list IS the engine's ranks");
+  ok(L.checkLists({ Status: ["Draft", "Live"] }).some((w) => /missing 'Teaser'/.test(w)), "checkLists notices a dropdown that lacks a value the game uses");
+  ok(L.checkLists(Object.assign(clone(V), { Skill: V.Skill.concat(["Vibes"]) })).some((w) => /'Vibes'/.test(w)), "checkLists notices a value the game doesn't understand");
+  ok(L.checkLists(clone(V)).length === 0, "checkLists is silent when the Sheet matches"); }
+{ const D = clone(C); D.questions.filter((q) => q.role === "Check" && q.forTag === "SCI-KE-TEMP").forEach((q) => (q.role = "Nope"));
+  const q = L.quarantine(D);   // removing a tag's only Check questions must hold exactly the cases that use that tag
+  ok(Object.keys(q.held).sort().join() === "DRY-ICE,MOVIN-MOLECULES,PHASE-PROBE" && /Archive tag has no Check question/.test(q.held["DRY-ICE"][0]), "cascade: no Check question for SCI-KE-TEMP holds exactly the three cases that use it: " + Object.keys(q.held).sort());
+  ok(q.C.cases.some((c) => c.id === "COLD-PACK") && q.errors.length === 0, "...and the other cases carry on"); }
+if (ART) {
+  { const D = clone(C); D.items.push({ id: "ghost", name: "Ghost", slot: "pet", price: 10, kind: "Pet", unlocks: "", rank: "", sprite: "no-such-art", desc: "" });
+    D.items.push({ id: "wrongslot", name: "Wrong", slot: "pet", price: 10, kind: "Pet", unlocks: "", rank: "", sprite: "microscope", desc: "" });
+    D.cases.find((c) => c.id === "BOUNCE-LAB").requires = "ghost";
+    const p = L.prepare(D, ART);
+    ok(!p.C.items.some((i) => i.id === "ghost" || i.id === "wrongslot"), "fitToArt: items without matching art never reach the shop");
+    ok(p.held["BOUNCE-LAB"] && !p.C.cases.some((c) => c.id === "BOUNCE-LAB"), "fitToArt: a job needing an art-less item is held back");
+    ok(p.warnings.some((w) => /ghost.*no 'no-such-art'/.test(w)) && p.warnings.some((w) => /wrongslot.*slot 'pet' but the art sits in 'bench-1'/.test(w)), "fitToArt: says why, in plain words"); }
+  { const p = L.prepare(C, ART); ok(Object.keys(p.held).length === 0 && p.errors.length === 0 && p.warnings.length === 0 && p.C.cases.length === C.cases.length, "the shipped snapshot prepares with nothing held or warned"); }
+}
+{ const M = L.load(C);
+  const P = Object.assign(L.freshProgress(), { placed: { room: "paint-lavender", pet: "pet-gone", "bench-1": "pressure-gauge" }, activeJob: { caseId: "REMOVED-CASE" } });
+  L.sanitizeProgress(P, C);
+  ok(!P.placed.pet && !P.placed["bench-1"] && P.placed.room === "paint-lavender" && !P.activeJob, "sanitizeProgress drops what no longer exists (missing item, wrong slot, removed case's saved job)");
+  const P2 = L.freshProgress(); P2.placed = {}; L.sanitizeProgress(P2, C); ok(P2.placed.room === "paint-lavender", "...and puts the starter paint back if the room has none");
+  const BQ = M.main["BOUNCE-LAB"][0].id;
+  const snap = { caseId: "BOUNCE-LAB", qi: 99, order: { [BQ]: ["Z", "Y"] }, rec: { [BQ]: { tries: 1 }, "OLD-Q": { tries: 3 } }, visited: ["CAL-SCALE", "TAG-GONE"], screen: "question", certified: true };
+  const r = L.reconcileJob(M, snap), qs = M.main["BOUNCE-LAB"];
+  ok(r && r.qi === qs.length - 1 && r.rec[BQ] && !r.rec["OLD-Q"] && r.visited.join() === "CAL-SCALE", "reconcileJob clamps the position, drops stale records, and drops unknown tags");
+  ok(qs.every((q) => r.order[q.id].slice().sort().join() === M.options[q.id].map((o) => o.letter).sort().join()), "reconcileJob re-shuffles any answer order that no longer matches the question's options");
+  { const inst = L.instance("COLD-PACK", { n: 2, variant: "hot", seed: 7 }), M2 = L.load(C); inst.qs.forEach((q) => (M2.options[q.id] = q.options));   // a generated job has no Sheet questions
+    const rt = L.reconcileJob(M2, { caseId: "COLD-PACK", qi: 2, order: {}, rec: { "CPT-1": { tries: 1 } }, visited: ["PLAN-CONTROL"], screen: "run" }, inst.qs);
+    ok(rt && rt.qi === 2 && rt.screen === "run" && rt.rec["CPT-1"] && inst.qs.every((q) => rt.order[q.id].length === q.options.length), "reconcileJob resumes a template job from its generated questions");
+    ok(L.reconcileJob(M2, { caseId: "COLD-PACK", qi: 0 }) === null, "...and without them a template job can't resume as a Sheet case"); }
+  { const D = clone(C); D.tags = D.tags.filter((t) => t.id !== "PLAN-CONTROL"); const q = L.quarantine(D);
+    ok(q.held["COLD-PACK"] && /PLAN-CONTROL/.test(q.held["COLD-PACK"].join(" ")) && q.C.cases.some((c) => c.id === "MOVIN-MOLECULES") && q.errors.length === 0, "a template whose tag is missing from the Sheet is held back; the rest play"); }
+  ok(L.reconcileJob(M, { caseId: "GONE", qi: 0 }) === null && L.reconcileJob(M, null) === null, "a saved job for a case that no longer exists can't resume"); }
+
+const fakeStore = (init) => { const st = { v: init || null, puts: [] }; st.cacheGet = () => st.v; st.cachePut = (v) => { st.v = v; st.puts.push(v); }; return st; };
+const feed = (mut) => { const f = clone(C); f.generated = "2026-10-20T12:00:00Z"; f.cases[0].title = "Live Title"; return mut ? mut(f) || f : f; };
+const BASE = Object.assign(clone(C), { generated: "2026-01-01T00:00:00Z" });   // pinned, so these tests never depend on when the embedded snapshot was last refreshed
+const run = async (o) => { const calls = []; const d = Object.assign({ snapshot: BASE, art: ART, feedUrl: "https://example.test/exec", preview: false, store: fakeStore(), now: 5_000_000, fetchJson: async (u) => { calls.push(u); return feed(); } }, o); const out = await L.content.choose(d); return Object.assign(out, { calls, store: d.store }); };
+(async () => {
+  let r = await run({ feedUrl: "" });                       ok(r.source === "snapshot" && r.calls.length === 0 && r.C.cases[0].title !== "Live Title", "chooser: no feed configured -> the built-in snapshot, no network");
+  r = await run();                                          ok(r.source === "live" && r.C.cases.find((c) => c.id === "MOVIN-MOLECULES").title === "Live Title", "chooser: a good feed is used");
+  ok(/\?v=0\.4$/.test(r.calls[0]) && !/draft/.test(r.calls[0]) && r.store.puts.length === 1 && r.store.puts[0].savedAt === 5_000_000, "...fetched without drafts, and cached with a timestamp");
+  r = await run({ preview: true });                         ok(/include=draft&fresh=1/.test(r.calls[0]) && r.store.puts.length === 0, "chooser: preview asks for drafts, bypasses the server cache, and never caches them");
+  r = await run({ fetchJson: async () => { throw new Error("timed out"); } });  ok(r.source === "snapshot" && /couldn't reach/.test(r.note), "chooser: network failure -> snapshot, with a note");
+  const cached = { savedAt: 1, content: feed() };
+  r = await run({ store: fakeStore(cached), fetchJson: async () => { throw new Error("offline"); } });  ok(r.source === "cache" && r.C.cases[0].title === "Live Title", "chooser: network failure -> the last good copy");
+  r = await run({ store: fakeStore(cached), snapshot: Object.assign(clone(C), { generated: "2026-12-01T00:00:00Z" }), fetchJson: async () => { throw new Error("offline"); } });  ok(r.source === "snapshot", "chooser: a cached copy OLDER than a newer snapshot is ignored");
+  r = await run({ store: fakeStore({ savedAt: 4_950_000, content: feed() }) });  ok(r.source === "cache" && r.calls.length === 0, "chooser: a copy under two minutes old is used without asking the Sheet again");
+  r = await run({ store: fakeStore({ savedAt: 4_950_000, content: feed() }), preview: true });  ok(r.calls.length === 1, "chooser: ...but preview always asks, so teachers see edits at once");
+  r = await run({ fetchJson: async () => feed((f) => { f.schema = "1.0.0"; }) });  ok(r.source === "snapshot" && /schema 1\.0\.0/.test(r.note), "chooser: a feed from a different schema is refused");
+  r = await run({ fetchJson: async () => feed((f) => { f.sheetSchema = "0.2.1"; }) });  ok(r.source === "snapshot" && /needs upgrading/.test(r.note), "chooser: a Sheet on an older schema is refused (jobs would pay $0)");
+  r = await run({ fetchJson: async () => feed((f) => { f.errors = ["The 'Options' tab is missing."]; }) });  ok(r.source === "snapshot" && /Options/.test(r.note), "chooser: a feed that reports blocking errors is refused");
+  r = await run({ fetchJson: async () => ({}) });           ok(r.source === "snapshot" && /isn't a content feed/.test(r.note), "chooser: garbage is refused");
+  r = await run({ fetchJson: async () => feed((f) => { f.options.filter((o) => o.qid === f.questions.find((q) => q.caseId === "BOUNCE-LAB").id).forEach((o) => (o.correct = false)); }) });
+  ok(r.source === "live" && r.held["BOUNCE-LAB"] && r.C.cases.some((c) => c.id === "MOVIN-MOLECULES") && !r.C.cases.some((c) => c.id === "BOUNCE-LAB"), "chooser: a feed with one broken case is USED, minus that case");
+  r = await run({ preview: true, fetchJson: async () => feed((f) => { f.sheetSchema = "0.2.1"; }) });  ok(r.source === "snapshot" && r.feed && r.feed.errors !== undefined, "chooser: in preview a refused feed still reports what was wrong");
+  console.log(fails ? `${fails} FAILURES` : "ALL TESTS PASSED"); process.exit(fails ? 1 : 0);
+})();

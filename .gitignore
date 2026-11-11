@@ -1,0 +1,21 @@
+# build leftovers (regenerate with the dev tools)
+dev/art/models/
+dev/art/node_modules/
+dev/art/sprites/
+dev/art/package.json
+dev/art/package-lock.json
+__pycache__/
+*.pyc
+node_modules/
+
+# personal / local
+CLAUDE.local.md
+.claude/settings.local.json
+.DS_Store
+*.log
+.env
+.env.*
+
+# drop zone for files from outside (see incoming/README.md)
+incoming/*
+!incoming/README.md
