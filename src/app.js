@@ -40,7 +40,7 @@
   function start(CONTENT) {
   const C = CONTENT.C;
   const M = LFH.load(C);
-  let P = LFH.sanitizeProgress(LFH.store.load(), C);
+  let P = LFH.sanitizeProgress(LFH.store.load(), C, ART);
   const save = () => LFH.store.save(P);
   const rep = () => LFH.rep(P);
   const ITEMS = C.items || [], ITEM = {}; ITEMS.forEach((it) => (ITEM[it.id] = it));
@@ -273,61 +273,40 @@
       ${P.labName ? "" : `<p class="small load-line">Already have a lab from another iPad? <button class="linkish" data-act="loadFile">Load my lab from a backup file</button></p>${S.toast ? `<div class="toast inline" role="status">${esc(S.toast)}</div>` : ""}${loadInput()}`}</div></main>`;
   }
 
-  /* ---------------- The room (home screen): baked layers stacked in fixed slot order ---------------- */
-  const F = () => ART.frame;
-  const pct = (L) => `left:${(L.x / F().w) * 100}%;top:${(L.y / F().h) * 100}%;width:${(L.w / F().w) * 100}%`;
-  const slotsInArt = () => [...new Set(ART.order.map((k) => ART.layers[k].slot))].filter((sl) => sl !== "fixed");
-  function visibleLayers() {
-    const out = [];
-    ART.order.forEach((k) => {
-      const L = ART.layers[k];
-      if (L.slot === "fixed") return out.push({ k });
-      const id = P.placed[L.slot], it = ITEM[id];
-      const need = LFH.SLOT_NEEDS[L.slot];
-      if (it && it.sprite === k && (!need || P.placed[need])) out.push({ k });
-      else if (S.decorate && !id && k === ghostFor(L.slot) && (!need || P.placed[need])) out.push({ k, ghost: L.slot });
-    });
-    return out;
+  /* ---------------- The room (home screen) and the store: drawn by LabRoom (src/lab.js); the rules are LFH.lab ---------------- */
+  const rankIdx = () => LFH.RANKS.indexOf(LFH.rankOf(rep()));
+  let labRoom = null;
+  function mountLab() {            // called after every render: the room lives in a placeholder the screen leaves for it
+    if (labRoom) { labRoom.destroy(); labRoom = null; }
+    const host = document.getElementById("labroom");
+    if (!host) return;
+    const store = S.screen === "shop";
+    labRoom = LabRoom.mount(host, { state: P.lab, funds: P.funds, items: ITEMS, manifest: ART.manifest, sprites: ART.sprites, rank: rankIdx(), readOnly: !store,
+      onTap: (itemId) => { const it = ITEM[itemId]; if (itemId === "laptop") go({ screen: "laptop", app: S.app || "inbox", toast: null }); else if (it && ["bench", "bench-item", "chair"].includes(it.slot)) goBench(); },   // the desk, the chair at it, or anything on it
+      onChange: (lab, funds) => {  // the ONE place a purchase or a move is recorded
+        P.lab = lab; P.funds = funds; save();
+        const f = document.querySelector(".topbar .funds"); if (f) f.textContent = "$" + P.funds;
+      } });
   }
-  function ghostFor(slot) {        // cheapest item for an empty slot = its "wishlist" ghost
-    const opts = ITEMS.filter((it) => it.slot === slot && ART.layers[it.sprite]).sort((a, b) => a.price - b.price);
-    return opts.length ? opts[0].sprite : null;
-  }
-  function union(keys) {
-    const Ls = keys.map((k) => ART.layers[k]).filter(Boolean);
-    const x0 = Math.min(...Ls.map((l) => l.x)), y0 = Math.min(...Ls.map((l) => l.y));
-    const x1 = Math.max(...Ls.map((l) => l.x + l.w)), y1 = Math.max(...Ls.map((l) => l.y + l.h));
-    return `left:${(x0 / F().w) * 100}%;top:${(y0 / F().h) * 100}%;width:${((x1 - x0) / F().w) * 100}%;height:${((y1 - y0) / F().h) * 100}%`;
-  }
+  const PET_SAYS = { "pet-cat": "Purr-fect work!", "pet-dog": "Woof! Great job!", "pet-bunny": "Hop hop hooray!" };
   function roomScreen() {
-    const paint = (ITEM[P.placed.room] || {}).sprite || "base-lavender";
-    const layers = visibleLayers();
-    const imgs = [`<img class="layer" src="${ART.layers[paint].src}" alt="" style="${pct(ART.layers[paint])}">`].concat(layers.map((v) => {
-      const L = ART.layers[v.k];
-      if (!v.ghost) return `<img class="layer${v.k.startsWith("pet-") && S.celebrate ? " cheer" : ""}" src="${L.src}" alt="" style="${pct(L)}">`;
-      const it = ITEMS.find((x) => x.sprite === v.k);
-      return `<img class="layer ghost" src="${L.src}" alt="" style="${pct(L)}"><button class="price-tag" data-slot="${v.ghost}" style="left:${((L.x + L.w / 2) / F().w) * 100}%;top:${((L.y + Math.min(L.h * 0.35, 40)) / F().h) * 100}%">$${it.price}</button>`;
-    }));
-    const benchKeys = ["bench", "starter-glass"].concat(["bench-1", "bench-2", "bench-3"].map((sl) => P.placed[sl] && ITEM[P.placed[sl]].sprite).filter(Boolean));
-    const hot = S.decorate ? "" : `<button class="hotspot" data-act="laptop" style="${union(["desk", "laptop"])}" aria-label="Open the laptop"><span>Laptop</span></button>
-      <button class="hotspot" data-act="bench" style="${union(benchKeys)}" aria-label="Go to the workbench"><span>Workbench</span></button>`;
-    let bubble = "";
-    if (S.celebrate) {
-      const petId = P.placed.pet, pet = petId && ITEM[petId], L = pet && ART.layers[pet.sprite];
-      const say = { "pet-cat": "Purr-fect work!", "pet-dog": "Woof! Great job!", "pet-penguin": "Ice work!" }[petId] || "";
-      bubble = L ? `<div class="bubble" style="left:${((L.x + L.w / 2) / F().w) * 100}%;top:${(L.y / F().h) * 100}%">${say}</div>` : "";
-    }
     const unread = inbox().filter((m) => !P.inbox.read[m.id]).length;
     const job = P.activeJob && caseById(P.activeJob.caseId);
-    const toast = S.celebrate && !bubble ? `<div class="toast" role="status">Job complete! +$${S.celebrate} for the lab.</div>` : S.celebrate ? `<div class="toast" role="status">Job complete! +$${S.celebrate} for the lab.</div>` : "";
+    const placed = (P.lab.rooms.main || {}).placed || {}, pet = ITEM[placed.pet];
+    const toast = S.celebrate ? `<div class="toast" role="status">Job complete! +$${S.celebrate} for the lab.${pet ? ` ${esc(pet.name)} says: ${PET_SAYS[pet.sprite] || "Nice work!"}` : ""}</div>` : S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : "";
     S.celebrate = null;
     return `${topbar()}<main class="roomwrap">${toast}
-      <div class="room-stage${S.decorate ? " decorating" : ""}" style="max-width:calc(62vh * ${(F().w / F().h).toFixed(3)} + 24px)"><div class="room" style="padding-bottom:${(F().h / F().w) * 100}%">${imgs.join("")}${hot}${bubble}</div></div>
+      <div class="room-stage"><div id="labroom" class="room"></div></div>
       <div class="room-actions">
         <button class="btn big" data-act="laptop">💻 Laptop${unread ? ` <span class="badge-n inline">${unread}</span>` : ""}</button>
         <button class="btn big" data-act="bench">🧪 Workbench${job ? `: resume ${esc(job.title)}` : ""}</button>
-        <button class="btn big ghost${S.decorate ? " on" : ""}" data-act="decorate" aria-pressed="${!!S.decorate}">${S.decorate ? "Done decorating" : "🖌️ Decorate"}</button></div>
-      <p class="small center">${S.decorate ? "Faded items are empty spots. Tap a price to shop for that spot." : unread ? `You have ${unread} new email${unread > 1 ? "s" : ""} on the laptop.` : job ? "A job is waiting on your workbench." : "Check the laptop for new jobs."}</p></main>`;
+        <button class="btn big ghost" data-act="decorate">🛒 Store and decorate</button></div>
+      <p class="small center">${unread ? `You have ${unread} new email${unread > 1 ? "s" : ""} on the laptop.` : job ? "A job is waiting on your workbench." : "Check the laptop for new jobs."} Tip: tap the laptop or the bench in your lab.</p></main>`;
+  }
+  function shopScreen() {
+    return `${topbar()}<main class="shopwrap"><div class="shop-bar"><h1>Store and decorate</h1><button class="btn primary" data-act="room">Done</button></div>
+      <p class="small">Tap a spot in your lab to see what fits there, or browse the store. Try things before you buy. Anything you take out waits in Storage.</p>
+      <div id="labroom"></div></main>`;
   }
 
   /* ---------------- Inbox: built from the Sheet's cases + this student's history ---------------- */
@@ -368,8 +347,8 @@
     let act = "";
     if (j.state === "open") act = `<button class="btn primary" data-accept="${c.id}">Accept the job</button>`;
     if (j.state === "done") act = isTemplate(c.id) ? `<p class="small">Done! ${esc(c.client.split(",")[0])} will keep emailing new jobs.</p>` : `<button class="btn" data-accept="${c.id}">Take it again (repeat jobs pay 25%)</button>`;
-    if (j.state === "locked") act = `<p class="needs">🔒 You'll need a <strong>${esc(need.name)}</strong> ($${need.price}) to take this job.</p><button class="btn" data-app="shop">Open the Supply shop</button>`;
-    if (j.state === "teaser") act = `<p class="needs">🔒 This job needs a <strong>${esc(need ? need.name : c.requires)}</strong>${need ? ` ($${need.price} in the Supply shop)` : ""}.</p><p class="small">Coming later this year (${esc(c.standard)}).</p>`;
+    if (j.state === "locked") act = `<p class="needs">🔒 You'll need a <strong>${esc(need.name)}</strong> ($${need.price}) to take this job.</p><button class="btn" data-act="decorate">Go to the store</button>`;
+    if (j.state === "teaser") act = `<p class="needs">🔒 This job needs a <strong>${esc(need ? need.name : c.requires)}</strong>${need ? ` ($${need.price} in the store)` : ""}.</p><p class="small">Coming later this year (${esc(c.standard)}).</p>`;
     if (j.state === "soon") act = `<p class="needs">You have the equipment! Your teacher is still preparing this job. Check back soon.</p>`;
     const pay = c.pay ? `<p class="pay-line">Pays up to <strong>$${c.pay}</strong></p>` : "";
     const rules = isTemplate(c.id) && j.state === "open" ? rulesCard(instFor(c.id, CLASSIC), c.client) : "";
@@ -390,26 +369,6 @@
   }
 
   /* ---------------- Supply shop ---------------- */
-  function shopApp() {
-    const kinds = [["Equipment", "Equipment: unlocks new jobs"], ["Pet", "Lab pets"], ["Decor", "Decor"], ["Theme", "Frankenstein theme pack"], ["Paint", "Paint and floors"]];
-    const filter = S.shopSlot;
-    const card = (it) => {
-      const st = LFH.shopState(it, P, ITEMS), L = ART.layers[it.sprite];
-      const unlock = it.unlocks && caseById(it.unlocks) ? `<p class="unlock">Unlocks: ${esc(caseById(it.unlocks).title)}</p>` : "";
-      let btn = "";
-      if (st.state === "buy") btn = `<button class="btn primary" data-buy="${it.id}">Buy $${it.price}</button>`;
-      else if (st.state === "owned") btn = `<button class="btn" data-place="${it.id}">Put it in the lab</button>`;
-      else if (st.state === "placed") btn = `<span class="inlab">In your lab ✓</span>${it.kind !== "Paint" && it.kind !== "Equipment" ? `<button class="linkish" data-putaway="${it.slot}">Put away</button>` : ""}`;
-      else btn = `<button class="btn" disabled>${esc(st.why)}</button>`;
-      return `<li class="item"><div class="thumb">${L ? `<img src="${L.src}" alt="">` : ""}</div><div class="item-body"><h4>${esc(it.name)}</h4><p class="price">${it.price ? "$" + it.price : "Free"}</p><p class="small">${esc(it.desc)}</p>${unlock}<div class="row">${btn}</div></div></li>`;
-    };
-    const sections = kinds.map(([k, label]) => {
-      const list = ITEMS.filter((it) => it.kind === k && (!filter || it.slot === filter));
-      return list.length ? `<h3 class="shop-h">${label}</h3><ul class="shop-grid">${list.map(card).join("")}</ul>` : "";
-    }).join("");
-    return `<div class="shop"><p class="shop-top"><span>You have <strong>$${P.funds}</strong> to spend.</span>${filter ? `<button class="linkish" data-act="shopAll">Show everything</button>` : ""}</p>${S.toast ? `<div class="toast inline" role="status">${esc(S.toast)} <button class="linkish" data-act="room">See it in the lab</button></div>` : ""}${sections}</div>`;
-  }
-
   /* ---------------- Training sim (free practice) and ledger ---------------- */
   function simApp() {
     const drills = Object.entries(LFH.drillNames).map(([id, name]) => `<button class="chip-btn" data-bay="${id}">${esc(name)}</button>`).join("");
@@ -459,7 +418,7 @@
     const msg = `Load ${s.lab}? It has $${s.funds} and ${s.jobs} job${s.jobs === 1 ? "" : "s"} done (backed up ${when}).` +
       (LFH.hasProgress(P) ? `\n\nThis REPLACES the lab on this iPad (${P.labName || "unnamed"}, $${P.funds}).` : "");
     if (!confirm(msg)) return;
-    P = LFH.sanitizeProgress(r.progress, C); save(); S = { screen: "room", toast: null }; render();
+    P = LFH.sanitizeProgress(r.progress, C, ART); save(); S = { screen: "room", toast: null }; render();
   }
   function ledgerApp() {
     const r = rep(), k = LFH.rankOf(r), n = LFH.nextRank(r);
@@ -479,9 +438,9 @@
     const app = S.app || "inbox";
     const unread = inbox().filter((m) => !P.inbox.read[m.id]).length;
     const tab = (id, label) => `<button class="lt-app${app === id ? " on" : ""}" data-app="${id}">${label}${id === "inbox" && unread ? ` <span class="badge-n inline">${unread}</span>` : ""}</button>`;
-    const body = app === "inbox" ? inboxApp() : app === "shop" ? shopApp() : app === "sim" ? simApp() : ledgerApp();
+    const body = app === "inbox" ? inboxApp() : app === "sim" ? simApp() : ledgerApp();
     return `${topbar()}<main class="laptopwrap"><div class="laptop"><div class="lt-bar"><span>${esc(P.labName)} · Lab OS</span><button class="btn small-btn ghost" data-act="room">Close the laptop</button></div>
-      <div class="lt-body"><nav class="lt-apps" aria-label="Laptop apps">${tab("inbox", "✉️ Inbox")}${tab("shop", "🛒 Supply shop")}${tab("sim", "🎯 Training sim")}${tab("ledger", "📒 Ledger")}</nav><section class="lt-main">${body}</section></div></div></main>`;
+      <div class="lt-body"><nav class="lt-apps" aria-label="Laptop apps">${tab("inbox", "✉️ Inbox")}<button class="lt-app" data-act="decorate">🛒 Supply store</button>${tab("sim", "🎯 Training sim")}${tab("ledger", "📒 Ledger")}</nav><section class="lt-main">${body}</section></div></div></main>`;
   }
   function benchEmpty() {
     return `${topbar()}<main class="intro"><div class="ticket"><p class="ticket-kicker">Workbench</p><h1>Your bench is clear</h1>
@@ -816,6 +775,11 @@
       P.offers = P.offers || {};
       P.offers[S.caseId] = LFH.nextOffer(S.caseId, S.offer.n, strong, Math.floor(Math.random() * 1e9));
     }
+    if (S.build && S.certified && ITEM["graph-frame"]) {   // the graph the student built goes up on the wall (an Award: earned, never sold)
+      const spec = M.visuals[S.build.vid];
+      P.lab = LFH.lab.grant(P.lab, ITEMS, "graph-frame", { title: S.caseObj.title, type: "line", points: spec.series[0].points.map((pt) => [pt.x, pt.y]) }, ART.manifest);
+      entry.award = "graph-frame";
+    }
     P.history.push(entry);
     delete P.activeJob; save();
     go({ screen: "report", report: { strong, pts, max, stars, pay, gained: rep() - before, rankBefore: LFH.rankOf(before), rankAfter: LFH.rankOf(rep()) } });
@@ -856,8 +820,9 @@
   function render() {
     const s = S.screen;
     if (S.caseId && JOB_SCREENS.includes(S.screen)) autosaveJob();     // every step of a job is saved
-    const screens = { name: nameScreen, room: roomScreen, laptop: laptopScreen, bench: benchEmpty, intro, build: buildScreen, question: questionScreen, run: runScreen, mission: missionScreen, report: reportScreen, bay: bayScreen };
+    const screens = { name: nameScreen, room: roomScreen, shop: shopScreen, laptop: laptopScreen, bench: benchEmpty, intro, build: buildScreen, question: questionScreen, run: runScreen, mission: missionScreen, report: reportScreen, bay: bayScreen };
     app.innerHTML = (screens[s] || roomScreen)();
+    mountLab();
     const target = app.querySelector(".plot-target");
     if (target) target.addEventListener("pointerdown", onPlotTap);
   }
@@ -895,11 +860,7 @@
     if (d.offer) { const off = P.offers[d.offer], j = P.activeJob; if (!off) return; if (j && !(j.caseId === d.offer && j.offer && j.offer.n === off.n) && !confirm("You have another job in progress. Start this one instead? (The other job's progress will be lost.)")) return;
       if (j && j.caseId === d.offer && j.offer && j.offer.n === off.n) return goBench(); delete P.activeJob; return startCase(d.offer, null, off); }
     if (d.mail) return go({ mail: d.mail });
-    if (d.app) return go({ screen: "laptop", app: d.app, toast: null, shopSlot: d.app === "shop" ? S.shopSlot : null });
-    if (d.slot) return go({ screen: "laptop", app: "shop", shopSlot: d.slot, toast: null, decorate: false });
-    if (d.buy) { const it = ITEM[d.buy]; if (LFH.buy(it, P, ITEMS)) { save(); return go({ toast: `${it.name} is in your lab!` }); } return; }
-    if (d.place) { const it = ITEM[d.place]; P.placed[it.slot] = it.id; save(); return go({ toast: `${it.name} is back in your lab.` }); }
-    if (d.putaway) { delete P.placed[d.putaway]; Object.keys(LFH.SLOT_NEEDS).forEach((k) => { if (LFH.SLOT_NEEDS[k] === d.putaway) delete P.placed[k]; }); save(); return go({ toast: null }); }
+    if (d.app) return go({ screen: "laptop", app: d.app, toast: null });
     if (d.nameAdj) { S.nameAdj = d.nameAdj; return render(); }
     if (d.nameNoun) { S.nameNoun = d.nameNoun; return render(); }
     if (d.bay) return startBay(d.bay);
@@ -913,11 +874,11 @@
     }
     switch (d.act) {
       case "room": return go({ screen: "room", caseId: S.caseId && JOB_SCREENS.includes(S.screen) ? null : S.caseId, mission: null, toast: null });
-      case "laptop": return go({ screen: "laptop", app: S.app || "inbox", toast: null, decorate: false });
-      case "inbox": return go({ screen: "laptop", app: "inbox", toast: null, decorate: false });
+      case "laptop": return go({ screen: "laptop", app: S.app || "inbox", toast: null });
+      case "inbox": return go({ screen: "laptop", app: "inbox", toast: null });
       case "ledger": return go({ screen: "laptop", app: "ledger" });
       case "bench": return goBench();
-      case "decorate": return go({ decorate: !S.decorate });
+      case "decorate": return go({ screen: "shop", toast: null });
       case "shopAll": return go({ shopSlot: null });
       case "mailBack": return go({ mail: "none" });
       case "simBack": return go({ screen: "laptop", app: "sim" });

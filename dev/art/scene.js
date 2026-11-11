@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-export const SCENE_VERSION = "0.3.0";
+export const SCENE_VERSION = "0.4.0";
 export const FRAME = { w: 1600, h: 1200 };
 export const S = 4;                 // room size
 export const IN = -S / 2 + 0.06;    // inner face of both walls (-1.94)
@@ -175,6 +175,34 @@ const P = {
     g.scale.setScalar(1.15); g.rotation.y = 0.3;
     return g;
   },
+  laptop() {
+    // the lab's business side: tapping it in the room opens the inbox
+    const g = new THREE.Group(); const dark = flat(C.ink), body = flat(C.body);
+    part(g, new THREE.BoxGeometry(0.4, 0.025, 0.28), body, 0, 0.0125, 0.02);
+    part(g, new THREE.BoxGeometry(0.3, 0.004, 0.13), dark, 0, 0.027, 0.0);
+    part(g, new THREE.BoxGeometry(0.4, 0.27, 0.02), body, 0, 0.15, -0.155, -0.22);
+    part(g, new THREE.BoxGeometry(0.35, 0.22, 0.008), flat(C.purple), 0, 0.152, -0.142, -0.22);
+    part(g, new THREE.BoxGeometry(0.2, 0.02, 0.006), flat(C.light), -0.04, 0.2, -0.146, -0.22);
+    part(g, new THREE.BoxGeometry(0.13, 0.02, 0.006), flat(C.foam), -0.075, 0.155, -0.136, -0.22);
+    part(g, new THREE.BoxGeometry(0.24, 0.02, 0.006), flat(C.foam), -0.02, 0.11, -0.126, -0.22);
+    g.rotation.y = 0.35;
+    return g;
+  },
+  "pressure-gauge"() {
+    // a dial gauge on a stand with an air hose: measures the pressure inside a ball
+    const g = new THREE.Group(); const dark = flat(C.ink), body = flat(C.body);
+    part(g, new THREE.BoxGeometry(0.28, 0.05, 0.2), dark, 0, 0.025, 0);
+    part(g, new THREE.CylinderGeometry(0.03, 0.04, 0.12, 8), body, 0, 0.11, 0);
+    part(g, new THREE.CylinderGeometry(0.16, 0.16, 0.08, 16), flat(C.purple), 0, 0.31, 0, Math.PI / 2);
+    part(g, new THREE.CylinderGeometry(0.13, 0.13, 0.09, 16), flat(C.foam), 0, 0.31, 0, Math.PI / 2);
+    for (let i = 0; i < 5; i++) { const a = Math.PI * (0.15 + 0.175 * i); part(g, new THREE.BoxGeometry(0.012, 0.03, 0.01), dark, Math.cos(a) * 0.1, 0.31 + Math.sin(a) * 0.1, 0.046, 0, a - Math.PI / 2); }
+    part(g, new THREE.BoxGeometry(0.014, 0.11, 0.012), flat(C.pink), 0.03, 0.345, 0.05, 0, -0.7);
+    part(g, new THREE.SphereGeometry(0.02, 8, 6), dark, 0, 0.31, 0.05);
+    part(g, new THREE.CylinderGeometry(0.012, 0.012, 0.16, 6), flat(C.teal), 0.2, 0.2, 0, 0, 0.9);
+    part(g, new THREE.SphereGeometry(0.025, 8, 6), flat(C.gold), 0.265, 0.15, 0);
+    g.scale.setScalar(0.88); g.rotation.y = 0.3;
+    return g;
+  },
   calorimeter() {
     // coffee-cup calorimeter: two nested foam cups, a lid, a thermometer, a stirrer
     const g = new THREE.Group(); const foam = flat(C.foam);
@@ -328,6 +356,8 @@ export const RECIPES = {
   microscope:         { prim: "microscope" },
   calorimeter:        { prim: "calorimeter" },
   "tube-rack":        { prim: "tube-rack" },
+  laptop:             { prim: "laptop" },
+  "pressure-gauge":   { prim: "pressure-gauge" },
   "grow-cabinet":     { prim: "grow-cabinet" },
   "materials-tester": { prim: "materials-tester" },
   generator:          { model: "machine-generator", width: 1.0 },

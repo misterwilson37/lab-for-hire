@@ -36,7 +36,7 @@ with sync_playwright() as p:
     state["feed"] = "edited"; pg, ctx = new_page(br); name_lab(pg)
     t = mail_text(pg); assert "Edited By Hanson" in t, "edited title should reach the inbox"
     pg.click("[data-mail='job-MOVIN-MOLECULES']"); assert "Pays up to $75" in pg.inner_text(".mail-view"), "edited pay should show"
-    pg.click("[data-app=shop]"); card = [c for c in pg.query_selector_all(".item") if "Lab cat" in c.inner_text()][0]; assert "$90" in card.inner_text(), "edited price should show"
+    pg.click("[data-act=decorate]"); pg.wait_for_selector("[data-item='pet-cat']"); assert "$90" in pg.inner_text("[data-item='pet-cat']"), "edited price should show in the store"
     log.append("1. edits in the Sheet reach the game: title, pay, shop price: OK")
     # 2. the network dies: the last good copy keeps the edits
     state["fail"] = True; pg.close(); pg, ctx = new_page(br, ctx=ctx)

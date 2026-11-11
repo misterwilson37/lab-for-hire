@@ -16,7 +16,7 @@ const LFH = gas(clone(SEED)).ctx.LFH;
 console.log("seed:", xlsx);
 eq(sect(feedOf(clone(SEED))), sect(snapshot), "students feed from the seed == shipped snapshot");
 eq(sect(feedOf(clone(SEED), true)), sect(snapshot), "draft feed from the seed == shipped snapshot (seed has no drafts)");
-{ const f = feedOf(clone(SEED)); ok(f.schema === "0.4.0" && f.sheetSchema === "0.4.0" && f.errors.length === 0 && f.warnings.length === 0, "seed feed: schema stamped, no errors or warnings"); ok(Date.parse(f.generated) > 0, "feed carries a generated timestamp"); }
+{ const f = feedOf(clone(SEED)); ok(f.schema === "0.5.0" && f.sheetSchema === "0.5.0" && f.errors.length === 0 && f.warnings.length === 0, "seed feed: schema stamped, no errors or warnings"); ok(Date.parse(f.generated) > 0, "feed carries a generated timestamp"); }
 { const pr = LFH.prepare(feedOf(clone(SEED)), ART); ok(pr.errors.length === 0 && Object.keys(pr.held).length === 0 && pr.warnings.length === 0, "seed content prepares cleanly: nothing held, no warnings"); }
 { const lists = feedOf(clone(SEED)).lists; eq(LFH.checkLists(lists), [], "the seed's Lists tab matches the game's vocabulary exactly"); }
 
@@ -50,9 +50,9 @@ eq(sect(feedOf(clone(SEED), true)), sect(snapshot), "draft feed from the seed ==
   const pr = LFH.prepare(drf, ART); ok(pr.held["DRAFT-X"], "a broken draft is held even in preview, so it can't crash the game");
   const rep = gas(g).ctx.checkReport_(gas(g).ctx.SpreadsheetApp.getActiveSpreadsheet()); ok(rep.ok && /Drafts with problems/.test(rep.html), "the check lists broken drafts separately and still says students are fine"); }
 { const g = clone(SEED);   // a typo'd item Kind: the item is skipped, and the job that needs it is held (not silently free)
-  mapRows(g, "Items", (r) => { if (r[0] === "pressure-gauge") r[col(g, "Items", "Kind")] = "Cosmetic"; return r; });
+  mapRows(g, "Items", (r) => { if (r[0] === "pressure-gauge") r[col(g, "Items", "Kind")] = "Decor"; return r; });
   const pr = LFH.prepare(feedOf(g), ART);
-  ok(!pr.C.items.some((i) => i.id === "pressure-gauge") && pr.warnings.some((w) => /pressure-gauge.*Kind 'Cosmetic'/.test(w)), "an item with a bad Kind is skipped with a warning");
+  ok(!pr.C.items.some((i) => i.id === "pressure-gauge") && pr.warnings.some((w) => /pressure-gauge.*Kind 'Decor'/.test(w)), "an item with a bad Kind is skipped with a warning");
   ok(pr.held["BOUNCE-LAB"] && /requires 'pressure-gauge'/.test(pr.held["BOUNCE-LAB"][0]), "the job that required it is held back rather than given away free"); }
 { const g = clone(SEED); const ri = g.Cases.values.findIndex((r) => r[0] === "MOVIN-MOLECULES"); g.Cases.values.push(g.Cases.values[ri].slice()); g.Cases.display.push(g.Cases.display[ri].slice());   // copy-pasted row
   const pr = LFH.prepare(feedOf(g), ART); ok(pr.held["MOVIN-MOLECULES"] && /appears 2 times/.test(pr.held["MOVIN-MOLECULES"].join(" ")), "a duplicated CaseID holds that case back"); }
@@ -82,8 +82,8 @@ eq(sect(feedOf(clone(SEED), true)), sect(snapshot), "draft feed from the seed ==
   ok(f.cases.length === 5 && f.cases.map((c) => c.id).join() === "MOVIN-MOLECULES,COLD-PACK,PHASE-PROBE,DRY-ICE,BOUNCE-LAB", "all five cases found despite ten blank rows above the first");
   ok(f.items.length === 39, "all 39 catalog items read (" + f.items.length + ")");
   const j = LFH.content.judge(f, ART); ok(!j.ok && /needs upgrading/.test(j.why), "THE GAME REFUSES THIS SHEET until it is upgraded (otherwise jobs would silently pay $0 and the shop would be empty): " + j.why);
-  const pr = LFH.prepare(f, ART); ok(pr.warnings.some((w) => /desk: Kind 'Cosmetic'/.test(w)), "the other design's items are reported plainly, one by one");
-  ok(pr.C.items.every((it) => ART.layers[it.sprite] && ART.layers[it.sprite].slot === it.slot), "no item reaches the shop unless the game has art for it in that slot (" + pr.C.items.length + " of 39 survive)");
+  const pr = LFH.prepare(f, ART); ok(pr.warnings.some((w) => /grow-cabinet: rank '1' isn't a rank name/.test(w)), "that draft's number ranks are reported plainly, one by one (the game uses rank names)");
+  ok(pr.C.items.length > 30 && pr.C.items.every((it) => LFH.lab.paintKey(it) || ART.manifest.slots.filter((sp) => sp.type === it.slot).every((sp) => ART.manifest.sprites[it.sprite + "@" + sp.id])), "no item reaches the store unless the game has a picture for it in every spot it fits (" + pr.C.items.length + " of 39 survive)");
   const G = gas(g); const rep = G.ctx.checkReport_(G.ctx.SpreadsheetApp.getActiveSpreadsheet());
   ok(!rep.ok && rep.blocking.some((b) => /schema 0\.2\.1/.test(b)), "the content check says it in plain words");
   ok(rep.warnings.some((w) => /'Status': missing 'Teaser'/.test(w)) && rep.warnings.some((w) => /no 'ItemKind' column/.test(w)), "...and that the Lists tab is missing newer dropdowns");

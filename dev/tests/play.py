@@ -91,12 +91,30 @@ with sync_playwright() as p:
     pg.click("[data-name-adj=Curious]"); pg.click("[data-name-noun=Comet]"); pg.click("[data-act=nameDone]")
     assert "The Curious Comet Lab" in pg.inner_text(".wordmark")
     jobs = sorted([c for c in C["cases"] if c["status"] == "Live"], key=lambda c: c["order"])
+    lab = lambda: json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))["lab"]
+    placed = lambda: lab()["rooms"]["main"]["placed"]
+    # ---- the starter lab, and the room as the way in: tapping the laptop opens the inbox, tapping the bench goes to the workbench ----
+    pg.wait_for_selector("#labroom image")
+    assert placed().get("bench") == "desk" and placed().get("bench-2") == "laptop" and "bench-3" not in placed(), f"starter lab: {placed()}"
+    def tap_item(sprite_key, fx=0.5, fy=0.6):   # a real tap on the picture of an item in the room
+        box = pg.evaluate("""([k, fx, fy]) => { const A = JSON.parse(document.getElementById('lfh-art').textContent), sp = A.manifest.sprites[k];
+            const svg = document.querySelector('#labroom svg'), pt = svg.createSVGPoint(); pt.x = sp.x + sp.w * fx; pt.y = sp.y + sp.h * fy;
+            const c = pt.matrixTransform(svg.getScreenCTM()); return [c.x, c.y]; }""", [sprite_key, fx, fy])
+        pg.wait_for_timeout(250); pg.mouse.click(box[0], box[1])
+    tap_item("laptop@bench-2"); assert pg.query_selector(".laptop"), "tapping the laptop in the room opens it"
+    pg.click("[data-act=room]"); pg.wait_for_selector("#labroom image")
+    tap_item("desk@bench", 0.8, 0.75); assert "Your bench is clear" in pg.inner_text("main"), "tapping the bench goes to the workbench: " + pg.inner_text("main")[:300]
+    pg.click("[data-act=room]")
+    log.append("starter lab is right; tapping the laptop and the bench in the room works")
     for c in jobs:
         if c.get("requires"):
             pg.click("[data-act=inbox]"); pg.click(f"[data-mail='job-{c['id']}']")
             assert not pg.query_selector(f"[data-accept='{c['id']}']"), f"{c['id']} should be locked"
             item = next(i for i in C["items"] if i["id"] == c["requires"])
-            pg.click("[data-app=shop]"); pg.click(f"[data-buy='{item['id']}']")
+            pg.click("[data-act=decorate]"); pg.click(f"[data-item='{item['id']}']")
+            assert f"Unlocks {item['unlocks']}" in pg.inner_text(f"[data-item='{item['id']}']"), "the store says what the equipment unlocks"
+            pg.click(f"[data-buy='{item['id']}']")
+            assert item["id"] in lab()["owned"], "bought equipment is owned"
             log.append(f"bought {item['id']} to unlock {c['id']}"); pg.click("[data-act=room]")
         before = funds(pg)
         if c["id"] == "COLD-PACK":   # job template, first play = Hanson's example
@@ -111,6 +129,12 @@ with sync_playwright() as p:
         pg.click("[data-act=celebrate]"); after = funds(pg)
         assert after == before + paid, f"{c['id']}: funds {before} + {paid} != {after}"
         log.append(f"{c['id']}: paid ${paid}, funds now ${after}")
+        if c["id"] == "MOVIN-MOLECULES":   # the graph the student built is framed on the wall (an Award: earned, never sold)
+            aw = lab()["awards"].get("graph-frame"); spec = next(v for v in C["visuals"] if v["id"] == "MM-GRAPH")
+            want = sorted([[d["x"], d["y"]] for d in C["data"] if d["visualId"] == "MM-GRAPH"])
+            assert aw and sorted(aw["points"]) == want and aw["title"] == c["title"], f"award should carry the built graph's real points: {aw}"
+            assert placed().get("poster-left") == "graph-frame" and pg.query_selector("#labroom polyline"), "the framed graph is on the wall, drawn from those points"
+            log.append("built graph earned the framed 'Your Graph' award, on the wall")
     # ---- the client comes back: strong work earned a sequel (hot packs); do it badly on purpose -> follow-up ----
     store = lambda: json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))
     off = store()["offers"]["COLD-PACK"]; assert off["n"] == 2 and off["variant"] == "hot" and off["kind"] == "sequel", off
@@ -127,8 +151,26 @@ with sync_playwright() as p:
     replies = [m for m in pg.query_selector_all(".mail") if "payment enclosed" in m.inner_text()]
     assert len(replies) == len(jobs) + 1, "a reply email per finished job"
     pg.click("[data-mail='offer-COLD-PACK-3']"); assert "fresh batch" in pg.inner_text(".mail-view"), "follow-up explains the fresh data"
-    pg.click("[data-app=shop]"); pg.click("[data-buy='pet-cat']"); pg.click("[data-act=room]")
-    assert len(pg.query_selector_all(".room .layer")) >= 7, "cat should be in the room"
+    # ---- the store: buy, paint, a table that opens two more spots, storage ----
+    pg.click("[data-act=decorate]"); f0 = funds(pg)
+    pg.click("[data-item='pet-cat']"); pg.click("[data-buy='pet-cat']")
+    assert placed().get("pet") == "pet-cat" and funds(pg) == f0 - 80, "buying the cat puts it in the room and takes the price (top bar and save agree)"
+    pg.click("[data-item='work-table']"); pg.click("[data-buy='work-table']")
+    assert placed().get("table") == "work-table" and funds(pg) == f0 - 200, "the work table is bought and placed"
+    assert pg.query_selector("[data-buy='microscope']") is None
+    pg.click("[data-item='microscope']"); f1 = funds(pg); want = f"Need ${150 - f1} more" if f1 < 150 else "Buy for $150"
+    assert pg.inner_text(".lr-card.on .lr-act") == want, f"the microscope button should say '{want}' with ${f1}: " + pg.inner_text(".lr-card.on .lr-act")
+    pg.click(".lr-tabs button:has-text('Paint')"); pg.click("[data-item='wall-lavender']"); pg.click("[data-buy='wall-lavender']")
+    assert lab()["rooms"]["main"]["paint"]["wall"] == "wall-lavender" and funds(pg) == f0 - 240, "paint applies right away"
+    pg.click(".lr-tabs button:has-text('Store')"); pg.click("[data-item='work-table']"); pg.click(".lr-card.on .lr-act")   # take the table out
+    assert "table" not in placed() and "work-table" in lab()["owned"], "taking something out sends it to storage; it is still owned"
+    assert "Storage (1)" in pg.inner_text(".lr-tabs"), "the Storage tab counts it"
+    pg.click(".lr-tabs button:has-text('Storage')"); pg.click("[data-item='work-table']"); pg.click(".lr-card.on .lr-act")
+    assert placed().get("table") == "work-table", "and storage puts it back"
+    assert json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))["funds"] == funds(pg), "the saved funds and the top bar are the same number"
+    pg.click("[data-act=room]"); pg.wait_for_selector("#labroom image")
+    assert len(pg.query_selector_all("#labroom image")) >= 9, "cat and table should be in the room"
+    log.append("store: bought a cat, a work table, and paint; storage round trip OK")
     pg.screenshot(path=os.path.join(tempfile.gettempdir(), "lfh_play_end_room.png"))   # never write into the repo
     # ---- Save file: back up the REAL lab this loop built, wipe the device, restore from the file ----
     store = lambda: json.loads(pg.evaluate("localStorage.getItem('lfh.progress')"))
@@ -155,10 +197,10 @@ with sync_playwright() as p:
     fc.value.set_files(save_path); pg.wait_for_timeout(300)
     assert dialogs and "The Curious Comet Lab" in dialogs[0] and f"${before_funds}" in dialogs[0], dialogs
     after = store()
-    for k in ("labName", "funds", "owned", "placed", "cases", "history", "inbox", "bayCorrect", "bayBest", "offers"):
+    for k in ("labName", "funds", "lab", "cases", "history", "inbox", "bayCorrect", "bayBest", "offers"):
         assert after[k] == before[k], f"restore changed {k}: {before[k]!r} -> {after[k]!r}"
     assert funds(pg) == before_funds and "The Curious Comet Lab" in pg.inner_text(".wordmark"), "room shows the restored lab"
-    assert len(pg.query_selector_all(".room .layer")) >= 7, "restored room still has the cat"
+    pg.wait_for_selector("#labroom image"); assert len(pg.query_selector_all("#labroom image")) >= 9, "restored room still has the cat and the table"
     log.append(f"backup -> wipe -> restore: OK ({before_funds} funds, {sum(1 for c in after['cases'].values() if c.get('done'))} jobs, edited file refused)")
     br.close()
 print("\n".join(log)); print("JS errors:", errs)

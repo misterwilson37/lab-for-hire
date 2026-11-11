@@ -22,7 +22,7 @@ function addRow(g, tab, obj) { const h = hdr(g, tab); const r = h.map((name) => 
 const gas = (g, o = {}) => makeGas(g, Object.assign({ source: gasSrc }, o));
 const feedOf = (g, draft) => JSON.parse(gas(g).ctx.doGet({ parameter: draft ? { include: "draft" } : {} }).text);
 
-/* The live Sheet exactly as I found it in Oct 2026: the old v0.2.1 layout with ten blank rows, only the five built cases,
+/* The live Sheet exactly as it was found in Oct 2026 (before the Nov 2026 rebuild): the old v0.2.1 layout with ten blank rows, only the five built cases,
    and the lab-space conversation's 39-item Items tab (transcribed from the real Sheet into fixtures/). */
 function liveAsFound(g) {
   dropColumn(g, "Cases", "Pay"); dropColumn(g, "Cases", "Requires item"); blankRowsAfterHeader(g, "Cases", 10);
@@ -33,7 +33,7 @@ function liveAsFound(g) {
   g.Items.display = g.Items.values.map((r) => r.map(String));
   g["Items Legend"] = { values: [["Column", "What goes here"], ["ItemID", "..."]], display: [["Column", "What goes here"], ["ItemID", "..."]] };
   g["Start Here"].values[0][1] = g["Start Here"].display[0][1] = "Schema version 0.2.1. This Sheet is the ONLY home for game content.";
-  ["ItemKind", "Rank"].forEach((n) => { const j = hdr(g, "Lists").indexOf(n); for (const k of ["values", "display"]) g.Lists[k] = g.Lists[k].map((r) => r.filter((_, i) => i !== j)); });
+  ["ItemKind", "Rank", "Slot"].forEach((n) => { const j = hdr(g, "Lists").indexOf(n); for (const k of ["values", "display"]) g.Lists[k] = g.Lists[k].map((r) => r.filter((_, i) => i !== j)); });
   const sj = hdr(g, "Lists").indexOf("Status"); g.Lists.values = g.Lists.values.map((r) => r.map((c, i) => (i === sj && c === "Teaser" ? "" : c))); g.Lists.display = g.Lists.values.map((r) => r.map(String));
   return g;
 }

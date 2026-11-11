@@ -2,7 +2,6 @@
 dev/art/models/
 dev/art/node_modules/
 dev/art/sprites/
-dev/art/package.json
 dev/art/package-lock.json
 __pycache__/
 *.pyc

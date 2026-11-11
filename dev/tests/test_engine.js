@@ -108,11 +108,52 @@ ok(L.payout({ pay: 60, pts: 24, max: 24, missions: 2 }) === 70, "side missions a
 ok(L.payout({ pay: 60, pts: 24, max: 24, replay: true }) === 15, "replay pays 25%");
 ok(L.payout({ pay: 70, pts: 23, max: 24, weak: true }) === 55 && L.payout({ pay: 70, pts: 23, max: 24 }) === 70, "a weak recommendation is capped at part of the fee");
 ok(L.payout({ pay: 70, pts: 23, max: 24, weak: true, missions: 2 }) === 65, "side missions still pay on a weak recommendation");
+const artBlock = src.match(/<script id="lfh-art" type="application\/json">([\s\S]*?)<\/script>/);
+const ART = artBlock ? JSON.parse(artBlock[1].replace(/<\\\//g, "</")) : null, MAN = ART.manifest;
+const items = C.items, item = (id) => items.find((i) => i.id === id);
+const fresh = () => L.sanitizeProgress(L.freshProgress(), C, ART);
 const P0 = L.migrate({ v: 1, cases: { "MOVIN-MOLECULES": { best: 20, stars: 3, done: true } }, bayCorrect: 4 });
-ok(P0.v === 2 && P0.cases["MOVIN-MOLECULES"].done && P0.bayCorrect === 4 && P0.funds === 0 && P0.placed.room === "paint-lavender", "v1 save migrates");
-ok(JSON.stringify(L.migrate(JSON.parse(JSON.stringify(P0)))) === JSON.stringify(P0), "v2 save round-trips unchanged");
-ok(L.migrate(null).v === 2 && L.migrate("junk").v === 2, "garbage save -> fresh lab");
-const Pj = L.freshProgress();
+ok(P0.v === 3 && P0.cases["MOVIN-MOLECULES"].done && P0.bayCorrect === 4 && P0.funds === 0 && P0.lab === null, "v1 save migrates");
+ok(JSON.stringify(L.migrate(JSON.parse(JSON.stringify(P0)))) === JSON.stringify(P0), "a current save round-trips unchanged");
+ok(L.migrate(null).v === 3 && L.migrate("junk").v === 3, "garbage save -> fresh lab");
+{ // a save from the old shop (v2: owned as a map, one item per slot) keeps what still exists and gets a fresh room
+  const old = { v: 2, labName: "The Old Lab", funds: 40, owned: { "paint-lavender": true, microscope: true, "pet-penguin": true, "pet-cat": true }, placed: { room: "paint-lavender", "bench-1": "microscope", pet: "pet-cat" }, cases: { "MOVIN-MOLECULES": { done: true, best: 20 } }, inbox: { read: { a: 1 }, arrived: {}, seq: 3 }, history: [{ caseId: "MOVIN-MOLECULES", pay: 60 }] };
+  const Pn = L.sanitizeProgress(L.migrate(old), C, ART);
+  ok(Pn.v === 3 && Pn.funds === 40 && Pn.labName === "The Old Lab" && Pn.history.length === 1 && Pn.inbox.seq === 3 && !("owned" in Pn) && !("placed" in Pn), "old-shop save: funds, name, history, and inbox survive; the old owned/placed records are gone (one record, not two)");
+  ok(L.owns(Pn, "microscope") && L.owns(Pn, "pet-cat") && !L.owns(Pn, "pet-penguin") && !L.owns(Pn, "paint-lavender") && L.owns(Pn, "desk"), "old-shop save: items that still exist stay owned (in storage), retired ones are dropped, the starter lab is added");
+}
+// 6a. The lab: starter room, storage, buying, ranks, awards (rules in LFH.lab; src/lab.js only draws)
+{
+  const Pf = fresh(), lab = Pf.lab, rm = lab.rooms.main;
+  const starters = items.filter((i) => i.price === 0 && i.kind !== "Award").map((i) => i.id);
+  ok(starters.every((id) => lab.owned.includes(id)) && lab.owned.length === starters.length, "starter lab = every Price 0 row (no Awards), owned from the start");
+  ok(rm.placed.bench === "desk" && rm.placed["bench-1"] === "beaker" && rm.placed["bench-2"] === "laptop" && rm.placed.shelf === "shelf-open" && !rm.placed["bench-3"], "starters are placed in row order: beaker, then the laptop, on the desk");
+  ok(rm.paint.wall === "wall-white" && rm.paint.floor === "floor-lilac" && rm.paint.trim === "trim-purple" && rm.paint.tiles === "tiles-plain", "starter paint is the free row of each kind");
+  ok(!("funds" in lab), "the lab record holds no money: funds live in progress.funds only");
+  const canon = (o) => JSON.stringify(o, (k, v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((x) => [x, v[x]])) : v));
+  ok(canon(L.lab.normalize(lab, items, MAN)) === canon(lab), "normalize leaves a good lab untouched");
+  const micro = item("microscope");
+  ok(L.lab.canBuy(micro, lab, 100, 0).state === "short" && /Need \$50 more/.test(L.lab.canBuy(micro, lab, 100, 0).why), "can't buy without funds, and the button says how much more");
+  const got = L.lab.buy(micro, lab, 200, 0);
+  ok(got && got.funds === 50 && got.lab.owned.includes("microscope") && !lab.owned.includes("microscope"), "buying takes the price and adds the item (without changing the lab it was given)");
+  ok(L.lab.buy(micro, got.lab, 500, 0) === null && L.lab.canBuy(micro, got.lab, 500, 0).state === "owned", "one of each: an owned item can't be bought twice");
+  const bunny = item("pet-bunny");
+  ok(L.lab.canBuy(bunny, lab, 999, 0).state === "rank" && /Lab Tech/.test(L.lab.canBuy(bunny, lab, 999, 0).why) && L.lab.canBuy(bunny, lab, 999, 1).ok, "a rank-gated item says which rank, and opens at that rank");
+  const award = item("graph-frame");
+  ok(award && award.kind === "Award" && L.lab.canBuy(award, lab, 999, 4).state === "award" && L.lab.buy(award, lab, 999, 4) === null, "an Award can never be bought");
+  const g1 = L.lab.grant(lab, items, "graph-frame", { title: "A", type: "line", points: [[0, 1], [1, 2]] }, MAN);
+  ok(g1.owned.includes("graph-frame") && g1.rooms.main.placed["poster-left"] === "graph-frame" && g1.awards["graph-frame"].title === "A", "an earned award goes up in the empty poster spot");
+  const g2 = L.lab.grant(g1, items, "graph-frame", { title: "B", type: "line", points: [[0, 3], [1, 4]] }, MAN);
+  ok(g2.awards["graph-frame"].title === "B" && g2.owned.filter((x) => x === "graph-frame").length === 1, "earning it again replaces the graph (the newest wins), never duplicates it");
+  // repairs: whatever a stale save or an edited Items tab does, the lab stays drawable
+  const messy = { owned: ["microscope", "microscope", "no-such-item"], rooms: { main: { placed: { pet: "microscope", "bench-3": "microscope", "table-1": "beaker", bench: "pet-cat" }, paint: { wall: "floor-lilac", floor: "wall-any" }, colors: { wall: "red", trim: "#abcdef" } } }, funds: 5 };
+  const fixed = L.lab.normalize(messy, items, MAN), fr = fixed.rooms.main;
+  ok(fixed.owned.filter((x) => x === "microscope").length === 1 && !fixed.owned.includes("no-such-item") && !("funds" in fixed), "normalize drops duplicates, unknown items, and any stray funds");
+  ok(!fr.placed.pet && fr.placed["bench-3"] === "microscope" && fr.placed.bench === "desk" && !fr.placed["table-1"], "normalize: wrong-spot items go to storage, the required bench comes back, nothing floats on a table that isn't there");
+  ok(fr.paint.wall === "wall-white" && fr.paint.floor === "floor-lilac" && !fr.colors.wall && fr.colors.trim === "#ABCDEF", "normalize: paint the student doesn't own (or in the wrong place) falls back to the starter; bad colors are dropped");
+  ok(L.lab.normalize(null, items, MAN).rooms.main.placed.bench === "desk" && L.lab.normalize("junk", items, MAN).owned.length === starters.length, "normalize never throws on garbage");
+}
+const Pj = fresh();
 let J = L.jobs(M, Pj, false);
 ok(J.filter((j) => j.state === "open").length === 1 && J[0].c.id === "MOVIN-MOLECULES", "fresh lab: only the first job is open");
 ok(J.filter((j) => j.state === "teaser").length === 3, "three teasers advertise the year");
@@ -120,25 +161,21 @@ ok(J.filter((j) => j.state === "teaser").length === 3, "three teasers advertise 
 J = L.jobs(M, Pj, false);
 const bl = J.find((j) => j.c.id === "BOUNCE-LAB");
 ok(bl && bl.state === "locked" && bl.needs === "pressure-gauge", "Bounce Lab waits for a pressure gauge");
-const items = C.items, gauge = items.find((i) => i.id === "pressure-gauge");
-ok(L.shopState(gauge, Pj, items).state === "short", "can't buy without funds");
-Pj.funds = 100; ok(L.buy(gauge, Pj, items) && Pj.funds === 20 && Pj.placed["bench-3"] === "pressure-gauge", "buying places the item");
-ok(L.jobs(M, Pj, false).find((j) => j.c.id === "BOUNCE-LAB").state === "open", "owning the gauge opens the job");
-const candles = items.find((i) => i.id === "candles"); Pj.funds = 100;
-ok(L.shopState(candles, Pj, items).state === "needs", "candles need a bookshelf first");
-const skel = items.find((i) => i.id === "skeleton"); const Pr = L.freshProgress(); Pr.funds = 999;
-ok(L.shopState(skel, Pr, items).state === "rank", "rank-gated item says so");
+{ const got = L.lab.buy(item("pressure-gauge"), Pj.lab, 100, 0); Pj.lab = got.lab; Pj.funds = got.funds; }
+ok(Pj.funds === 20 && L.jobs(M, Pj, false).find((j) => j.c.id === "BOUNCE-LAB").state === "open", "owning the gauge opens the job (even while it sits in storage)");
+ok(L.jobs(M, Pj, false).find((j) => j.c.id === "CELL-CLINIC").state === "teaser", "a teaser stays a teaser until its equipment is owned");
 items.forEach((it) => ok(it.price >= 0 && it.sprite, `${it.id} priced with art`));
-// 7. Shop items match the baked art (index.html carries the art block)
-const artBlock = src.match(/<script id="lfh-art" type="application\/json">([\s\S]*?)<\/script>/);
-if (artBlock) { const AE = L.validateArt(C, JSON.parse(artBlock[1])); AE.forEach((e) => console.log("ART", e)); ok(AE.length === 0, "every item has art in the right slot"); }
-const bad = L.validateArt({ items: [{ id: "x", sprite: "nope", slot: "pet" }] }, { layers: { desk: {}, laptop: {}, bench: {} } });
-ok(bad.length === 1, "art validator catches a missing sprite");
+C.cases.filter((c) => c.requires).forEach((c) => ok(item(c.requires) && item(c.requires).kind === "Equipment" && item(c.requires).unlocks, `${c.id} requires a piece of Equipment whose Unlocks note tells students what it's for`));
+// 7. Items match the baked art (index.html carries the art block), and the engine's list of spots IS the art's
+{ const f = L.fitToArt(C, ART); f.warnings.concat(f.errors).forEach((e) => console.log("ART", e)); ok(f.warnings.length === 0 && f.errors.length === 0 && f.held.length === 0, "every item has a picture for every spot it can go in"); }
+ok([...new Set(MAN.slots.map((sl) => sl.type))].sort().join() === L.lab.SLOTS.filter((x) => !L.lab.PAINT_KEYS[x]).sort().join(), "the Slot dropdown (LFH.lab.SLOTS) is exactly the room art's spot types plus the four paints");
+ok(items.every((it) => L.lab.paintKey(it) || MAN.thumbs[it.sprite]), "every store item has a thumbnail");
+ok(Object.values(MAN.sprites).every((sp) => ART.sprites[sp.file]) && Object.values(MAN.thumbs).every((f) => ART.sprites[f]), "every picture the manifest names is in the page");
 // 8. Save file (backup to Drive). The real-data proof is in play.py (a lab built by the full loop survives a wipe).
 {
-  const Ps = L.freshProgress(); Ps.labName = "The Curious Comet Lab"; Ps.funds = 215;
+  const Ps = fresh(); Ps.labName = "The Curious Comet Lab"; Ps.funds = 215;
   ["MOVIN-MOLECULES", "COLD-PACK"].forEach((id) => (Ps.cases[id] = { done: true, best: 20, stars: 3 }));
-  Ps.owned["pet-cat"] = true; Ps.placed.pet = "pet-cat"; Ps.history.push({ caseId: "COLD-PACK", pay: 70 });
+  Ps.lab.owned.push("pet-cat"); Ps.lab.rooms.main.placed.pet = "pet-cat"; Ps.history.push({ caseId: "COLD-PACK", pay: 70 });
   Ps.activeJob = { caseId: "PHASE-PROBE", qi: 3 };
   const now = "2026-10-12T15:00:00.000Z", text = L.exportSave(Ps, now), r = L.importSave(text);
   ok(r.ok, "a fresh save file loads");
@@ -147,7 +184,7 @@ ok(bad.length === 1, "art validator catches a missing sprite");
   ok(Ps.backedUpAt === "", "exporting does not change the live lab until the save succeeds");
   const f = JSON.parse(text); f.progress.funds = 99999;
   ok(!L.importSave(JSON.stringify(f)).ok, "an edited save (funds changed by hand) is refused");
-  const g = JSON.parse(text); g.progress.v = 3; g.check = L.checksum(JSON.stringify(g.progress));
+  const g = JSON.parse(text); g.progress.v = 4; g.check = L.checksum(JSON.stringify(g.progress));
   ok(/newer version/.test(L.importSave(JSON.stringify(g)).error), "a save from a newer game version is refused with a reason");
   ok(!L.importSave("hello").ok && !L.importSave("{\"a\":1}").ok && !L.importSave("").ok, "non-save files are refused");
   ok(!L.importSave(text.slice(0, text.length - 40)).ok, "a truncated file is refused");
@@ -229,7 +266,6 @@ ok(bad.length === 1, "art validator catches a missing sprite");
 }
 // 10. Content: vocabulary, quarantine, art fitting, the chooser, and saved progress meeting changed content
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const ART = artBlock ? JSON.parse(artBlock[1]) : null;
 { const V = L.vocab();
   ok(V.Drill.length === Object.keys(L.drills).length && V.Drill.length === 13, "vocabulary: the Drill list IS the engine's drills");
   ok(V.Rank.join() === L.RANKS.map((r) => r.name).join(), "vocabulary: the Rank list IS the engine's ranks");
@@ -240,21 +276,39 @@ const ART = artBlock ? JSON.parse(artBlock[1]) : null;
   const q = L.quarantine(D);   // removing a tag's only Check questions must hold exactly the cases that use that tag
   ok(Object.keys(q.held).sort().join() === "DRY-ICE,MOVIN-MOLECULES,PHASE-PROBE" && /Archive tag has no Check question/.test(q.held["DRY-ICE"][0]), "cascade: no Check question for SCI-KE-TEMP holds exactly the three cases that use it: " + Object.keys(q.held).sort());
   ok(q.C.cases.some((c) => c.id === "COLD-PACK") && q.errors.length === 0, "...and the other cases carry on"); }
-if (ART) {
-  { const D = clone(C); D.items.push({ id: "ghost", name: "Ghost", slot: "pet", price: 10, kind: "Pet", unlocks: "", rank: "", sprite: "no-such-art", desc: "" });
-    D.items.push({ id: "wrongslot", name: "Wrong", slot: "pet", price: 10, kind: "Pet", unlocks: "", rank: "", sprite: "microscope", desc: "" });
-    D.cases.find((c) => c.id === "BOUNCE-LAB").requires = "ghost";
-    const p = L.prepare(D, ART);
-    ok(!p.C.items.some((i) => i.id === "ghost" || i.id === "wrongslot"), "fitToArt: items without matching art never reach the shop");
-    ok(p.held["BOUNCE-LAB"] && !p.C.cases.some((c) => c.id === "BOUNCE-LAB"), "fitToArt: a job needing an art-less item is held back");
-    ok(p.warnings.some((w) => /ghost.*no 'no-such-art'/.test(w)) && p.warnings.some((w) => /wrongslot.*slot 'pet' but the art sits in 'bench-1'/.test(w)), "fitToArt: says why, in plain words"); }
-  { const p = L.prepare(C, ART); ok(Object.keys(p.held).length === 0 && p.errors.length === 0 && p.warnings.length === 0 && p.C.cases.length === C.cases.length, "the shipped snapshot prepares with nothing held or warned"); }
-}
+{ const D = clone(C); D.items.push({ id: "ghost", name: "Ghost", slot: "pet", price: 10, kind: "Cosmetic", unlocks: "", rank: "", sprite: "no-such-art", desc: "" });
+  D.items.push({ id: "wrongspot", name: "Wrong", slot: "pet", price: 10, kind: "Cosmetic", unlocks: "", rank: "", sprite: "microscope", desc: "" });
+  D.items.find((i) => i.id === "pressure-gauge").sprite = "no-such-art";
+  const p = L.prepare(D, ART);
+  ok(!p.C.items.some((i) => i.id === "ghost" || i.id === "wrongspot" || i.id === "pressure-gauge"), "fitToArt: items without a matching picture never reach the store");
+  ok(p.held["BOUNCE-LAB"] && !p.C.cases.some((c) => c.id === "BOUNCE-LAB"), "fitToArt: a job needing a picture-less item is held back, not given away free");
+  ok(p.warnings.some((w) => /ghost.*no 'no-such-art' picture/.test(w)) && p.warnings.some((w) => /wrongspot.*no 'microscope' picture for a pet spot/.test(w)), "fitToArt: says why, in plain words"); }
+{ const p = L.prepare(C, ART); ok(Object.keys(p.held).length === 0 && p.errors.length === 0 && p.warnings.length === 0 && p.C.cases.length === C.cases.length, "the shipped snapshot prepares with nothing held or warned"); }
+{ const bad = (mut) => { const D = clone(C); mut(D); return L.prepare(D, ART); };   // the Items tab, edited by a teacher
+  let p = bad((D) => { D.items.find((i) => i.id === "pet-cat").kind = "Pet"; });
+  ok(!p.C.items.some((i) => i.id === "pet-cat") && p.warnings.some((w) => /pet-cat.*Kind 'Pet'/.test(w)) && p.errors.length === 0, "an item with a Kind the game doesn't know is skipped with a warning");
+  p = bad((D) => { D.items.find((i) => i.id === "pet-cat").slot = "ceiling"; });
+  ok(!p.C.items.some((i) => i.id === "pet-cat") && p.warnings.some((w) => /pet-cat.*Slot 'ceiling'/.test(w)), "an item in a spot the lab doesn't have is skipped");
+  p = bad((D) => { D.items.find((i) => i.id === "graph-frame").price = 20; });
+  ok(!p.C.items.some((i) => i.id === "graph-frame") && p.warnings.some((w) => /graph-frame.*Award/.test(w)), "an Award with a price is skipped (awards are earned)");
+  p = bad((D) => { D.items.find((i) => i.id === "wall-mint").sprite = "minty"; });
+  ok(!p.C.items.some((i) => i.id === "wall-mint") && p.warnings.some((w) => /wall-mint.*color like/.test(w)), "a paint whose color isn't a color is skipped");
+  p = bad((D) => { D.items.push(clone(D.items.find((i) => i.id === "pet-dog"))); });
+  ok(p.C.items.filter((i) => i.id === "pet-dog").length === 0 && p.warnings.some((w) => /pet-dog.*used twice/.test(w)), "a copy-pasted ItemID is skipped rather than guessed at");
+  p = bad((D) => { D.items.find((i) => i.id === "wall-white").price = 10; });
+  ok(p.errors.some((e) => /no free starter row for paint-wall/.test(e)), "no free wall paint: a blocking error (the room can't be drawn), so the game falls back");
+  p = bad((D) => { D.items.find((i) => i.id === "desk").price = 10; });
+  ok(p.errors.some((e) => /starter lab has no bench/.test(e)), "no free bench: a blocking error");
+  p = bad((D) => { D.items.find((i) => i.id === "pressure-gauge").unlocks = ""; });
+  ok(p.warnings.some((w) => /pressure-gauge: BOUNCE-LAB requires this item, but its Unlocks cell is blank/.test(w)) && p.errors.length === 0, "equipment a job requires should say what it unlocks");
+  p = bad((D) => { D.items.find((i) => i.id === "pet-bunny").rank = "Wizard"; });
+  ok(p.warnings.some((w) => /pet-bunny: rank 'Wizard'/.test(w)), "a rank that isn't a rank name is flagged"); }
 { const M = L.load(C);
-  const P = Object.assign(L.freshProgress(), { placed: { room: "paint-lavender", pet: "pet-gone", "bench-1": "pressure-gauge" }, activeJob: { caseId: "REMOVED-CASE" } });
-  L.sanitizeProgress(P, C);
-  ok(!P.placed.pet && !P.placed["bench-1"] && P.placed.room === "paint-lavender" && !P.activeJob, "sanitizeProgress drops what no longer exists (missing item, wrong slot, removed case's saved job)");
-  const P2 = L.freshProgress(); P2.placed = {}; L.sanitizeProgress(P2, C); ok(P2.placed.room === "paint-lavender", "...and puts the starter paint back if the room has none");
+  const P = Object.assign(fresh(), { activeJob: { caseId: "REMOVED-CASE" } });
+  P.lab.owned.push("pet-gone", "pet-cat"); P.lab.rooms.main.placed.pet = "pet-gone"; P.lab.rooms.main.placed["bench-3"] = "pet-cat";
+  L.sanitizeProgress(P, C, ART);
+  ok(!P.lab.rooms.main.placed.pet && !P.lab.rooms.main.placed["bench-3"] && !P.lab.owned.includes("pet-gone") && L.owns(P, "pet-cat") && !P.activeJob, "sanitizeProgress drops what no longer exists (missing item, wrong spot, removed case's saved job) and keeps what does");
+  const P2 = L.freshProgress(); L.sanitizeProgress(P2, C, ART); ok(P2.lab.rooms.main.paint.wall === "wall-white" && P2.lab.rooms.main.placed.bench === "desk", "...and a brand-new student gets the starter lab");
   const BQ = M.main["BOUNCE-LAB"][0].id;
   const snap = { caseId: "BOUNCE-LAB", qi: 99, order: { [BQ]: ["Z", "Y"] }, rec: { [BQ]: { tries: 1 }, "OLD-Q": { tries: 3 } }, visited: ["CAL-SCALE", "TAG-GONE"], screen: "question", certified: true };
   const r = L.reconcileJob(M, snap), qs = M.main["BOUNCE-LAB"];
@@ -275,7 +329,7 @@ const run = async (o) => { const calls = []; const d = Object.assign({ snapshot:
 (async () => {
   let r = await run({ feedUrl: "" });                       ok(r.source === "snapshot" && r.calls.length === 0 && r.C.cases[0].title !== "Live Title", "chooser: no feed configured -> the built-in snapshot, no network");
   r = await run();                                          ok(r.source === "live" && r.C.cases.find((c) => c.id === "MOVIN-MOLECULES").title === "Live Title", "chooser: a good feed is used");
-  ok(/\?v=0\.4$/.test(r.calls[0]) && !/draft/.test(r.calls[0]) && r.store.puts.length === 1 && r.store.puts[0].savedAt === 5_000_000, "...fetched without drafts, and cached with a timestamp");
+  ok(/\?v=0\.5$/.test(r.calls[0]) && !/draft/.test(r.calls[0]) && r.store.puts.length === 1 && r.store.puts[0].savedAt === 5_000_000, "...fetched without drafts, and cached with a timestamp");
   r = await run({ preview: true });                         ok(/include=draft&fresh=1/.test(r.calls[0]) && r.store.puts.length === 0, "chooser: preview asks for drafts, bypasses the server cache, and never caches them");
   r = await run({ fetchJson: async () => { throw new Error("timed out"); } });  ok(r.source === "snapshot" && /couldn't reach/.test(r.note), "chooser: network failure -> snapshot, with a note");
   const cached = { savedAt: 1, content: feed() };

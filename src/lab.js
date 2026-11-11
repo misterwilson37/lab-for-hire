@@ -1,70 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lab for Hire: lab space demo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap">
-<!-- Lab Space demo v0.3.0 | LabRoom module v0.3.0 | built by bake/build_lab.py. Edit src/lab_template.html, not this file. -->
-<style>
-  :root {
-    --ink: #2A1F4A; --accent: #6547CF; --paper: #FBFAFE; --room: #EEEAF8; --line: #DDD6EF; --muted: #6B6388;
-    box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  :root:not([data-theme="light"]) { color-scheme: light; }
-  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
-  *, *::before, *::after { box-sizing: inherit; }
-  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.45; }
-  .demo-bar { display: grid; grid-template-columns: 1fr auto; align-items: center; grid-gap: 10px 16px; padding: 14px 20px 12px; max-width: 1280px; margin: 0 auto; }
-  .brand h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
-  .brand p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
-  .rankbox { justify-self: end; text-align: right; font-size: 14px; color: var(--muted); }
-  .rankbox b { color: var(--ink); font-weight: 600; font-size: 16px; }
-  .demo-strip { grid-column: 1 / -1; display: grid; grid-template-columns: auto auto auto 1fr; grid-gap: 10px; align-items: center; border: 2px dashed var(--line); border-radius: 12px; padding: 8px 10px; }
-  .demo-strip small { color: var(--muted); font-size: 13px; }
-  .demo-strip button { font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; padding: 9px 14px; border: 2px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; touch-action: manipulation; }
-  .demo-strip button.quiet { background: transparent; color: var(--accent); }
-  .demo-strip button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-  #lab { max-width: 1280px; margin: 0 auto; padding: 0 20px 24px; }
-  @media (max-width: 560px) {
-    .demo-bar { grid-template-columns: 1fr; padding: 12px 12px 10px; }
-    .rankbox { justify-self: start; text-align: left; }
-    .demo-strip { grid-template-columns: 1fr 1fr; }
-    .demo-strip small { grid-column: 1 / -1; }
-    #lab { padding: 0 12px 20px; }
-  }
-</style>
-</head>
-<body>
-<header class="demo-bar">
-  <div class="brand"><h1>Your lab</h1><p>Lab for Hire lab space demo, v0.3.0</p></div>
-  <div class="rankbox">Rank <b id="rankName">Intern</b><br><span id="repLine">0 rep</span></div>
-  <div class="demo-strip">
-    <button id="job" type="button">Finish a job (+$60)</button>
-    <button id="award" type="button" class="quiet">Ace a case (award)</button>
-    <button id="reset" type="button" class="quiet">Reset demo</button>
-    <small>Demo only. These buttons stand in for real case work. This lab saves in this browser only.</small>
-  </div>
-</header>
-<main id="lab"></main>
-
-<!-- ======== GENERATED DATA (build_lab.py). Never hand-edit. ======== -->
-<script id="lab-items" type="application/json">/*ITEMS*/</script>
-<script id="lab-manifest" type="application/json">/*MANIFEST*/</script>
-<script id="lab-sprites" type="application/json">/*SPRITES*/</script>
-
-<!-- ======== LabRoom module v0.3.0: pastes into index.html as-is ======== -->
-<script id="lab">
+/* Lab for Hire lab room v0.4.0: draws the student's lab and its store. UI only.
+   The rules (starter lab, what fits where, buying, awards) live in the engine: LFH.lab.
+   LabRoom.mount(el, { state, funds, items, manifest, sprites, rank, readOnly, onTap, onChange })
+     state    the lab part of progress (see LFH.lab); funds is passed separately and handed back in onChange(lab, funds, event)
+     readOnly just the room (the home screen); onTap(itemId, spotId) says what was tapped */
 (function () {
   "use strict";
-  var VERSION = "0.3.0";
+  var VERSION = "0.4.0";
   var SVGNS = "http://www.w3.org/2000/svg";
-  var PAINT_KEYS = { "paint-wall": "wall", "paint-floor": "floor", "paint-trim": "trim", "paint-tiles": "tiles" };
+  var LAB = LFH.lab;
   var PAINT_LABELS = { wall: "Walls", floor: "Floor", trim: "Trim", tiles: "Floor pattern" };
-  var UNLOCK_LABELS = { cells: "Cell cases", "plant-growth": "Plant growth cases", materials: "Medical design cases", reactions: "Reaction cases" };
 
-  // ---------- paint math: identical to bake/scene.js ----------
+  // ---------- paint math: identical to dev/art/scene.js ----------
   function s2l(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
   function l2s(c) { return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055; }
   function hexToRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map(function (i) { return parseInt(h.slice(i, i + 2), 16) / 255; }); }
@@ -72,109 +18,17 @@
   function shadeHex(hex, f) { return rgbToHex(hexToRgb(hex).map(function (c, i) { return l2s(s2l(c) * f[i]); })); }
   function darkHex(hex, k) { return rgbToHex(hexToRgb(hex).map(function (c) { return l2s(s2l(c) * k); })); }
 
-  function readJSON(id) { var el = document.getElementById(id); return el ? JSON.parse(el.textContent) : null; }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function sv(tag, attrs) { var e = document.createElementNS(SVGNS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
   function money(n) { return "$" + n; }
-
-  function indexItems(items) {
-    var byId = {}; items.forEach(function (it) { byId[it.id] = it; }); return byId;
-  }
-  function paintKey(it) { return PAINT_KEYS[it.slot] || null; }
-  function slotsOfType(man, type) { return man.slots.filter(function (s) { return s.type === type; }); }
-
-  // ---------- state helpers (pure: the main game can call these) ----------
-  // Lab state v2 (wing-ready): { v: 2, funds, owned: [itemId], rooms: { main: { placed: {spotId: itemId}, paint: {wall,floor,trim,tiles}, colors: {wall,floor,trim} } }, awards: { itemId: data } }
-  // One of each item. An item is out in at most one room; everything owned but not out is "in storage".
+  function indexItems(items) { var byId = {}; items.forEach(function (it) { byId[it.id] = it; }); return byId; }
+  var paintKey = LAB.paintKey, isAward = LAB.isAward, roomOf = LAB.roomOf, slotsOfType = LAB.slotsOfType;
   var ANY_DEFAULT = { wall: "#FFE7A8", floor: "#CFE8D5", trim: "#E0413A" };
-  function isAward(it) { return it.kind === "Award"; }
-  function isStarter(it) { return it.price === 0 && !isAward(it); }
-  function roomOf(man) { return man.roomId || "main"; }
-  function defaultRoom(items, man) {
-    var rm = { placed: {}, paint: { wall: null, floor: null, trim: null, tiles: null }, colors: {} };
-    items.forEach(function (it) {
-      if (!isStarter(it)) return;
-      var pk = paintKey(it);
-      if (pk) { if (!rm.paint[pk] && it.sprite !== "any") rm.paint[pk] = it.id; return; }
-      var free = slotsOfType(man, it.slot).filter(function (s) { return !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]); })[0];
-      if (free) rm.placed[free.id] = it.id;
-    });
-    return rm;
-  }
-  // Starter lab = every Price 0 row (except Awards), owned, placed in row order.
-  function defaultState(items, man) {
-    man = man || readJSON("lab-manifest");
-    var st = { v: 2, funds: 0, owned: [], rooms: {}, awards: {} };
-    items.forEach(function (it) { if (isStarter(it)) st.owned.push(it.id); });
-    st.rooms[roomOf(man)] = defaultRoom(items, man);
-    return st;
-  }
-  function isHex(c) { return typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c); }
-  // Repairs anything a stale save, a v1 save, or an edited Items tab could break. Never throws.
-  function normalize(state, items, man) {
-    man = man || readJSON("lab-manifest");
-    var byId = indexItems(items), rid = roomOf(man), def = defaultState(items, man), drm = def.rooms[rid];
-    var st = state && typeof state === "object" ? clone(state) : {};
-    // v1 (lab-space v0.1.0): placed and paint sat at the top level
-    if (!st.rooms) { st.rooms = {}; if (st.placed || st.paint) st.rooms[rid] = { placed: st.placed, paint: st.paint }; }
-    delete st.placed; delete st.paint;
-    st.v = 2;
-    st.funds = Math.max(0, Math.floor(Number(st.funds) || 0));
-    var owned = Array.isArray(st.owned) ? st.owned : [];
-    def.owned.forEach(function (id) { if (owned.indexOf(id) < 0) owned.push(id); });
-    st.owned = owned.filter(function (id, i) { return byId[id] && owned.indexOf(id) === i; });
-    st.awards = st.awards && typeof st.awards === "object" ? st.awards : {};
-    // items already out in OTHER rooms (future wings) stay there; this room can't also use them
-    var used = {};
-    Object.keys(st.rooms).forEach(function (k) { if (k === rid) return; var p = (st.rooms[k] || {}).placed || {}; for (var s in p) used[p[s]] = 1; });
-    var src = st.rooms[rid] && typeof st.rooms[rid] === "object" ? st.rooms[rid] : null;
-    var placed = {};
-    if (!src || !src.placed) placed = clone(drm.placed); // brand-new lab
-    else man.slots.forEach(function (s) {
-      var id = src.placed[s.id], it = byId[id];
-      if (it && it.slot === s.type && st.owned.indexOf(id) >= 0 && !used[id]) { placed[s.id] = id; used[id] = 1; }
-    });
-    man.slots.forEach(function (s) { if (s.required && !placed[s.id] && drm.placed[s.id]) placed[s.id] = drm.placed[s.id]; });
-    // nothing floats: a spot whose table or shelf is gone goes back to storage
-    man.slots.forEach(function (s) { if (s.parent && !placed[s.parent]) delete placed[s.id]; });
-    var paint = (src && src.paint) || {}, colors = (src && src.colors) || {}, outColors = {};
-    ["wall", "floor", "trim", "tiles"].forEach(function (k) {
-      var it = byId[paint[k]];
-      if (!it || paintKey(it) !== k || st.owned.indexOf(it.id) < 0) paint[k] = drm.paint[k];
-    });
-    ["wall", "floor", "trim"].forEach(function (k) { if (isHex(colors[k])) outColors[k] = colors[k].toUpperCase(); });
-    st.rooms[rid] = { placed: placed, paint: { wall: paint.wall, floor: paint.floor, trim: paint.trim, tiles: paint.tiles }, colors: outColors };
-    return st;
-  }
-  // The bench and the shelf can be swapped but never emptied (other spots sit on them). The Work Table is optional.
   function isRequired(man, slotId) { var s = man.slots.filter(function (x) { return x.id === slotId; })[0]; return !!(s && s.required); }
-  // Case types unlocked by OWNED equipment (placing it isn't required).
-  function unlocks(state, items) {
-    var byId = indexItems(items), out = [];
-    (state.owned || []).forEach(function (id) { var it = byId[id]; if (it && it.unlocks && out.indexOf(it.unlocks) < 0) out.push(it.unlocks); });
-    return out;
-  }
-  // The game grants Awards (never sold). For "Your Graph", data = { title, type: "line"|"bar"|"scatter", points: [[x, y], ...] }.
-  // Granting again replaces the data (the newest graph wins). New awards go up in an empty poster spot if there is one.
-  function grant(state, items, itemId, data, man) {
-    man = man || readJSON("lab-manifest");
-    var st = normalize(state, items, man), it = indexItems(items)[itemId];
-    if (!it) return st;
-    var isNew = st.owned.indexOf(itemId) < 0;
-    if (isNew) st.owned.push(itemId);
-    if (data !== undefined) st.awards[itemId] = clone(data);
-    var rm = st.rooms[roomOf(man)], out = false;
-    for (var k in rm.placed) if (rm.placed[k] === itemId) out = true;
-    if (isNew && !out) {
-      var free = slotsOfType(man, it.slot).filter(function (s) { return !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]); })[0];
-      if (free) rm.placed[free.id] = itemId;
-    }
-    return st;
-  }
   // ---------- styles (scoped to .lr) ----------
   var CSS = [
-    ".lr{--lr-ink:#2A1F4A;--lr-accent:#6547CF;--lr-room:#EEEAF8;--lr-line:#DDD6EF;--lr-muted:#6B6388;--lr-card:#FFFFFF;--lr-good:#1F7A57;--lr-warn:#B3265A;color:var(--lr-ink);font:inherit;display:grid;grid-template-columns:1fr;grid-gap:16px}",
+    ".lr{--lr-ink:var(--ink);--lr-accent:var(--violet);--lr-room:var(--bg);--lr-line:var(--line);--lr-muted:var(--ink-soft);--lr-card:var(--paper);--lr-good:var(--mint);--lr-warn:var(--pink);--lr-soft:var(--violet-soft);color:var(--lr-ink);font:inherit;display:grid;grid-template-columns:1fr;grid-gap:16px}",
     ".lr.lr-wide{grid-template-columns:minmax(0,1fr) 360px;align-items:start}",
     ".lr button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}",
     ".lr button:focus-visible{outline:3px solid var(--lr-accent);outline-offset:2px}",
@@ -182,27 +36,27 @@
     ".lr-wide .lr-stage{top:12px;border-radius:20px}",
     ".lr-sizer{position:relative;width:100%;margin:0 auto}",
     ".lr-svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}",
-    ".lr-hint{position:absolute;left:12px;bottom:10px;margin:0;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.75);font-size:14px;color:var(--lr-muted);pointer-events:none}",
+    ".lr-hint{position:absolute;left:12px;bottom:10px;margin:0;padding:4px 10px;border-radius:999px;background:var(--stamp-bg);font-size:14px;color:var(--lr-muted);pointer-events:none}",
     ".lr-panel{background:var(--lr-card);border:1px solid var(--lr-line);border-radius:18px;padding:16px;min-width:0}",
     ".lr-wallet{display:grid;grid-template-columns:auto 1fr;grid-gap:2px 10px;align-items:baseline}",
     ".lr-funds{font-size:32px;font-weight:600;line-height:1.1;letter-spacing:-0.02em}",
     ".lr-funds-label{font-size:14px;color:var(--lr-muted)}",
     ".lr-status{grid-column:1/-1;min-height:1.45em;margin:6px 0 0;font-size:14px;color:var(--lr-good);font-weight:500}",
-    ".lr-unlocks{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#F4F1FC;font-size:14px}",
+    ".lr-unlocks{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--lr-soft);font-size:14px}",
     ".lr-unlocks b{font-weight:600}",
     ".lr-chips{display:flex;flex-wrap:wrap;margin:6px -3px 0}",
-    ".lr-chip{display:inline-block;margin:3px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--lr-line);font-size:13px;font-weight:500}",
-    ".lr-tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 0 10px;background:#F4F1FC;border-radius:12px;padding:4px}",
+    ".lr-chip{display:inline-block;margin:3px;padding:3px 10px;border-radius:999px;background:var(--lr-card);border:1px solid var(--lr-line);font-size:13px;font-weight:500}",
+    ".lr-tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 0 10px;background:var(--lr-soft);border-radius:12px;padding:4px}",
     ".lr-tabs button{border:0;background:transparent;border-radius:9px;padding:9px 2px;white-space:nowrap;font-weight:600;font-size:15px;color:var(--lr-muted)}",
-    ".lr-tabs button[aria-selected=true]{background:#fff;color:var(--lr-ink);box-shadow:0 1px 3px rgba(42,31,74,.14)}",
+    ".lr-tabs button[aria-selected=true]{background:var(--lr-card);color:var(--lr-ink);box-shadow:0 1px 3px rgba(42,31,74,.14)}",
     ".lr-spothead{display:grid;grid-template-columns:auto 1fr;grid-gap:0 10px;align-items:center;margin:14px 0 10px}",
-    ".lr-back{border:1px solid var(--lr-line);background:#fff;border-radius:10px;padding:8px 12px;font-weight:600;font-size:15px}",
+    ".lr-back{border:1px solid var(--lr-line);background:var(--lr-card);border-radius:10px;padding:8px 12px;font-weight:600;font-size:15px}",
     ".lr-spothead h3{margin:0;font-size:18px;font-weight:600}",
     ".lr-spothead p{grid-column:2;margin:0;font-size:13px;color:var(--lr-muted)}",
     ".lr-group{margin:14px 0 6px;font-size:15px;font-weight:600}",
     ".lr-group small{display:block;font-weight:400;font-size:13px;color:var(--lr-muted)}",
     ".lr-list{display:grid;grid-template-columns:1fr;grid-gap:8px}",
-    ".lr-card{border:1px solid var(--lr-line);border-radius:12px;background:#fff;overflow:hidden}",
+    ".lr-card{border:1px solid var(--lr-line);border-radius:12px;background:var(--lr-card);overflow:hidden}",
     ".lr-card.on{border-color:var(--lr-accent);box-shadow:0 0 0 2px var(--lr-accent) inset}",
     ".lr-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;grid-gap:12px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:8px 12px 8px 8px}",
     ".lr-thumb{width:56px;height:56px;border-radius:10px;background:var(--lr-room);display:flex;align-items:center;justify-content:center;overflow:hidden}",
@@ -217,16 +71,16 @@
     ".lr-tag.earn{color:var(--lr-accent)}",
     ".lr-colors{display:grid;grid-template-columns:repeat(8,1fr);grid-gap:8px;margin:4px 0 12px;max-width:340px}",
     ".lr-color{width:100%;padding:0;padding-bottom:100%;border-radius:50%;border:2px solid rgba(42,31,74,.18);cursor:pointer;touch-action:manipulation}",
-    ".lr-color[aria-pressed=true]{border-color:var(--lr-ink);box-shadow:0 0 0 2px #fff inset}",
+    ".lr-color[aria-pressed=true]{border-color:var(--lr-ink);box-shadow:0 0 0 2px var(--lr-card) inset}",
     ".lr-color:focus-visible{outline:3px solid var(--lr-ink);outline-offset:2px}",
     ".lr-more{display:inline-grid;grid-template-columns:auto auto;grid-gap:8px;align-items:center;font-size:15px;font-weight:600;color:var(--lr-accent)}",
-    ".lr-more input{width:44px;height:36px;border:1px solid var(--lr-line);border-radius:8px;padding:2px;background:#fff}",
-    ".lr-unlockline{display:block;font-size:13px;color:#16688F;font-weight:500}",
+    ".lr-more input{width:44px;height:36px;border:1px solid var(--lr-line);border-radius:8px;padding:2px;background:var(--lr-card)}",
+    ".lr-unlockline{display:block;font-size:13px;color:var(--sky);font-weight:500}",
     ".lr-detail{padding:0 12px 12px 76px}",
     ".lr-detail p{margin:0 0 10px;font-size:14px}",
-    ".lr-act{border:2px solid var(--lr-accent);background:var(--lr-accent);color:#fff !important;border-radius:10px;padding:9px 16px;font-weight:600;font-size:15px}",
-    ".lr-act.alt{background:#fff;color:var(--lr-accent) !important}",
-    ".lr-act[disabled]{background:#EDEAF5;border-color:#EDEAF5;color:var(--lr-muted) !important;cursor:default}",
+    ".lr-act{border:2px solid var(--lr-accent);background:var(--lr-accent);color:var(--paper) !important;border-radius:10px;padding:9px 16px;font-weight:600;font-size:15px}",
+    ".lr-act.alt{background:var(--lr-card);color:var(--lr-accent) !important}",
+    ".lr-act[disabled]{background:var(--lr-soft);border-color:var(--lr-soft);color:var(--lr-muted) !important;cursor:default}",
     ".lr-empty{font-size:14px;color:var(--lr-muted);margin:8px 0}",
     ".lr-slot-focus{fill:transparent;stroke:none;outline:none}",
     ".lr-slot-focus:focus{stroke:var(--lr-accent);stroke-width:4;stroke-dasharray:10 8}",
@@ -240,23 +94,19 @@
   // ---------- mount ----------
   function mount(root, opts) {
     injectCSS();
-    var items = opts.items || readJSON("lab-items");
-    var man = opts.manifest || readJSON("lab-manifest");
-    var spriteData = opts.sprites || readJSON("lab-sprites") || {};
-    var spriteBase = opts.spriteBase || "lab-sprites/";
+    var items = opts.items, man = opts.manifest, spriteData = opts.sprites || {};
     var onChange = opts.onChange || function () {};
     var rank = opts.rank || 0;
-    var rankName = opts.rankName || function (n) { return "rank " + n; };
-    var unlockLabel = function (t) { return (opts.unlockLabels && opts.unlockLabels[t]) || UNLOCK_LABELS[t] || t; };
-    var readOnly = !!opts.readOnly;
+    var readOnly = !!opts.readOnly, onTap = opts.onTap || null;
     var byId = indexItems(items);
     var slotById = {}; man.slots.forEach(function (s) { slotById[s.id] = s; });
-    var state = normalize(opts.state, items, man);
+    var state = LAB.normalize(opts.state, items, man);
+    var funds = Math.max(0, Math.floor(Number(opts.funds) || 0));
     var roomId = roomOf(man);
     function R() { return state.rooms[roomId]; }
 
     var ui = { tab: "store", spot: null, preview: null, status: "" };   // preview: { itemId, slotId | paintKey }
-    function spriteUrl(file) { return spriteData[file] || spriteBase + file; }
+    function spriteUrl(file) { return spriteData[file] || ""; }
     function spriteFor(it, slotId) { return man.sprites[it.sprite + "@" + slotId] || null; }
     function owns(id) { return state.owned.indexOf(id) >= 0; }
     function placedAt(id) { for (var k in R().placed) if (R().placed[k] === id) return k; return null; }
@@ -438,18 +288,17 @@
       }
       return null;
     }
-    if (!readOnly) {
-      svg.addEventListener("click", function (e) {
-        var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-        var p = pt.matrixTransform(svg.getScreenCTM().inverse());
-        var id = pickAt(p.x, p.y);
-        if (id) selectSpot(id); else if (ui.spot) { ui.spot = null; ui.preview = null; render(); }
-      });
-    }
+    svg.addEventListener("click", function (e) {
+      var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      var p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      var id = pickAt(p.x, p.y);
+      if (readOnly) { if (id && onTap && R().placed[id]) onTap(R().placed[id], id); return; }
+      if (id) selectSpot(id); else if (ui.spot) { ui.spot = null; ui.preview = null; render(); }
+    });
 
     // ----- actions -----
     function say(msg) { ui.status = msg; if (panel) { var s = panel.querySelector(".lr-status"); if (s) s.textContent = msg; } }
-    function emit(ev) { preloadHits(); onChange(clone(state), ev); }
+    function emit(ev) { preloadHits(); onChange(clone(state), funds, ev); }
     function selectSpot(id) { ui.spot = id; ui.preview = null; ui.status = ""; render(); var b = panel && panel.querySelector(".lr-back"); if (b) b.focus(); }
     function targetSlot(it) {
       if (ui.spot && slotById[ui.spot].type === it.slot) return ui.spot;   // a tapped spot wins, even for things already out
@@ -466,14 +315,14 @@
       render();
     }
     function buy(it) {
-      if (owns(it.id) || it.price > state.funds || it.rank > rank) return;
-      var p = ui.preview; state.funds -= it.price; state.owned.push(it.id);
+      var got = LAB.buy(it, state, funds, rank); if (!got) return;
+      var p = ui.preview; state = got.lab; funds = got.funds;
       var pk = paintKey(it), slotId = null;
       if (pk) R().paint[pk] = it.id;
       else { slotId = p && p.itemId === it.id ? p.slotId : targetSlot(it); placeIn(it, slotId); }
       ui.preview = null;
       var msg = "Bought the " + it.name + ".";
-      if (it.unlocks) msg += " " + unlockLabel(it.unlocks) + " are unlocked!";
+      if (it.unlocks) msg += " Unlocked: " + it.unlocks + "!";
       else if (pk) msg = "Bought " + it.name + " for your " + PAINT_LABELS[pk].toLowerCase() + ".";
       ui.status = msg; render(); emit({ type: "buy", itemId: it.id, slotId: slotId, price: it.price });
     }
@@ -504,7 +353,7 @@
       var inUse = pk ? R().paint[pk] === it.id : !!where;
       var on = ui.preview && ui.preview.itemId === it.id;
       var c = el("div", "lr-card" + (on ? " on" : ""));
-      var row = el("button", "lr-row"); row.type = "button"; row.setAttribute("aria-expanded", on ? "true" : "false"); row.setAttribute("data-k", it.id);
+      var row = el("button", "lr-row"); row.type = "button"; row.setAttribute("data-item", it.id); row.setAttribute("aria-expanded", on ? "true" : "false"); row.setAttribute("data-k", it.id);
       var th = el("span", "lr-thumb");
       if (pk === "tiles") th.appendChild(patternSwatch(it.sprite));
       else if (pk) {
@@ -522,14 +371,15 @@
       var meta = pk ? PAINT_LABELS[pk] : slotById[targetSlot(it)].label;
       if (where && slotsOfType(man, it.slot).length > 1) meta = "In your lab: " + slotById[where].label.toLowerCase();
       txt.appendChild(el("span", "lr-meta", meta));
-      if (it.unlocks) txt.appendChild(el("span", "lr-unlockline", "Unlocks " + unlockLabel(it.unlocks).toLowerCase()));
-      if (!mine && it.rank > rank) txt.appendChild(el("span", "lr-meta", "Reach " + rankName(it.rank) + " to buy"));
+      var can = LAB.canBuy(it, state, funds, rank);
+      if (it.unlocks && it.kind === "Equipment") txt.appendChild(el("span", "lr-unlockline", "Unlocks " + it.unlocks));
+      if (can.state === "rank") txt.appendChild(el("span", "lr-meta", can.why));
       row.appendChild(txt);
       var tag;
       if (inUse) tag = el("span", "lr-tag have", "In your lab");
       else if (mine) tag = el("span", "lr-tag have", isAward(it) ? "Earned" : "Yours");
       else if (isAward(it)) tag = el("span", "lr-tag earn", "Earn it");
-      else if (it.rank > rank) tag = el("span", "lr-tag lock", "Locked");
+      else if (can.state === "rank") tag = el("span", "lr-tag lock", "Locked");
       else tag = el("span", "lr-tag price", money(it.price));
       row.appendChild(tag);
       row.addEventListener("click", function () {
@@ -538,18 +388,16 @@
       });
       c.appendChild(row);
       if (on) {
-        var d = el("div", "lr-detail"); d.appendChild(el("p", null, it.description));
+        var d = el("div", "lr-detail"); d.appendChild(el("p", null, it.desc || ""));
         var slotId = ui.preview.slotId;
         var btn = el("button", "lr-act"); btn.type = "button";
         if (pk && it.sprite === "any" && mine) {
           d.appendChild(colorPicker(it)); c.appendChild(d); return c;
         }
         if (pk && it.sprite === "any") d.appendChild(el("p", "lr-meta", "After you buy it, pick any color right here, as often as you like."));
-        if (!mine && isAward(it)) { btn.disabled = true; btn.textContent = "Earned, never bought"; }
-        else if (!mine) {
-          if (it.rank > rank) { btn.disabled = true; btn.textContent = "Reach " + rankName(it.rank) + " to buy"; }
-          else if (it.price > state.funds) { btn.disabled = true; btn.textContent = "Need " + money(it.price - state.funds) + " more"; }
-          else { btn.textContent = "Buy for " + money(it.price); btn.addEventListener("click", function () { buy(it); }); }
+        if (!mine) {
+          if (!can.ok) { btn.disabled = true; btn.textContent = can.why; }
+          else { btn.textContent = "Buy for " + money(it.price); btn.setAttribute("data-buy", it.id); btn.addEventListener("click", function () { buy(it); }); }
         } else if (placedAt(it.id) === slotId) {
           if (isRequired(man, slotId)) { btn.disabled = true; btn.textContent = "In your lab"; }
           else { btn.className = "lr-act alt"; btn.textContent = "Take it out"; btn.addEventListener("click", function () { takeOut(slotId); }); }
@@ -596,15 +444,15 @@
       var keepScroll = panel.scrollTop;
       panel.innerHTML = "";
       var wallet = el("div", "lr-wallet");
-      wallet.appendChild(el("span", "lr-funds", money(state.funds)));
+      wallet.appendChild(el("span", "lr-funds", money(funds)));
       wallet.appendChild(el("span", "lr-funds-label", "lab funds to spend"));
       var st = el("p", "lr-status", ui.status); st.setAttribute("role", "status"); st.setAttribute("aria-live", "polite"); wallet.appendChild(st);
       panel.appendChild(wallet);
-      var un = unlocks(state, items), ub = el("div", "lr-unlocks");
+      var un = items.filter(function (it) { return it.kind === "Equipment" && it.unlocks && owns(it.id); }).map(function (it) { return it.unlocks; }), ub = el("div", "lr-unlocks");
       if (un.length) {
         ub.appendChild(el("b", null, "Unlocked by your equipment"));
-        var chips = el("div", "lr-chips"); un.forEach(function (t) { chips.appendChild(el("span", "lr-chip", unlockLabel(t))); }); ub.appendChild(chips);
-      } else ub.textContent = "Buy equipment to unlock new kinds of cases.";
+        var chips = el("div", "lr-chips"); un.forEach(function (t) { chips.appendChild(el("span", "lr-chip", t)); }); ub.appendChild(chips);
+      } else ub.textContent = "Buy equipment to unlock new kinds of jobs.";
       panel.appendChild(ub);
 
       if (ui.spot) {
@@ -665,70 +513,10 @@
     return {
       version: VERSION,
       getState: function () { return clone(state); },
-      update: function (next) { state = normalize(next, items, man); ui.preview = null; render(); preloadHits(); },
-      setRank: function (n) { rank = n || 0; render(); },
-      // The game calls this when a student earns an award. For "graph-frame", data = { title, type, points }.
-      grant: function (itemId, data) {
-        var had = owns(itemId); state = grant(state, items, itemId, data, man); ui.preview = null;
-        var it = byId[itemId], at = placedAt(itemId);
-        if (it) ui.status = (had ? "Updated: " : "Award! ") + it.name + (at ? " is up on the " + slotById[at].label.toLowerCase() + "." : " is waiting in Storage.");
-        render(); emit({ type: "award", itemId: itemId });
-      },
-      say: function (msg) { say(msg); },
-      unlocks: function () { return unlocks(state, items); },
+      getFunds: function () { return funds; },
       destroy: function () { if (ro) ro.disconnect(); root.innerHTML = ""; }
     };
   }
 
-  window.LabRoom = { version: VERSION, mount: mount, defaultState: defaultState, normalize: normalize, unlocks: unlocks, grant: grant };
+  window.LabRoom = { version: VERSION, mount: mount };
 })();
-</script>
-
-<!-- ======== demo glue (NOT part of the module) ======== -->
-<script id="lab-demo">
-(function () {
-  "use strict";
-  // Separate key from the real game: on the same github.io origin, the demo must never touch lfh.progress.
-  var KEY = "lfh.labDemo";
-  var RANKS = [[0, "Intern"], [40, "Technician"], [100, "Analyst"], [200, "Lead Scientist"]]; // placeholder: the main game owns rank
-  function rankOf(rep) { var r = 0; RANKS.forEach(function (x, i) { if (rep >= x[0]) r = i; }); return r; }
-  function load() { try { var v = JSON.parse(localStorage.getItem(KEY)); if (v && v.lab) return v; } catch (e) {} return null; }
-  function save(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {} }
-  function fresh() { var lab = LabRoom.defaultState(JSON.parse(document.getElementById("lab-items").textContent)); lab.funds = 100; return { rep: 0, lab: lab }; }
-
-  var progress = load() || fresh();
-  var lab = LabRoom.mount(document.getElementById("lab"), {
-    state: progress.lab,
-    rank: rankOf(progress.rep),
-    rankName: function (n) { return RANKS[n] ? RANKS[n][1] : "rank " + n; },
-    onChange: function (next) { progress.lab = next; save(progress); }
-  });
-  progress.lab = lab.getState();
-  function showRank() {
-    document.getElementById("rankName").textContent = RANKS[rankOf(progress.rep)][1];
-    document.getElementById("repLine").textContent = progress.rep + " rep";
-  }
-  showRank();
-  document.getElementById("job").addEventListener("click", function () {
-    var before = rankOf(progress.rep);
-    progress.rep += 20; progress.lab = lab.getState(); progress.lab.funds += 60; save(progress);
-    lab.update(progress.lab); lab.setRank(rankOf(progress.rep)); showRank();
-    lab.say(rankOf(progress.rep) > before ? "Job done: +$60. You reached " + RANKS[rankOf(progress.rep)][1] + "!" : "Job done: +$60 for solid evidence.");
-  });
-  // In the real game, the case decides when a student earns this, and passes the graph they actually made.
-  var DEMO_GRAPHS = [
-    { title: "Movin' Molecules", type: "line", points: [[0, 21], [2, 30], [4, 41], [6, 49], [8, 60]] },
-    { title: "Winter Bounce", type: "bar", points: [[1, 34], [2, 52], [3, 47], [4, 71]] },
-    { title: "Cold Pack", type: "scatter", points: [[1, 19], [2, 15], [3, 16], [4, 11], [5, 9], [6, 10], [7, 6]] }
-  ];
-  var awardN = 0;
-  document.getElementById("award").addEventListener("click", function () {
-    lab.grant("graph-frame", DEMO_GRAPHS[awardN++ % DEMO_GRAPHS.length]);
-  });
-  document.getElementById("reset").addEventListener("click", function () {
-    progress = fresh(); save(progress); lab.update(progress.lab); lab.setRank(0); showRank(); lab.say("Demo reset. Back to the starter lab.");
-  });
-})();
-</script>
-</body>
-</html>

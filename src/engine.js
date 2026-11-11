@@ -216,15 +216,27 @@
       if (LFH.TEMPLATES && LFH.TEMPLATES[c.id] && c.status !== "Teaser") LFH.templateErrors(C, c.id).forEach(e);
     });
     // items: a bad item is skipped with a warning; cases that need it are held (see above)
+    const seenItem = new Set();
     (C.items || []).forEach((it) => {
       const skip = (m) => warn(`${it.id}: ${m}, so the item is skipped`, { dropItem: it.id });
+      const paint = LFH.lab.paintKey(it);
+      if (seenItem.has(it.id)) return skip("this ItemID is used twice");
+      seenItem.add(it.id);
       if (typeof it.price !== "number" || !(it.price >= 0)) skip("Price should be a number");
       else if (!V.ItemKind.includes(it.kind)) skip(`Kind '${it.kind}' isn't one of ${V.ItemKind.join(", ")}`);
+      else if (!V.Slot.includes(it.slot)) skip(`Slot '${it.slot}' isn't a spot in the lab`);
+      else if (it.kind === "Award" && it.price !== 0) skip("an Award is earned, never sold, so its Price must be 0");
+      else if (paint === "tiles" && !LFH.lab.PATTERNS.includes(it.sprite)) skip(`a floor pattern's Sprite must be one of ${LFH.lab.PATTERNS.join(", ")}`);
+      else if (paint && paint !== "tiles" && it.sprite !== "any" && !/^#[0-9a-fA-F]{6}$/.test(it.sprite)) skip("a paint's Sprite must be a color like #F5F0E6, or the word any");
       else {
-        if (it.unlocks && !caseIds.has(it.unlocks)) warn(`${it.id}: unlocks '${it.unlocks}', which isn't a case`);
-        else if (it.unlocks) { const c = C.cases.find((x) => x.id === it.unlocks); if (c && c.requires !== it.id) warn(`${it.id}: unlocks ${it.unlocks}, but that case requires '${c.requires || "nothing"}'`); }
+        if (it.unlocks && it.kind !== "Equipment") warn(`${it.id}: only Equipment unlocks cases, so its Unlocks note is ignored`);
         if (it.rank && LFH.rankIndex(it.rank) < 0) warn(`${it.id}: rank '${it.rank}' isn't a rank name, so anyone can buy it`);
       }
+    });
+    C.cases.forEach((c) => { const it = items[c.requires]; if (it && !it.unlocks) warn(`${it.id}: ${c.id} requires this item, but its Unlocks cell is blank, so the store can't tell students what it's for`); });
+    // the starter lab: every kind of paint needs one free color to start from (the room can't be drawn without it)
+    if ((C.items || []).length) Object.keys(LFH.lab.PAINT_KEYS).forEach((slot) => {
+      if (!C.items.some((it) => it.slot === slot && it.price === 0 && it.kind !== "Award" && it.sprite !== "any")) add(`Items: there is no free starter row for ${slot} (one row with Price 0)`);
     });
     return out;
   };
@@ -604,7 +616,101 @@
   LFH.rankOf = (rep) => LFH.RANKS.filter((k) => rep >= k.at).pop();
   LFH.nextRank = (rep) => LFH.RANKS.find((k) => k.at > rep);
   LFH.rankIndex = (name) => LFH.RANKS.findIndex((k) => k.name === name);
-  LFH.SLOT_NEEDS = { "shelf-top": "shelf" };                      // a slot that sits on another slot's furniture
+
+  /* ---------------- The student's lab: what they own, where it sits, paint, awards. Pure rules; src/lab.js draws it. ----------------
+     Lab state: { v: 2, owned: [itemId], rooms: { main: { placed: { spotId: itemId }, paint: { wall, floor, trim, tiles }, colors: {} } }, awards: { itemId: data } }
+     One of each item. An item is out in at most one room; everything owned but not out is "in storage".
+     `man` is the room manifest from the art bake (ART.manifest): it lists the spots. Funds live in progress.funds, never here. */
+  LFH.lab = (function () {
+    const PAINT_KEYS = { "paint-wall": "wall", "paint-floor": "floor", "paint-trim": "trim", "paint-tiles": "tiles" };
+    const PATTERNS = ["none", "checker", "stripes"];
+    const SLOTS = ["bench", "bench-item", "chair", "shelf", "shelf-top", "plant", "machine", "table", "rug", "poster", "pet", "lantern"].concat(Object.keys(PAINT_KEYS));
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+    const index = (items) => { const by = {}; items.forEach((it) => (by[it.id] = it)); return by; };
+    const paintKey = (it) => PAINT_KEYS[it.slot] || null;
+    const isAward = (it) => it.kind === "Award";
+    const isStarter = (it) => it.price === 0 && !isAward(it);
+    const roomOf = (man) => man.roomId || "main";
+    const slotsOfType = (man, type) => man.slots.filter((s) => s.type === type);
+    const isHex = (c) => typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c);
+    const rankNeeded = (it) => Math.max(0, LFH.rankIndex(it.rank));
+    function defaultRoom(items, man) {
+      const rm = { placed: {}, paint: { wall: null, floor: null, trim: null, tiles: null }, colors: {} };
+      items.forEach((it) => {
+        if (!isStarter(it)) return;
+        const pk = paintKey(it);
+        if (pk) { if (!rm.paint[pk] && it.sprite !== "any") rm.paint[pk] = it.id; return; }
+        const free = slotsOfType(man, it.slot).filter((s) => !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]))[0];
+        if (free) rm.placed[free.id] = it.id;
+      });
+      return rm;
+    }
+    /* The starter lab = every Price 0 row (except Awards), owned, placed in row order. */
+    function defaultState(items, man) {
+      const st = { v: 2, owned: items.filter(isStarter).map((it) => it.id), rooms: {}, awards: {} };
+      st.rooms[roomOf(man)] = defaultRoom(items, man);
+      return st;
+    }
+    /* Repairs anything a stale save or an edited Items tab could break. Never throws. */
+    function normalize(state, items, man) {
+      const byId = index(items), rid = roomOf(man), def = defaultState(items, man), drm = def.rooms[rid];
+      const st = state && typeof state === "object" ? clone(state) : {};
+      if (!st.rooms || typeof st.rooms !== "object") st.rooms = {};
+      delete st.funds; st.v = 2;
+      const owned = Array.isArray(st.owned) ? st.owned.slice() : [];
+      def.owned.forEach((id) => { if (owned.indexOf(id) < 0) owned.push(id); });
+      st.owned = owned.filter((id, i) => byId[id] && owned.indexOf(id) === i);
+      st.awards = st.awards && typeof st.awards === "object" ? st.awards : {};
+      const used = {};   // items already out in OTHER rooms (future wings) stay there
+      Object.keys(st.rooms).forEach((k) => { if (k === rid) return; const p = (st.rooms[k] || {}).placed || {}; for (const s in p) used[p[s]] = 1; });
+      const src = st.rooms[rid] && typeof st.rooms[rid] === "object" ? st.rooms[rid] : null;
+      let placed = {};
+      if (!src || !src.placed) placed = clone(drm.placed);   // a brand-new lab
+      else man.slots.forEach((s) => {
+        const id = src.placed[s.id], it = byId[id];
+        if (it && it.slot === s.type && st.owned.indexOf(id) >= 0 && !used[id]) { placed[s.id] = id; used[id] = 1; }
+      });
+      man.slots.forEach((s) => { if (s.required && !placed[s.id] && drm.placed[s.id]) placed[s.id] = drm.placed[s.id]; });
+      man.slots.forEach((s) => { if (s.parent && !placed[s.parent]) delete placed[s.id]; });   // nothing floats
+      const paint = (src && src.paint) || {}, colors = (src && src.colors) || {}, outColors = {};
+      ["wall", "floor", "trim", "tiles"].forEach((k) => { const it = byId[paint[k]]; if (!it || paintKey(it) !== k || st.owned.indexOf(it.id) < 0) paint[k] = drm.paint[k]; });
+      ["wall", "floor", "trim"].forEach((k) => { if (isHex(colors[k])) outColors[k] = colors[k].toUpperCase(); });
+      st.rooms[rid] = { placed, paint: { wall: paint.wall, floor: paint.floor, trim: paint.trim, tiles: paint.tiles }, colors: outColors };
+      return st;
+    }
+    const owns = (lab, id) => !!(lab && Array.isArray(lab.owned) && lab.owned.indexOf(id) >= 0);
+    /* What a store button says, and why. rank is the student's rank index. */
+    function canBuy(item, lab, funds, rank) {
+      if (isAward(item)) return { ok: false, state: "award", why: "Earned, never bought" };
+      if (owns(lab, item.id)) return { ok: false, state: "owned", why: "Yours" };
+      if (rankNeeded(item) > rank) return { ok: false, state: "rank", why: `Reach ${LFH.RANKS[rankNeeded(item)].name} to buy` };
+      if (item.price > funds) return { ok: false, state: "short", why: `Need $${item.price - funds} more` };
+      return { ok: true, state: "buy", why: "" };
+    }
+    /* Buying takes the money and adds the item. Returns the new { lab, funds }, or null if it can't be bought. Placing is separate. */
+    function buy(item, lab, funds, rank) {
+      if (!canBuy(item, lab, funds, rank).ok) return null;
+      const next = clone(lab); next.owned.push(item.id);
+      return { lab: next, funds: funds - item.price };
+    }
+    /* The game grants Awards (never sold). For "Your Graph", data = { title, type: "line"|"bar"|"scatter", points: [[x, y], ...] }.
+       Granting again replaces the data (the newest graph wins). A new award goes up in an empty poster spot if there is one. */
+    function grant(lab, items, itemId, data, man) {
+      const st = normalize(lab, items, man), it = index(items)[itemId];
+      if (!it) return st;
+      const isNew = st.owned.indexOf(itemId) < 0;
+      if (isNew) st.owned.push(itemId);
+      if (data !== undefined) st.awards[itemId] = clone(data);
+      const rm = st.rooms[roomOf(man)];
+      if (isNew && !Object.keys(rm.placed).some((k) => rm.placed[k] === itemId)) {
+        const free = slotsOfType(man, it.slot).filter((s) => !rm.placed[s.id] && (!s.parent || rm.placed[s.parent]))[0];
+        if (free) rm.placed[free.id] = itemId;
+      }
+      return st;
+    }
+    return { PAINT_KEYS, PATTERNS, SLOTS, paintKey, isAward, isStarter, roomOf, slotsOfType, rankNeeded, defaultState, normalize, owns, canBuy, buy, grant };
+  })();
+  LFH.owns = (P, id) => LFH.lab.owns(P.lab, id);
 
   /* Pay rewards evidence quality and finished side missions, never speed.
      First run: at least 40% of the job's pay even for rough work. Replays: 25% (same data). */
@@ -617,12 +723,16 @@
   };
 
   /* Progress lives in ONE versioned object (Firestore-ready: only the storage adapter touches storage). */
-  LFH.freshProgress = () => ({ v: 2, labName: "", funds: 0, owned: { "paint-lavender": true }, placed: { room: "paint-lavender" },
+  LFH.freshProgress = () => ({ v: 3, labName: "", funds: 0, lab: null,     // lab is filled in by sanitizeProgress (it needs the Items tab and the room art)
     cases: {}, bayCorrect: 0, bayBest: 0, inbox: { read: {}, arrived: {}, seq: 0 }, history: [], backedUpAt: "", offers: {} });
   LFH.migrate = function (raw) {
     const P = LFH.freshProgress();
     if (!raw || typeof raw !== "object") return P;
-    if (raw.v === 2) return Object.assign(P, raw, { offers: Object.assign(P.offers, raw.offers || {}), inbox: Object.assign(P.inbox, raw.inbox || {}), owned: Object.assign(P.owned, raw.owned || {}), placed: Object.assign(P.placed, raw.placed || {}) });
+    if (raw.v === 3) return Object.assign(P, raw, { offers: Object.assign(P.offers, raw.offers || {}), inbox: Object.assign(P.inbox, raw.inbox || {}) });
+    if (raw.v === 2) {   // game v0.3-v0.5: the old shop kept owned as a map and one item per slot. Keep what's owned; the room is laid out fresh.
+      const keep = Object.assign({}, raw); delete keep.owned; delete keep.placed;
+      return Object.assign(P, keep, { v: 3, lab: { owned: Object.keys(raw.owned || {}) }, offers: Object.assign(P.offers, raw.offers || {}), inbox: Object.assign(P.inbox, raw.inbox || {}) });
+    }
     // v1 (game v0.1-v0.2): keep stars and practice, start the business fresh
     P.cases = raw.cases || {}; P.bayCorrect = raw.bayCorrect || 0; P.bayBest = raw.bayBest || 0;
     return P;
@@ -665,42 +775,13 @@
       const released = preview || i === 0 || !!(P.cases[prev.id] && P.cases[prev.id].done);
       if (!released) return;
       const done = !!(P.cases[c.id] && P.cases[c.id].done);
-      const needs = c.requires && !P.owned[c.requires] ? c.requires : "";
+      const needs = c.requires && !LFH.owns(P, c.requires) ? c.requires : "";
       out.push({ c, state: needs ? "locked" : done ? "done" : "open", needs });
     });
-    M.cases.filter((c) => c.status === "Teaser").forEach((c) => out.push({ c, state: P.owned[c.requires] ? "soon" : "teaser", needs: P.owned[c.requires] ? "" : c.requires }));
+    M.cases.filter((c) => c.status === "Teaser").forEach((c) => out.push({ c, state: LFH.owns(P, c.requires) ? "soon" : "teaser", needs: LFH.owns(P, c.requires) ? "" : c.requires }));
     return out;
   };
 
-  /* What a shop button says, and why. */
-  LFH.shopState = function (item, P, items) {
-    if (P.placed[item.slot] === item.id) return { state: "placed" };
-    if (P.owned[item.id]) return { state: "owned" };
-    const rep = LFH.rep(P);
-    if (item.rank && rep < (LFH.RANKS[LFH.rankIndex(item.rank)] || { at: 0 }).at) return { state: "rank", why: `Reach ${item.rank}` };
-    const need = LFH.SLOT_NEEDS[item.slot];
-    if (need && !P.placed[need]) { const n = items.find((x) => x.slot === need); return { state: "needs", why: `Needs a ${n ? n.name.toLowerCase() : need}` }; }
-    if (P.funds < item.price) return { state: "short", why: `Need $${item.price - P.funds} more` };
-    return { state: "buy" };
-  };
-  LFH.buy = function (item, P, items) {
-    const st = LFH.shopState(item, P, items);
-    if (st.state !== "buy") return false;
-    P.funds -= item.price; P.owned[item.id] = true; P.placed[item.slot] = item.id;
-    return true;
-  };
-
-  /* Items must match the baked room: the sprite exists and sits in the slot the Sheet says. */
-  LFH.validateArt = function (C, ART) {
-    const err = [];
-    (C.items || []).forEach((it) => {
-      const L = ART.layers[it.sprite];
-      if (!L) err.push(`${it.id}: no art named '${it.sprite}' (re-bake the room)`);
-      else if (it.slot === "room" ? !it.sprite.startsWith("base-") : L.slot !== it.slot) err.push(`${it.id}: Sheet slot '${it.slot}' but the art sits in '${L.slot}'`);
-    });
-    ["desk", "laptop", "bench"].forEach((k) => { if (!ART.layers[k]) err.push(`room art is missing the ${k}`); });
-    return err;
-  };
   LFH.drillNames = {
     "scale-read": "Gridline values", "axis-read": "Which axis?", "point-find": "Find the point", "uneven-spacing": "Steepest section",
     "trend-read": "Spot the trend", "extrapolate": "Predict what's next", "phase-region": "Phase regions", "phase-trace": "Trace a phase change",
@@ -709,7 +790,7 @@
 
 
   /* ---------------- Content: vocabulary, quarantine, and where the game gets its content ---------------- */
-  LFH.SCHEMA = "0.4.0";
+  LFH.SCHEMA = "0.5.0";
   const mm = (v) => String(v || "").split(".").slice(0, 2).join(".");
   LFH.schemaOk = (v) => mm(v) === mm(LFH.SCHEMA);
 
@@ -724,7 +805,8 @@
     Drill: Object.keys(LFH.drills),
     Correct: ["Yes"], Build: ["Yes"], AxisScale: ["Linear", "Log"],
     PhaseSeries: ["Melting line", "Boiling line", "Sublimation line"],
-    ItemKind: ["Equipment", "Decor", "Pet", "Theme", "Paint"],
+    ItemKind: ["Equipment", "Cosmetic", "Theme", "Award"],
+    Slot: LFH.lab.SLOTS,
     Rank: LFH.RANKS.map((r) => r.name),
   });
   LFH.checkLists = function (lists) {
@@ -752,7 +834,7 @@
       data: C.data.filter((d) => keepVis.has(d.visualId)),
       tables: C.tables.filter((t) => keepVis.has(t.visualId)),
       questions, options: C.options.filter((o) => qk.has(o.qid)),
-      items: (C.items || []).map((it) => (gone.has(it.unlocks) ? Object.assign({}, it, { unlocks: "" }) : it)),
+      items: C.items || [],
     });
   };
   /* Round 0: skip rows that can never work (orphans, bad items/tags/check questions) and say so. */
@@ -782,26 +864,32 @@
     }
     return { C, held, warnings, errors: ["too many cascading problems in the content"] };
   };
-  /* The room art is baked into the game. A shop item whose art isn't there is skipped, and a job that needs it is held back. */
+  /* The room art is baked into the game. An item whose picture isn't there is skipped, and a job that needs it is held back.
+     If the starter lab can't be drawn at all (no bench, say), that is a blocking error and the game falls back. */
   LFH.fitToArt = function (C, ART) {
-    const warnings = [], drop = new Set();
+    const man = ART.manifest, warnings = [], errors = [], drop = new Set();
     (C.items || []).forEach((it) => {
-      const L = ART.layers[it.sprite];
-      if (!L) { warnings.push(`${it.id}: the room art has no '${it.sprite}' yet, so the item isn't in the shop (it needs a re-bake)`); drop.add(it.id); }
-      else if (it.slot === "room" ? !it.sprite.startsWith("base-") : L.slot !== it.slot) { warnings.push(`${it.id}: the Sheet says slot '${it.slot}' but the art sits in '${L.slot}', so the item isn't in the shop`); drop.add(it.id); }
+      if (LFH.lab.paintKey(it)) return;   // paint is drawn by code, not baked
+      const spots = LFH.lab.slotsOfType(man, it.slot);
+      if (!spots.length) { warnings.push(`${it.id}: the room has no '${it.slot}' spot, so the item isn't in the store`); drop.add(it.id); }
+      else if (!spots.every((sp) => man.sprites[it.sprite + "@" + sp.id])) { warnings.push(`${it.id}: the room art has no '${it.sprite}' picture for a ${it.slot} spot yet, so the item isn't in the store (it needs a re-bake)`); drop.add(it.id); }
     });
-    if (!drop.size) return { C, warnings, held: [] };
+    const items = (C.items || []).filter((it) => !drop.has(it.id));
+    if (items.length) man.slots.filter((sp) => sp.required).forEach((sp) => {
+      if (!items.some((it) => it.slot === sp.type && it.price === 0 && it.kind !== "Award")) errors.push(`Items: the starter lab has no ${sp.label.toLowerCase()} (one '${sp.type}' row with Price 0)`);
+    });
+    if (!drop.size) return { C, warnings, errors, held: [] };
     const held = C.cases.filter((c) => c.requires && drop.has(c.requires)).map((c) => c.id);
-    held.forEach((id) => warnings.push(`${id}: held back, because the item it requires isn't in the shop yet`));
-    return { C: LFH.dropCases(Object.assign({}, C, { items: C.items.filter((it) => !drop.has(it.id)) }), held), warnings, held };
+    held.forEach((id) => warnings.push(`${id}: held back, because the item it requires isn't in the store yet`));
+    return { C: LFH.dropCases(Object.assign({}, C, { items }), held), warnings, errors, held };
   };
   /* Everything the game does to raw content before using it. */
   LFH.prepare = function (C, ART) {
     const q = LFH.quarantine(C);
-    const f = ART ? LFH.fitToArt(q.C, ART) : { C: q.C, warnings: [], held: [] };
+    const f = ART ? LFH.fitToArt(q.C, ART) : { C: q.C, warnings: [], errors: [], held: [] };
     const held = Object.assign({}, q.held);
-    f.held.forEach((id) => (held[id] = ["needs a shop item whose art isn't in the game yet"]));
-    return { C: f.C, held, warnings: (C.warnings || []).concat(q.warnings, f.warnings, LFH.checkLists(C.lists)), errors: q.errors };
+    f.held.forEach((id) => (held[id] = ["needs a store item whose art isn't in the game yet"]));
+    return { C: f.C, held, warnings: (C.warnings || []).concat(q.warnings, f.warnings, LFH.checkLists(C.lists)), errors: q.errors.concat(f.errors) };
   };
 
   /* Where content comes from: the live Sheet feed, else the last good copy, else the snapshot built into the page.
@@ -853,10 +941,8 @@
   };
 
   /* Saved progress meets changed content: drop what no longer exists, never crash. */
-  LFH.sanitizeProgress = function (P, C) {
-    const byId = {}; (C.items || []).forEach((it) => (byId[it.id] = it));
-    Object.keys(P.placed).forEach((slot) => { const it = byId[P.placed[slot]]; if (!it || it.slot !== slot) delete P.placed[slot]; });
-    if (!P.placed.room) { const base = (C.items || []).find((it) => it.slot === "room" && P.owned[it.id]); if (base) P.placed.room = base.id; }
+  LFH.sanitizeProgress = function (P, C, ART) {
+    if (ART) P.lab = LFH.lab.normalize(P.lab, C.items || [], ART.manifest);
     if (P.activeJob && !C.cases.some((c) => c.id === P.activeJob.caseId)) delete P.activeJob;
     return P;
   };

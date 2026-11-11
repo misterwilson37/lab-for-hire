@@ -12,8 +12,8 @@ c = json.loads(raw)
 def refuse(why): sys.exit("REFUSED: " + why)
 if c.get("errors"): refuse("the feed reports blocking errors: " + "; ".join(c["errors"][:3]))
 if c.get("draft") or any(x.get("status") == "Draft" for x in c.get("cases", [])): refuse("this feed includes Drafts. Use the students' feed (no ?include=draft).")
-if not str(c.get("schema", "")).startswith("0.4"): refuse(f"schema {c.get('schema')} is not the one this game reads (0.4.x)")
-if c.get("sheetSchema") and not str(c["sheetSchema"]).startswith("0.4"): refuse(f"the Sheet says schema {c['sheetSchema']}; upgrade the Sheet first")
+if not str(c.get("schema", "")).startswith("0.5"): refuse(f"schema {c.get('schema')} is not the one this game reads (0.5.x)")
+if c.get("sheetSchema") and not str(c["sheetSchema"]).startswith("0.5"): refuse(f"the Sheet says schema {c['sheetSchema']}; upgrade the Sheet first")
 for k in ("errors", "warnings", "lists", "draft", "sheetSchema"): c.pop(k, None)     # diagnostics belong to the live feed, not the snapshot
 c["source"] = "snapshot of the live feed"
 data = json.dumps(c, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
