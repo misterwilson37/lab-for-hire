@@ -11,9 +11,11 @@
 | `tests/play.py` | The entire game in Chromium, start to finish |
 | `tests/play_feed.py` | The real Apps Script builds each feed (`make_feeds.js`); Chromium plays against it |
 | `tests/test_repo.py` | Docs links, file references, the guard hook, no secrets or student data |
-| `tests/grid_tools.js`, `gas_mock.js`, `xlsx_to_grid.py`, `fixtures/` | Shared helpers. `fixtures/lab_space_items.tsv` is the real 39-row Items tab from the live Sheet |
+| `tests/grid_tools.js`, `gas_mock.js`, `xlsx_to_grid.py`, `fixtures/` | Shared helpers. `fixtures/lab_space_items.tsv` is the 39-row Items tab as it stood in the live Sheet before the Nov 2026 rebuild |
 | `content/embed_content.py` | Refresh the game's built-in offline content from the live feed (writes `src/content.json`, then builds) |
-| `art/bake.html`, `bake.py`, `embed_art.py` | The room: layout and homemade equipment (`bake.html`), rendering to sprites (`bake.py`), and writing `src/art.json` (`embed_art.py`) |
+| `art/scene.js`, `bake.html`, `bake.py`, `setup.sh` | The room: camera, lights, spots, and every item's recipe (`scene.js`); the bake page (`bake.html`); rendering each item alone in each spot and writing `src/art.json` (`bake.py`) |
+| `art/overlay_check.py` | Proof that the stacked pictures match a true 3D render of the same lab. Run it after any re-bake |
+| `art/portraits/` | The source photos for the scientist posters, with their licenses (`portraits/CREDITS.md`) |
 
 ## The six checks
 1. `python3 build.py --check`: generated files are exactly what `src/` builds
@@ -23,9 +25,11 @@
 ```
 python3 build.py                                                   after editing anything in src/
 python3 dev/content/embed_content.py "https://script.google.com/macros/s/XXXX/exec"     refresh the offline content copy
-python3 dev/art/bake.py && python3 dev/art/embed_art.py            re-bake the room after editing dev/art/bake.html
+bash dev/art/setup.sh                                              once, before the first bake (three.js and the Kenney models)
+python3 dev/art/bake.py && python3 build.py                        re-bake the room after editing dev/art/scene.js or the Items tab
+python3 dev/art/overlay_check.py                                   prove the bake against a real 3D render
 ```
-`bake.py` downloads the Kenney CC0 models and three.js on first run into `dev/art/models` and `dev/art/node_modules`. Those and `dev/art/sprites` are git-ignored leftovers.
+`setup.sh` downloads the Kenney CC0 models and three.js into `dev/art/models` and `dev/art/node_modules`. Those and `dev/art/sprites` are git-ignored leftovers.
 
 ## Rules of thumb
 - **Edit `src/`, never generated files.** A hook blocks it and check step 1 catches it. If you change `src/engine.js`, run `python3 build.py`: the Sheet's script contains a copy.

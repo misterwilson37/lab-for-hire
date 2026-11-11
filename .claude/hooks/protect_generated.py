@@ -3,11 +3,11 @@
 Exit code 2 blocks the tool call and sends stderr to Claude as the reason. Anything unexpected exits 0 (never block on a malformed event)."""
 import json, os, sys
 HOW = {
-    "index.html": "edit src/shell.html, src/engine.js, or src/app.js, then run: python3 build.py",
+    "index.html": "edit src/shell.html, src/engine.js, src/lab.js, or src/app.js, then run: python3 build.py",
     "apps-script/LabForHire.gs": "edit src/sheet-script.gs (or src/engine.js, which it contains), then run: python3 build.py",
     "apps-script/appsscript.json": "it is written by build.py",
     "src/content.json": "it is the offline copy of the live Sheet: python3 dev/content/embed_content.py <feed URL>",
-    "src/art.json": "edit dev/art/bake.html, then: python3 dev/art/bake.py && python3 dev/art/embed_art.py",
+    "src/art.json": "it is baked: edit dev/art/scene.js (or the Items tab), then: python3 dev/art/bake.py && python3 build.py",
 }
 try:
     data = json.load(sys.stdin)

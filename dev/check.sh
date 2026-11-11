@@ -17,3 +17,4 @@ python3 dev/tests/play_feed.py index.html
 echo "== 6/6 repo hygiene: docs links resolve, hook guards generated files, no secrets or student data"
 python3 dev/tests/test_repo.py
 echo "== ALL CHECKS PASSED"
+echo "   (Changed the room art? Also run: python3 dev/art/overlay_check.py)"

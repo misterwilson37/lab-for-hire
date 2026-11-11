@@ -7,7 +7,7 @@ def ok(c, m):
     if c: passed += 1
     else: fails.append(m); print("FAIL", m)
 def rd(p): return open(os.path.join(ROOT, p), encoding="utf-8", errors="replace").read()
-SKIP_DIRS = {".git", "node_modules", "incoming", "__pycache__"}
+SKIP_DIRS = {".git", "node_modules", "incoming", "__pycache__", "sprites", "models"}
 def walk():
     for d, ds, fs in os.walk(ROOT):
         ds[:] = [x for x in ds if x not in SKIP_DIRS]
@@ -17,9 +17,9 @@ files = list(walk())
 # 1. the files a new session depends on exist
 for p in ["CLAUDE.md", "README.md", "HANDOFF.md", "build.py", "index.html", ".gitignore", ".claude/settings.json", ".claude/hooks/protect_generated.py",
           "src/shell.html", "src/engine.js", "src/app.js", "src/sheet-script.gs", "src/config.json", "src/content.json", "src/art.json",
-          "apps-script/LabForHire.gs", "apps-script/appsscript.json", "apps-script/INSTALL.md", "sheet/UPGRADE-LIVE-SHEET.md",
-          "docs/START-HERE.md", "docs/ARCHITECTURE.md", "docs/DECISIONS.md", "docs/ROADMAP.md", "docs/CONTENT-GUIDE.md", "docs/CLIENT-BRIEF.md",
-          "docs/PLAYTEST-LOG.md", "docs/ITEMS-CONFLICT.md", "docs/PROVENANCE.md", "incoming/README.md", "dev/check.sh", "dev/setup.sh"]:
+          "apps-script/LabForHire.gs", "apps-script/appsscript.json", "apps-script/INSTALL.md", "sheet/README.md", "src/lab.js", "dev/art/bake.py", "dev/art/scene.js",
+          "docs/ARCHITECTURE.md", "docs/DECISIONS.md", "docs/ROADMAP.md", "docs/CONTENT-GUIDE.md", "docs/CLIENT-BRIEF.md",
+          "docs/PLAYTEST-LOG.md", "docs/PROVENANCE.md", "incoming/README.md", "dev/check.sh", "dev/setup.sh"]:
     ok(os.path.exists(os.path.join(ROOT, p)), f"missing required file: {p}")
 ok(any(re.match(r"sheet/LabForHire_Content_v[\d.]+\.xlsx$", f) for f in files), "the seed workbook is in sheet/")
 
@@ -46,8 +46,9 @@ try:
     cfg = json.loads(rd(".claude/settings.json")); ok(True, "")
     hook = cfg["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
     ok("protect_generated.py" in hook and os.path.exists(os.path.join(ROOT, ".claude/hooks/protect_generated.py")), "settings.json points at a hook that exists")
-    ok(all(any(a.endswith("__" + w) for a in cfg["permissions"]["ask"]) for w in ["update_values", "append_values", "batch_clear_values", "update_spreadsheet", "insert_dimension"]), "every Sheet write tool is on the ask list")
-    ok("Bash(git push *)" in cfg["permissions"]["ask"], "git push asks first")
+    # Jake gave standing permission for Sheet writes and pushes on Nov 11, 2026 (see docs/DECISIONS.md D29). Copying a tab OUT to another spreadsheet still asks.
+    ok(all(any(a.endswith("__" + w) for a in cfg["permissions"]["allow"]) for w in ["update_values", "append_values", "update_spreadsheet"]), "the Sheet write tools Jake pre-approved are on the allow list")
+    ok(any(a.endswith("__copy_sheet_to_another_spreadsheet") for a in cfg["permissions"]["ask"]), "copying a tab to another spreadsheet still asks first")
 except Exception as e:
     ok(False, f".claude/settings.json is invalid: {e}")
 def hook(path, raw=None):
@@ -74,9 +75,9 @@ for f in files:
     for pat, what in [(r"sk-[A-Za-z0-9]{20,}", "an API key"), (r"AKIA[0-9A-Z]{16}", "an AWS key"), (r"AIza[0-9A-Za-z_-]{30,}", "a Google API key"), (r"-----BEGIN [A-Z ]*PRIVATE KEY", "a private key"),
                       (r"sumnerschools\.org", "a school-district address"), (r"(?i)\bpassword\s*[:=]\s*['\"][^'\"]+", "a hard-coded password")]:
         ok(not re.search(pat, t), f"{f}: looks like {what}")
-ok(not any(f.endswith((".png", ".jpg", ".jpeg", ".gif", ".env")) or os.path.basename(f).startswith(".env") for f in files), "no images or .env files in the repo (art ships inside src/art.json)")
+ok(not any((f.endswith((".png", ".jpg", ".jpeg", ".gif")) and not f.startswith("dev/art/portraits/")) or f.endswith(".env") or os.path.basename(f).startswith(".env") for f in files), "no images or .env files in the repo, except the poster source photos in dev/art/portraits/ (baked art ships inside src/art.json)")
 ok(not any(os.path.sep + "__pycache__" in os.path.sep + f or f.endswith(".pyc") for f in files), "no Python cache files")
-big = [(f, os.path.getsize(os.path.join(ROOT, f))) for f in files if os.path.getsize(os.path.join(ROOT, f)) > 700_000]
+big = [(f, os.path.getsize(os.path.join(ROOT, f))) for f in files if os.path.getsize(os.path.join(ROOT, f)) > (2_500_000 if f in ("index.html", "src/art.json") else 700_000)]
 ok(not big, f"unexpectedly large files: {big}")
 print(f"{passed} repo checks passed")
 sys.exit(1 if fails else 0)

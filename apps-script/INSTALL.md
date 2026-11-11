@@ -16,7 +16,7 @@ The script **only reads** the Sheet. It never changes it, and the feed it serves
 5. Test it: paste the URL into a browser tab. You should see text starting `{"schema":"0.3.0"`. (Add `?include=draft` to also see drafts.)
 
 ## 3. Tell the game where the Sheet is
-In `index.html`, find `{"feedUrl": ""}` near the top. Paste your URL between the second pair of quotes. Upload `index.html` to GitHub Pages as usual. Do this once.
+Send the URL to whoever is working on the code (or to Claude). They run `python3 build.py --feed-url <your URL>` and push; GitHub Pages picks it up. This happens once.
 
 ## 4. Check your content any time
 Reload the Sheet. A **Lab for Hire** menu appears:

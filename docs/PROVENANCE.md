@@ -15,9 +15,10 @@ Where everything came from, so nobody has to guess.
 **Not used, anywhere:** items from the state unit test, items from the STEMscopes worksheet (copyright Accelerate Learning, and test security), or Hanson's slides. They informed which skills and misconceptions to cover. The uploaded PDFs are deliberately not in the repo.
 
 ## Art
-- **Kenney** asset packs (Furniture Kit, Cube Pets, Graveyard Kit), **CC0** (public domain), via the GitHub mirror `Hidencod/tge-assets` (`packs/<pack>/<model>.glb`). Attribution isn't required; crediting Kenney is courteous.
-- The beaker, flask, test-tube rack, microscope, pressure gauge, materials tester, and grow station are homemade from primitives in `dev/art/bake.html`, in the same low-poly style.
-- three.js (MIT) is used only to bake (downloaded by `dev/art/bake.py`); the shipped game contains no three.js.
+- **Kenney** asset packs (Furniture Kit, Space Kit, Cube Pets, Graveyard Kit), **CC0** (public domain), via the GitHub mirror `Hidencod/tge-assets`. Attribution isn't required; crediting Kenney is courteous.
+- The beaker, flask, test-tube rack, microscope, calorimeter, laptop, pressure gauge, lab bench, grow cabinet, materials tester, spark coil, graph posters, and the award frame are homemade from primitives in `dev/art/scene.js`, in the same low-poly style.
+- Scientist portraits: public domain in the United States. Sources and reasons: `dev/art/portraits/CREDITS.md`.
+- three.js (MIT) is used only to bake; the shipped game contains no three.js.
 - Fonts: Fredoka and Atkinson Hyperlegible (SIL Open Font License) from Google Fonts, optional with fallbacks.
 
 ## Code

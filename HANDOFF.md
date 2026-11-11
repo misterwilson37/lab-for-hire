@@ -1,67 +1,79 @@
 # HANDOFF: Lab for Hire
 
-**Updated:** Nov 10, 2026 · **Game v0.4.1** (engine 0.4.0, content schema 0.3.0, Sheet script 0.1.0) · **Repo baseline commit, tag `v0.4.1`**
-**Session names so far:** Playfair (the claude.ai conversation that built everything up to here). The next session picks a new one (rule 7).
-**People:** **Jake Wilson**: builder and deployer (GitHub Pages). **Hanson**: 7th-grade science teacher and client; owns content, standards, misconceptions, and student feedback.
+**Updated:** Nov 11, 2026 · **Game v0.6.0** (engine 0.6.0, room module 0.4.0, content schema 0.5.0, Sheet script 0.1.0)
+**Session names so far:** Playfair (v0.1 to v0.3, and the v0.4.1 feed and repo work), Hooke (the lab-space room), Minard (save file and Cold Pack template), **Nightingale** (this session: merged all three). The next session picks a new one.
+**People:** **Jake Wilson**: builder and deployer (GitHub Pages serves `main`). **Hanson**: 7th-grade science teacher and client; owns content, standards, misconceptions, and student feedback.
 
-This file is the *state of the world*. Rules and commands: `CLAUDE.md`. Why things are the way they are: `docs/DECISIONS.md`. What to build next: `docs/ROADMAP.md`. Setup for Jake: `docs/START-HERE.md`.
+This file is the state of the world. Rules and commands: `CLAUDE.md`. Why things are the way they are: `docs/DECISIONS.md`. What to build next: `docs/ROADMAP.md`. The live Sheet: `sheet/README.md`.
 
-## 0. The move to Claude Code (what changed in v0.4.1)
-The project moved from a claude.ai conversation into this git repo. **No behavior changed.** The rebuilt `index.html` differs from v0.4.0 in two comment lines only (proved by diff). What changed is the *shape*:
-- `index.html` was a 390 KB generated file with everything embedded. It is now built from `src/` by `python3 build.py`. **Edit `src/`, never the generated files** (a hook and `build.py --check` enforce this).
-- One command runs every check: `bash dev/check.sh` (6 steps).
-- `CLAUDE.md`, `.claude/` (permissions, a guard hook, slash commands), and `docs/` carry the context that used to live in conversation.
-- The Python Sheet reader was already retired (Apps Script is the one reader).
+## 1. What happened this session (v0.6.0): three projects became one
+Before Nov 11 there were three half-finished copies, and no single one had all the work:
+- **GitHub `main`** (v0.5.0, Minard): Cold Pack job template and the Drive save file, but no connection to the Sheet.
+- **A zip from the claude.ai conversation** (labelled v0.4.1, Playfair): the Sheet feed, quarantine, `src/` layout, docs and guard rails, but none of v0.5.0.
+- **`lab-space/`** (v0.3.0, Hooke): a better room and a 50-item catalog, never merged into either game.
 
-## 1. State at a glance
+They are now one game, by a three-way merge from the shared v0.3.0 ancestor. Nothing was dropped on purpose. What changed:
+- **Game lines merged.** Template jobs (Cold Pack) go through quarantine and safe resume like Sheet cases; a save file loaded from Drive is sanitized against today's content.
+- **One lab, one store** (this closed the old "Items catalog conflict"). The lab-space room replaced the game's old room, shop, and art. `src/lab.js` draws it; the rules live in the engine as `LFH.lab`. Progress is v3: one `lab` record, and money lives only in `progress.funds`. Old saves migrate.
+- **New art:** a laptop on the desk and a pressure gauge, in the same style. Tapping the laptop in the room opens it; tapping the desk, the chair, or anything on the desk goes to the workbench.
+- **The framed "Your Graph" award** is earned by finishing a Build-mode job, and shows the student's own points.
+- **Content schema 0.5.0.** Items: Kind is Equipment, Cosmetic, Theme, or Award; Slot is a kind of spot; Rank required is a rank *name*; **Unlocks is a short note students read** ("cell cases"), and a case names the equipment it needs in Cases > Requires item.
+- **Tests combined and extended.** `bash dev/check.sh` (six steps) and `python3 dev/art/overlay_check.py` all pass.
+
+## 2. State at a glance
 | Thing | State |
 |---|---|
-| Game (5 live jobs, 3 teasers, lab room, laptop, shop, ledger, Build mode, branching help) | **Built and tested.** Preview: https://claude.ai/artifact/3Dmvj54n6hjBkBSsdE3Egb (built-in content only; claude.ai blocks the live feed) |
-| Live Sheet feed (Apps Script, quarantine, safe resume) | **Built and tested against a stand-in. NOT deployed.** `apps-script/INSTALL.md` |
-| The live Sheet itself | On the **old v0.2.1 layout**; needs upgrading (`sheet/UPGRADE-LIVE-SHEET.md`). The game correctly refuses it, so students are unaffected |
-| Items catalog | **Two competing catalogs. Jake decides.** (1a) |
+| Game (5 live jobs, 3 teasers, room, laptop, store, storage, paint, awards, Build mode, branching help, Cold Pack template, save file) | **Built; every check passes** |
+| Live Sheet content | **Rewritten to schema 0.5.0 on Nov 11, but the final verification pass did not run.** See section 3 |
+| Apps Script feed | **Built and tested against a stand-in. NOT deployed** (`apps-script/INSTALL.md`). The game uses its built-in content until then |
 | Real iPad Safari | **Not tested** |
-| Real students | Not yet |
+| Real students | Not yet. Development only until Hanson is comfortable (Jake, Nov 11) |
 
-**The live content Sheet:** "Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`, owned by one of Jake's **tertiary** Google accounts. The Sheets connector attached to Claude is account-wide for that account, so it must never be pointed at an account that owns student data. (An older Sheet, ID `1D2uX2xzW87ykVcJ5uv3lDvwwdxfmvOOefkTN9QDOSqY`, is superseded.)
+## 3. READ FIRST next session: finish the live Sheet (`sheet/README.md` has the detail)
+The live Sheet ("Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`) was rebuilt in place to match `sheet/LabForHire_Content_v0.5.0.xlsx`. Every tab was written, and the old tabs are kept as hidden copies named "old ... (before Nov 11 rebuild)". **Work stopped before verification** because every write needed a manual approval click (Jake's organization disables "Always allow" for connectors in this product), and Jake asked to pause.
 
-## 1a. READ FIRST: the open decision (Rule 9)
-The room and shop were built in two places at once. This game has a 22-item catalog and a baked 27-layer room. A parallel "lab-space" conversation built a different 39-item catalog, a different slot system, and a different art pipeline, and wrote an `Items` tab and an `Items Legend` tab into the live Sheet. **Its code and art have never been seen by this project.** Two catalogs for one shop violate Rule 9, so one must go. Nothing has been overwritten or merged.
+Still to do, in order (about four Sheet calls):
+1. **Verify** every row against the seed (the checksum method in `sheet/README.md`). Until this passes, treat the Sheet as *probably* right, not proven.
+2. Delete the hidden scratch tab `zz_check`.
+3. Optional tidy: header notes, and dropdowns on any column that lacks them.
+4. Then Jake pastes the script (`apps-script/INSTALL.md`), and the real proof runs: **Lab for Hire > Check my content** in the Sheet, then `python3 build.py --feed-url <the /exec URL>` and `?preview=1`.
 
-**Recommendation:** adopt the lab-space catalog's data model (starter lab defined in the Sheet, bench items that fit any of 3 spots, split paint, unlock-by-case-type) and keep this game's economy, inbox, shop rules, and storage. That needs Jake to upload that conversation's zip to `incoming/lab-space/`. Options and the merge plan: `docs/ITEMS-CONFLICT.md`.
-**Until decided:** nothing breaks (the game refuses the old-layout Sheet and uses its built-in content, and `?preview=1` says why).
+## 4. Hanson and approachability (the reason for the next design step)
+Hanson found the whole thing hard to approach when she and Jake met. Jake's read (Nov 11): the hard part is **the workflow across all the tabs**. One question means rows in Questions and Options, linked by IDs to Cases, Visuals, Data, and SideMissions.
 
-## 2. What the game is
-A 7th-grade science data-reading game. Students run a "lab for hire". Full detail: `docs/ARCHITECTURE.md`.
-- **Five live jobs:** Movin' Molecules (**Build mode**: choose axes, choose a scale, plot, TALK check, certify, then analyze), The Cold Pack Challenge (multi-line graph + cost table; the coldest option isn't the best), Mission to Kestrel-b (real water phase diagram), Fog for Frankenstein (real CO2 phase diagram on a **log** axis), The Winter Bounce Test (text table + bar graph). **Three locked teaser jobs** advertise the year ahead (cells, plant growth, medical design).
-- **Branching help** (Hanson: "awesome"; sacred): every wrong option is tagged; Calibration (graph-reading) before Archive (science); Calibration side missions run "Watch one" then "Your turn" on freshly generated graphs; a second miss reveals the answer with the reason; getting help never costs money.
-- **The lab:** a baked isometric room (27 layers); the laptop holds Inbox (jobs, locked teasers, client replies), Supply shop (22 items), Training sim (13 skills, unlimited fresh graphs), Ledger. The workbench runs the jobs. Pay rewards evidence quality and finished side missions, never speed.
-- **Safe live editing:** a bad case is held back, the rest play; an unreadable or old-layout Sheet is refused (last good copy, then built-in content); a student mid-job keeps their place when content changes; drafts never reach students.
-- **Storage:** browser only (`localStorage` via `LFH.store`). No accounts, no student data.
+**Proposed, not built, and not yet agreed:** one tab per case. She duplicates a template tab and fills it top to bottom: the client and pitch, the data table, then each question with its answer choices and the mistake each wrong choice reveals. No IDs to type, nothing to cross-reference. SideMissions and Items stay as shared tabs. Only the Sheet's reader (`src/sheet-script.gs`) would change; the game would not. Until then: she hands over raw material in any form, Claude drafts the case (`/new-case`), and she reviews it in preview with yes/no answers.
 
-## 3. Verified, and NOT verified
-**Verified** (`bash dev/check.sh`): the engine's rules; the Apps Script reader against the real seed workbook (exact parity with the shipped snapshot) and a reconstruction of the live Sheet, including blank rows, reversed or missing columns, held-back cases, caching, expiry, chunking, and the menu; the whole game and every Sheet-to-browser scenario in real Chromium (desktop, 810x1080 iPad portrait, 390 phone, dark mode).
+## 5. Verified, and NOT verified
+**Verified** (`bash dev/check.sh`): the engine's rules (including 2,000 generated Cold Pack jobs checked against their own graphs, the lab rules, and save migration); the Apps Script reader against the real seed workbook and a reconstruction of the Sheet as it was found; the whole game start to finish in Chromium, including the store, storage, paint, the award, backup and restore; seven Sheet-to-browser scenarios. The room art matches a true 3D render (starter lab: no wrong pixels beyond 1-pixel outlines).
 **NOT verified:**
-- **Google's real servers.** `getActiveSpreadsheet()` in a web app, `CacheService` gzip round-trips, the authorization prompt, and CORS from GitHub Pages to `script.google.com` were exercised only against a stand-in. **The first deploy is a real test.** If the feed fails, the game silently uses its built-in content, so it never breaks, but it won't show Sheet edits.
-- **Real-iPad Safari.** Everything is emulated Chromium.
-- **District content filter** may block `script.google.com`; students would keep playing with built-in content.
-- Real students.
+- **Google's real servers** (the script has only run against a stand-in). The first deploy is a real test.
+- **The live Sheet's content after the rebuild** (section 3).
+- **Real-iPad Safari**, including the share sheet and Drive picker for the save file, and the color picker for Any Color paint.
+- Whether the district filter allows `script.google.com` and `*.github.io`.
+- Real students. Whether 11 items on the first Cold Pack play fits 15 minutes.
 
-## 4. What to do next, in order (details: `docs/ROADMAP.md`)
-1. **Jake decides the Items catalog** (1a).
-2. **Upgrade the live Sheet** to schema 0.3.0 (`sheet/UPGRADE-LIVE-SHEET.md`; every write asks Jake first).
-3. **Deploy the feed** (`apps-script/INSTALL.md`), then `python3 build.py --feed-url <the /exec URL>`, and verify on Google's servers.
-4. **A real-iPad Safari playthrough** (Jake), and fix what breaks.
-5. Save code, sticky graph in portrait, mentor text into the Sheet, teacher release per unit.
-6. The investigation loop: job templates (real replay), Plan-the-test, Recommendation (CER), then Build mode for bar graphs and phase diagrams.
-7. Content by unit with Hanson (`/new-case`). Later: Firestore (Rules 10 and 11).
+## 6. Known gaps (honest list)
+- `docs/ARCHITECTURE.md` was updated at the top for v0.6.0 but its body still describes parts of v0.4.1 in places. Trust the code and this file where they differ.
+- The game is now about 1.4 MB (the room art is inside the page). Fine on school Wi-Fi; worth knowing.
+- On the home screen the room is small on a laptop-sized window; the gap under the desk is not tappable (the desk top, chair, and items are).
+- The pet no longer hops when a job is finished; a message says what the pet thinks instead.
+- Old v2 saves keep their money and any items that still exist, but their room is laid out fresh. No students have saves yet.
+- The mentor's welcome email still lives in code, not the Sheet. Teacher release per unit is not built. Non-template jobs still replay the same data at 25% pay.
 
-## 5. Open items by person
-**Jake:** decide Items; say "go" on the Sheet upgrade; deploy the feed (can the tertiary account deploy a web app as "Anyone"? and does the district filter allow `script.google.com` and `*.github.io`?); one real-iPad playthrough; choose a license before publishing the repo publicly; confirm the embedded content snapshot is acceptable under Rule 9 as an *explicit offline cache* of the live feed (my reading: yes; overrule if not).
-**Hanson:** play the preview, ideally with a few students; rule on the real-water diagram disagreeing with her worksheet key, on the sample data, and on "dissolves" vs "reacts"; is 7 to 8 questions per case right; which unit first.
+## 7. Open items by person
+**Jake:**
+- Fix or work around the approval prompts before the next Sheet session (ask the organization admin about "Always allow" for connectors, or expect about four clicks).
+- Paste the script into the Sheet and deploy it (`apps-script/INSTALL.md`, about ten minutes), then send the `/exec` URL.
+- One real-iPad Safari playthrough, including *Save my lab* to Drive.
+- Decide whether to pursue the one-tab-per-case layout (section 4), ideally with Hanson looking at a mock-up.
+- Choose a license before making the repo public.
+**Hanson:** play the preview; rule on the real-water diagram disagreeing with her worksheet key, the sample data, and "dissolves" vs "reacts"; say whether the plan questions match how she teaches fair tests; pick which unit comes first; say when the framed graph should be earned (today: finishing any Build-mode job).
 
-## 6. Where things are
-`CLAUDE.md` (rules and commands) · `docs/ARCHITECTURE.md` (engine API, Sheet schema, tests) · `docs/DECISIONS.md` (25 decisions, with costs) · `docs/ROADMAP.md` (backlog with acceptance criteria) · `docs/CONTENT-GUIDE.md` (writing cases) · `docs/CLIENT-BRIEF.md` (Hanson's words, verbatim) · `docs/PLAYTEST-LOG.md` · `docs/ITEMS-CONFLICT.md` · `docs/PROVENANCE.md` · `docs/START-HERE.md` · `sheet/` (seed workbook + upgrade runbook) · `apps-script/` (generated script + `INSTALL.md`) · `dev/` (tests and tools) · `incoming/` (drop zone).
+## 8. Where things are
+`CLAUDE.md` (rules and commands) · `docs/ARCHITECTURE.md` · `docs/DECISIONS.md` · `docs/ROADMAP.md` · `docs/CONTENT-GUIDE.md` · `docs/CLIENT-BRIEF.md` (Hanson's words) · `docs/PLAYTEST-LOG.md` · `docs/PROVENANCE.md` · `sheet/` (seed workbook and the live Sheet's status) · `apps-script/` (generated script and `INSTALL.md`) · `src/` (the sources) · `dev/` (tests, the art bake, tools) · `incoming/` (drop zone).
 
-## 7. Session log
-- **Playfair** (claude.ai): built the game, the lab shell, the Sheet feed; found the seed bug and the Items conflict; moved the project into this repo.
+## 9. Session log
+- **Playfair** (claude.ai): built the game through v0.3.0; later the Sheet feed and the repo layout (v0.4.1).
+- **Hooke** (claude.ai): the lab-space room, catalog, and art bake (v0.3.0 of that module).
+- **Minard** (claude.ai): save file (v0.4.0) and the Cold Pack job template (v0.5.0).
+- **Nightingale** (Claude Code, Nov 11, 2026): found the three-way fork; merged it into v0.6.0; added the laptop and pressure gauge; rebuilt the live Sheet's content (verification pending).

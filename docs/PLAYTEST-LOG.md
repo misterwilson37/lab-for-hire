@@ -30,7 +30,7 @@ What testing found, in order. Each entry is a real defect and the rule that came
 
 ## Found while building the Sheet feed (Nov 2026)
 - **The seed workbook had ten blank rows under seven headers** (header notes were attached to row 11, a builder bug since v0.1.0). The live Sheet inherited them. The reader now skips blank rows and matches columns by header name; the seed is fixed (v0.3.1). (D13)
-- **The live Sheet was on the old layout** and had a competing Items catalog. The schema gate now refuses such a Sheet so jobs can't silently pay $0 (D15), and the conflict is documented (`ITEMS-CONFLICT.md`).
+- **The live Sheet was on the old layout** and had a competing Items catalog. The schema gate now refuses such a Sheet so jobs can't silently pay $0 (D15), and the conflict was settled in v0.6.0 (`DECISIONS.md` D26).
 
 ## Still untested (be honest)
 - Real iPad Safari (everything so far is emulated Chromium: desktop, 810x1080 iPad portrait, 390 phone, dark mode).

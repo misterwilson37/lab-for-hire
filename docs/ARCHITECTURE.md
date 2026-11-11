@@ -1,5 +1,18 @@
 # Architecture
 
+> **Updated for v0.6.0 (Nov 2026) at the top only.** The sections below were written for v0.4.1 and are still right about the content model, the feed, quarantine, and the tests' purpose, but they predate the merge in places. Where they differ from this box, this box and the code win.
+>
+> **What v0.6.0 changed**
+> - **Sources:** `src/shell.html`, `src/engine.js`, `src/lab.js` (new), `src/app.js`, `src/sheet-script.gs`. `build.py` puts them, `src/content.json`, `src/art.json`, and `src/config.json` into `index.html`.
+> - **The lab:** `LFH.lab` (engine) holds the rules: `defaultState`, `normalize`, `canBuy`, `buy`, `grant`, `owns`, plus the vocabulary `SLOTS`, `PAINT_KEYS`, `PATTERNS`. `LabRoom.mount(el, { state, funds, items, manifest, sprites, rank, readOnly, onTap, onChange })` in `src/lab.js` draws the room and the store and reports changes through `onChange(lab, funds, event)`. The old `LFH.shopState`, `LFH.buy`, `LFH.SLOT_NEEDS`, and `LFH.validateArt` are gone.
+> - **Progress is v3:** `{ v: 3, labName, funds, lab, cases, bayCorrect, bayBest, inbox, history, backedUpAt, offers, activeJob }`. `lab` is `{ v: 2, owned: [itemId], rooms: { main: { placed, paint, colors } }, awards }`. `LFH.sanitizeProgress(P, C, ART)` fills and repairs it. `LFH.migrate` upgrades v1 and v2 saves.
+> - **Art:** `src/art.json` is `{ manifest, sprites }`. The manifest lists the room's spots (`slots`), each picture's position (`sprites["<sprite>@<spot>"]`), thumbnails, and the room's walls and floor as polygons that code recolors. `LFH.fitToArt(C, ART)` drops items with no picture and holds the jobs that need them. Bake: `dev/art/` (`scene.js` holds every recipe).
+> - **Job templates** (from v0.5.0): `LFH.TEMPLATES`, `LFH.instance(caseId, offer)`, `LFH.nextOffer`, `LFH.recommendationStrong`, `LFH.templateErrors`, `LFH.validateTemplates`. A template case has a Cases row and its tags in SideMissions, and no rows in Visuals, Data, Tables, Questions, or Options. `LFH.reconcileJob(M, snap, templateQs)` resumes one.
+> - **Save file** (from v0.4.0): `LFH.exportSave`, `LFH.importSave`, `LFH.checksum`, `LFH.saveSummary`, `LFH.hasProgress`, `LFH.backupAge`.
+> - **Content schema 0.5.0, Items tab:** `ItemID, Name, Slot, Price, Kind, Unlocks, Rank required, Sprite, Description`. Kind: Equipment, Cosmetic, Theme, Award. Slot: a kind of spot (`bench`, `bench-item`, `chair`, `shelf`, `shelf-top`, `plant`, `machine`, `table`, `rug`, `poster`, `pet`, `lantern`) or a paint (`paint-wall`, `paint-floor`, `paint-trim`, `paint-tiles`). Price 0 means part of the starter lab. Unlocks is a note for students. Rank required is a rank name. For paint, Sprite is a color, the word `any`, or a pattern.
+> - **Screens:** `room` (the lab, read-only, with taps), `shop` (the store: the same module with its panel), `laptop` (Inbox, Training sim, Ledger; the store opens from here too), then the job screens as before, plus `run` for template jobs.
+
+
 How Lab for Hire fits together, and where to change what. Pair with `DECISIONS.md` (why) and `CONTENT-GUIDE.md` (what good content looks like).
 
 ## The big picture
@@ -62,7 +75,7 @@ Nothing is sent back to any server. There are no accounts and no student data.
 : Teacher-facing guide. Line 1 declares the schema version the game checks (`Schema version 0.3.0`).
 
 
-The game reads the Sheet only through the feed. The reader matches columns by header name (so inserted or reordered columns are fine), skips blank rows, and tolerates a missing `Pay` or `Requires item` column (with a warning). A Sheet whose `Start Here` line 1 declares a different schema than the game's is **refused** (`LFH.content.judge`). Required dropdowns in the seed workbook are listed in `sheet/UPGRADE-LIVE-SHEET.md`.
+The game reads the Sheet only through the feed. The reader matches columns by header name (so inserted or reordered columns are fine), skips blank rows, and tolerates a missing `Pay` or `Requires item` column (with a warning). A Sheet whose `Start Here` line 1 declares a different schema than the game's is **refused** (`LFH.content.judge`). Required dropdowns in the seed workbook are listed in `sheet/README.md`.
 
 ### Error tags in the seed (25)
 

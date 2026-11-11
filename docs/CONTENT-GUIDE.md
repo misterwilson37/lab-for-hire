@@ -44,7 +44,7 @@ Set `Student builds it?` = Yes on a **line graph**. The student chooses the axes
 Give the Melting, Boiling, and Sublimation lines as `Data` rows (series names must match exactly). The regions are computed from your lines, and **the answer-key check uses the same code that draws them**, so a drawn region can never disagree with a key. Questions to cover: state at a (T, P); particle motion for that state; which point has the greatest average kinetic energy (the temperature, not the pressure: that's `SCI-KE-TEMP`); trace a change at constant pressure or constant temperature.
 
 ## Equipment, jobs, and the shop
-A job can require equipment (`Requires item`). Equipment *unlocks job types*; cosmetics just decorate. Practice is always free, so a student short on funds is never locked out of learning. Put new equipment in `Items` (see `ITEMS-CONFLICT.md` before adding anything; the catalog is being decided).
+A job can require equipment (`Requires item`). Equipment *unlocks job types*; cosmetics just decorate. Practice is always free, so a student short on funds is never locked out of learning. Put new equipment in `Items`: give it Kind Equipment, a Slot, a Sprite that already exists (a new picture needs a re-bake), and a few words in Unlocks that tell students what it's for.
 
 ## Checklist before you set a case to Live
 - [ ] Status is Draft until every box is ticked, then Live.

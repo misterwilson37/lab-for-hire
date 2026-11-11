@@ -68,8 +68,8 @@ Students open a Google Classroom link and play. No login means no compliance sur
 **D20. All storage goes through `LFH.store`.** (Firestore later.)
 Jake wants Firestore eventually. When it arrives it replaces the adapter's functions and nothing else. It also brings the COPPA and Tennessee privacy work (reuse TypeThatBook's), Rule 11 for any teacher view, and a Rule 10 harness first.
 
-**D21. Room art: Kenney CC0 3D models baked to layered sprites through one locked camera. OPEN: which Items catalog wins.**
-No artist was available, and image generators can't keep 40 items consistent. Kenney's CC0 models plus a few homemade primitives (beaker, flask, microscope, rack), all rendered through the same isometric camera and lighting, look like one set with no hand-curation. Items go in fixed **slots**, and each is rendered alone so layers stack with no alignment math. Recolors are code. *Open:* a parallel conversation built a different catalog and art pipeline (39 items, flexible slots, different art recipes). Two catalogs for one shop violate Rule 9. See `ITEMS-CONFLICT.md`.
+**D21. Room art: Kenney CC0 3D models baked to layered sprites through one locked camera. (The catalog question was settled in D26.)**
+No artist was available, and image generators can't keep 40 items consistent. Kenney's CC0 models plus a few homemade primitives (beaker, flask, microscope, rack), all rendered through the same isometric camera and lighting, look like one set with no hand-curation. Items go in fixed **slots**, and each is rendered alone so layers stack with no alignment math. Recolors are code. *Was open:* a parallel conversation built a different catalog and art pipeline; see D26.
 
 **D22. iPad Safari first.**
 Students are on 1:1 iPads. No `color-mix()`, touch-friendly targets, portrait stacks the graph above the question (a sticky graph is on the roadmap). Real-device testing is still owed.
@@ -84,3 +84,17 @@ Connectors mirror an account's permissions; there is no per-file picker. The con
 
 **D25. Tests run against real data, and every harness that matters failed first.**
 The seed workbook, a reconstruction of the live Sheet (the real 39-row Items tab is a fixture), and the shipped snapshot are the fixtures. Examples of real bugs caught: the seed's misplaced header notes (ten blank rows), `null >= 0` letting a blank price read as free, progress not saving between plotted points, a test that silently depended on the snapshot's age.
+
+## The merge (v0.6.0, Nov 2026)
+
+**D26. The lab-space room is the one lab and store; the game's own room, shop, and art were deleted.** (Jake, Nov 11, 2026)
+Three copies of the project had drifted apart: the feed line (v0.4.1), the template and save-file line (v0.5.0), and the lab-space room. They were merged from their shared v0.3.0 ancestor. For the room, lab-space won on design: the starter lab is defined in the Sheet (Price 0 rows, placed in row order), equipment fits any free bench spot, paint is split into walls, floor, trim, and pattern, nothing is ever lost (Storage), and awards are earned. *Cost:* the page grew to about 1.4 MB, old saves get a freshly laid-out room, and the 22-item catalog is gone.
+
+**D27. The lab's rules live in the engine (`LFH.lab`); `src/lab.js` only draws. Money lives only in `progress.funds`.**
+The lab-space module carried its own rules and its own copy of the funds. Keeping either would have meant two records of one quantity and rules the Sheet's checker could not see. The module was cut down to drawing and taps; buying, the starter lab, repairs, and awards are engine functions with tests. *Cost:* the module is no longer a drop-in standalone demo.
+
+**D28. A case names the equipment it requires; an item's Unlocks cell is a note for students, not a key.**
+Lab-space used case *types* (`cells`, `reactions`) as keys, with their labels in code. The merged design keeps Cases > Requires item (an ItemID from a dropdown) and makes Items > Unlocks a few words students read ("cell cases"). One microscope still unlocks every case that requires it, there is no list of types to maintain, and Hanson can word the label herself. Rank required is a rank *name* from a dropdown, not a number.
+
+**D29. Claude may edit the content Sheet without asking each time; bulk changes go in as an imported file.** (Jake, Nov 11, 2026)
+Jake gave standing permission for Sheet edits, GitHub pushes (including to `main` while the project is development-only), and the Sheet's script. His organization disables "Always allow" for connectors, so each connector write still needs a click. Therefore: small fixes by connector, anything larger as an `.xlsx` he imports once (File > Import > Replace spreadsheet), or later through a menu item in the Sheet's own script. Back up first and verify afterwards (`sheet/README.md`).
