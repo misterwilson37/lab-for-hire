@@ -24,12 +24,12 @@ They are now one game, by a three-way merge from the shared v0.3.0 ancestor. Not
 | Thing | State |
 |---|---|
 | Game (5 live jobs, 3 teasers, room, laptop, store, storage, paint, awards, Build mode, branching help, Cold Pack template, save file) | **Built; every check passes** |
-| Live Sheet content | **Rewritten to schema 0.5.0 on Nov 11, but the final verification pass did not run.** See section 3 |
-| Apps Script feed | **Built and tested against a stand-in. NOT deployed** (`apps-script/INSTALL.md`). The game uses its built-in content until then |
+| Live Sheet content | **Replaced on Nov 12 by importing `sheet/LabForHire_Content_v0.5.0.xlsx`** (File > Import > Replace spreadsheet), the same file the tests read. This supersedes the connector rebuild described in section 3 |
+| Apps Script feed | **Deployed by Jake on Nov 12** and the game is pointed at it (`src/config.json`). **Not yet confirmed end to end**: this build environment cannot reach `script.google.com`, so Jake checks it with `?preview=1` and the Sheet's Check my content menu |
 | Real iPad Safari | **Not tested** |
 | Real students | Not yet. Development only until Hanson is comfortable (Jake, Nov 11) |
 
-## 3. READ FIRST next session: finish the live Sheet (`sheet/README.md` has the detail)
+## 3. History: the Nov 11 connector rebuild (superseded on Nov 12 by a file import; nothing left to do here)
 The live Sheet ("Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`) was rebuilt in place to match `sheet/LabForHire_Content_v0.5.0.xlsx`. Every tab was written, and the old tabs are kept as hidden copies named "old ... (before Nov 11 rebuild)". **Work stopped before verification** because every write needed a manual approval click (Jake's organization disables "Always allow" for connectors in this product), and Jake asked to pause.
 
 Still to do, in order (about four Sheet calls):

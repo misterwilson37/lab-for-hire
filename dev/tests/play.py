@@ -16,7 +16,12 @@ C = json.loads(re.search(r'<script id="lfh-content" type="application/json">([\s
 correct = {}
 for o in C["options"]:
     if o["correct"]: correct.setdefault(o["qid"], []).append(o["text"])
-url = "file://" + HTML
+# The playthrough tests the game itself, so it must not depend on the network or on whatever the live Sheet holds today:
+# play a copy of the page with the feed address blanked. (play_feed.py covers the feed, against feeds it controls.)
+CFG = re.compile(r'(<script id="lfh-config" type="application/json">)(.*?)(</script>)', re.S)
+assert CFG.search(src), "the page should carry its feed config"
+_page = os.path.join(tempfile.mkdtemp(), "page.html"); open(_page, "w", encoding="utf-8").write(CFG.sub(lambda m: m.group(1) + '{"feedUrl": ""}' + m.group(3), src, 1))
+url = "file://" + _page
 errs, log = [], []
 def pick(pg, texts):
     for t in texts: [b for b in pg.query_selector_all("[data-opt]") if b.inner_text().strip() == t][0].click()

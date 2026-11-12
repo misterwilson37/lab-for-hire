@@ -13,7 +13,7 @@ The script **only reads** the Sheet. It never changes it, and the feed it serves
 2. **Execute as:** Me. **Who has access:** Anyone. Click **Deploy**.
 3. Google asks you to authorize. It will warn the app is "unverified" (it's your own script): **Advanced → Go to Lab for Hire (unsafe) → Allow**.
 4. Copy the **Web app URL**. It ends in `/exec`.
-5. Test it: paste the URL into a browser tab. You should see text starting `{"schema":"0.3.0"`. (Add `?include=draft` to also see drafts.)
+5. Test it: paste the URL into a browser tab. You should see text starting `{"schema":"0.5.0"`. (Add `?include=draft` to also see drafts.)
 
 ## 3. Tell the game where the Sheet is
 Send the URL to whoever is working on the code (or to Claude). They run `python3 build.py --feed-url <your URL>` and push; GitHub Pages picks it up. This happens once.

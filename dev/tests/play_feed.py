@@ -8,7 +8,8 @@ tmp = tempfile.mkdtemp(); subprocess.run(["node", os.path.join(HERE, "make_feeds
 FEEDS = {n[:-5]: open(os.path.join(tmp, n)).read() for n in os.listdir(tmp)}
 src = open(HTML, encoding="utf-8").read()
 page_file = os.path.join(tmp, "page.html")
-open(page_file, "w", encoding="utf-8").write(src.replace('{"feedUrl": ""}', '{"feedUrl": "https://feed.test/exec"}', 1))
+CFG = re.compile(r'(<script id="lfh-config" type="application/json">)(.*?)(</script>)', re.S); assert CFG.search(src), "the page should carry its feed config"
+open(page_file, "w", encoding="utf-8").write(CFG.sub(lambda m: m.group(1) + '{"feedUrl": "https://feed.test/exec"}' + m.group(3), src, 1))   # whatever feed the page ships with, the test uses its own
 URL = "file://" + page_file
 state = {"feed": "seed", "fail": False, "hits": 0}
 errs, log = [], []

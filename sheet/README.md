@@ -3,7 +3,10 @@
 **Live Sheet:** "Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`, owned by Jake's tertiary Google account (no student data lives in that account; keep it that way).
 **Seed workbook:** `LabForHire_Content_v0.5.0.xlsx` in this folder. It is the test fixture and the reference copy of what the Sheet should contain. Once the feed is live, the Sheet is the source of truth and the seed is only a fixture.
 
-## Status (Nov 11, 2026): rebuilt to schema 0.5.0, verification pending
+## Status (Nov 12, 2026): replaced by import; the feed is deployed
+Jake imported `LabForHire_Content_v0.5.0.xlsx` with File > Import > Replace spreadsheet, which made the Sheet exactly the seed and removed the hidden backup tabs and `zz_check`. He also installed and deployed the script. Still to confirm: Check my content says all clear, and the game with `?preview=1` says "Content: the live Sheet". **For any future bulk change, do the same: build a file, Jake imports it.** The section below is the history of the earlier connector rebuild.
+
+## History (Nov 11, 2026): rebuilt in place by connector, verification never ran
 What was done to the live Sheet, in place:
 - Every original tab was duplicated first as a hidden tab named `old <Tab> (before Nov 11 rebuild)`. Unhide with View > Show hidden sheets. Delete them once the feed has been proven.
 - The ten blank rows under the headers of Cases, Visuals, Data, Tables, Questions, and Options were deleted (a bug in an old seed builder had put them there).
