@@ -7,7 +7,8 @@ const T = require("../tests/grid_tools.js");
 const url = JSON.parse(fs.readFileSync(path.join(T.ROOT, "src/config.json"), "utf8")).feedUrl;
 if (!url) { console.log("No feed address is set (src/config.json)."); process.exit(1); }
 (async () => {
-  const get = async (q) => { const r = await fetch(url + q, { redirect: "follow" }); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
+  // curl, not fetch: curl follows Google's redirect and honors a proxy set in the environment (cloud sessions have one)
+  const get = async (q) => JSON.parse(require("child_process").execFileSync("curl", ["-sSL", "-m", "60", url + q], { maxBuffer: 1 << 26 }).toString());
   const live = await get("?fresh=1"), draft = await get("?include=draft&fresh=1");
   console.log(`feed schema ${live.schema}, Sheet says ${live.sheetSchema}, read at ${live.generated}`);
   console.log("blocking errors:", JSON.stringify(live.errors), "| notes:", JSON.stringify(live.warnings));
