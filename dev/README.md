@@ -9,6 +9,7 @@
 | `tests/test_engine.js` | The engine: rules, answer keys, 13 drills x 300 rolls, economy, content rules, quarantine, the content chooser, resume safety |
 | `tests/test_feed.js` | The real Apps Script on the real seed workbook (through `gas_mock.js`, a stand-in for Google), plus the messes real Sheets get |
 | `tests/test_tabs.js` | The one-tab-per-case layout: reads to the same content as the row layout, tabs are found without registering, problems are reported by tab and row, New case only adds a tab |
+| `content/check_live.js` | Reads the LIVE feed and compares it with the game's built-in copy (read-only; needs network access to Google) |
 | `content/make_case_tabs.py` | Builds the workbook Jake imports (`sheet/`) from the row-layout fixture |
 | `tests/play.py` | The entire game in Chromium, start to finish |
 | `tests/play_feed.py` | The real Apps Script builds each feed (`make_feeds.js`); Chromium plays against it |

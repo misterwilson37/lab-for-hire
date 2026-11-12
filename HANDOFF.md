@@ -29,14 +29,15 @@ Hanson found the old Sheet hard to approach, and Jake's read was that the tab-to
 - The Mistake dropdown shows plain words ("Graph: read the wrong point | CAL-POINT"); the descriptions live in the last column of SideMissions.
 - **Proof** (`dev/tests/test_tabs.js`, 56 checks, part of `bash dev/check.sh`): the script reads the case-tab workbook to exactly the same cases, graphs, data, tables, questions, and answer choices as the row workbook; the game's built-in copy is that content; two deliberate breaks of the reader were confirmed to fail the tests.
 - **To install (Jake):** paste the complete `apps-script/LabForHire.gs` over the script in the Sheet and deploy a **new version** (Deploy > Manage deployments > pencil > Version: New version; the address stays the same), THEN import the workbook (File > Import > Upload > Replace spreadsheet). Script first: the new script reads either layout, the old one cannot read the new workbook.
-- **Not verified:** on Google's real servers; with Hanson. Whether she finds it approachable is the real test.
+- **Installed by Jake and VERIFIED ON GOOGLE'S REAL SERVERS (Nov 12):** the live feed reports schema 0.5.0, no errors, no warnings; all eight sections are identical to the game's built-in copy; the game's own acceptance check passes with nothing held back; the dropdown lists match the game's vocabulary. Repeat any time with `node dev/content/check_live.js` (the environment's network must allow `script.google.com` and `script.googleusercontent.com`).
+- **Not verified:** with Hanson (whether she finds it approachable is the real test); *New case* and *Check my content* clicked on the real Sheet; the game in a browser showing "Content: the live Sheet".
 
 ## 2. State at a glance
 | Thing | State |
 |---|---|
 | Game (5 live jobs, 3 teasers, room, laptop, store, storage, paint, awards, Build mode, branching help, Cold Pack template, save file) | **Built; every check passes** |
-| Live Sheet content | **Replaced on Nov 12 by importing the row-layout workbook (v0.5.0, now `dev/tests/fixtures/LabForHire_rows_v0.5.0.xlsx`)** (File > Import > Replace spreadsheet), the same file the tests read. This supersedes the connector rebuild described in section 3 |
-| Apps Script feed | **Deployed by Jake on Nov 12** and the game is pointed at it (`src/config.json`). **Not yet confirmed end to end**: this build environment cannot reach `script.google.com`, so Jake checks it with `?preview=1` and the Sheet's Check my content menu |
+| Live Sheet content | **One tab per case (workbook v0.6.0), imported by Jake on Nov 12 and verified through the feed** |
+| Apps Script feed | **Live and verified on Google's servers (Nov 12)**: `node dev/content/check_live.js` shows it identical to the built-in copy. Not yet checked: the district filter on student iPads |
 | Real iPad Safari | **Not tested** |
 | Real students | Not yet. Development only until Hanson is comfortable (Jake, Nov 11) |
 
@@ -57,8 +58,6 @@ Hanson found the whole thing hard to approach when she and Jake met. Jake's read
 ## 5. Verified, and NOT verified
 **Verified** (`bash dev/check.sh`): the engine's rules (including 2,000 generated Cold Pack jobs checked against their own graphs, the lab rules, and save migration); the Apps Script reader against the real seed workbook and a reconstruction of the Sheet as it was found; the whole game start to finish in Chromium, including the store, storage, paint, the award, backup and restore; seven Sheet-to-browser scenarios. The room art matches a true 3D render (starter lab: no wrong pixels beyond 1-pixel outlines).
 **NOT verified:**
-- **Google's real servers** (the script has only run against a stand-in). The first deploy is a real test.
-- **The live Sheet's content after the rebuild** (section 3).
 - **Real-iPad Safari**, including the share sheet and Drive picker for the save file, and the color picker for Any Color paint.
 - Whether the district filter allows `script.google.com` and `*.github.io`.
 - Real students. Whether 11 items on the first Cold Pack play fits 15 minutes.
