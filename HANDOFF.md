@@ -1,6 +1,6 @@
 # HANDOFF: Lab for Hire
 
-**Updated:** Nov 11, 2026 · **Game v0.6.0** (engine 0.6.0, room module 0.4.0, content schema 0.5.0, Sheet script 0.1.0)
+**Updated:** Nov 12, 2026 · **Game v0.6.0** (engine 0.6.0, room module 0.4.0, content schema 0.5.0, **Sheet script 0.2.0**)
 **Session names so far:** Playfair (v0.1 to v0.3, and the v0.4.1 feed and repo work), Hooke (the lab-space room), Minard (save file and Cold Pack template), **Nightingale** (this session: merged all three). The next session picks a new one.
 **People:** **Jake Wilson**: builder and deployer (GitHub Pages serves `main`). **Hanson**: 7th-grade science teacher and client; owns content, standards, misconceptions, and student feedback.
 
@@ -20,17 +20,28 @@ They are now one game, by a three-way merge from the shared v0.3.0 ancestor. Not
 - **Content schema 0.5.0.** Items: Kind is Equipment, Cosmetic, Theme, or Award; Slot is a kind of spot; Rank required is a rank *name*; **Unlocks is a short note students read** ("cell cases"), and a case names the equipment it needs in Cases > Requires item.
 - **Tests combined and extended.** `bash dev/check.sh` (six steps) and `python3 dev/art/overlay_check.py` all pass.
 
+## 1a. Nov 12: one tab per case (built; waiting on Jake to install it)
+Hanson found the old Sheet hard to approach, and Jake's read was that the tab-to-tab workflow was the problem. So the Sheet is now **one tab per case, filled top to bottom, with no IDs to type**:
+- `sheet/LabForHire_Content_v0.6.0.xlsx` is the new workbook: Start Here (six steps), a tab for each of the 8 cases, **New case template**, **Practice questions**, SideMissions, Items, and a hidden Lists tab. Made from the row-layout fixture by `dev/content/make_case_tabs.py`.
+- The Sheet's script (v0.2.0) finds case tabs by itself: any tab whose top-left cell says `CASE` is a case; `CHECKS` marks practice questions; `CASE TEMPLATE` is ignored. It still reads the old row tabs if they exist, so both layouts work.
+- Menu **Lab for Hire > New case** copies the template, asks for a title, and fills in the Case ID, Draft status, and the next Order number. It is the only thing the script writes.
+- **Check my content** now reports problems by tab, question, choice, and row.
+- The Mistake dropdown shows plain words ("Graph: read the wrong point | CAL-POINT"); the descriptions live in the last column of SideMissions.
+- **Proof** (`dev/tests/test_tabs.js`, 56 checks, part of `bash dev/check.sh`): the script reads the case-tab workbook to exactly the same cases, graphs, data, tables, questions, and answer choices as the row workbook; the game's built-in copy is that content; two deliberate breaks of the reader were confirmed to fail the tests.
+- **To install (Jake):** paste the complete `apps-script/LabForHire.gs` over the script in the Sheet and deploy a **new version** (Deploy > Manage deployments > pencil > Version: New version; the address stays the same), THEN import the workbook (File > Import > Upload > Replace spreadsheet). Script first: the new script reads either layout, the old one cannot read the new workbook.
+- **Not verified:** on Google's real servers; with Hanson. Whether she finds it approachable is the real test.
+
 ## 2. State at a glance
 | Thing | State |
 |---|---|
 | Game (5 live jobs, 3 teasers, room, laptop, store, storage, paint, awards, Build mode, branching help, Cold Pack template, save file) | **Built; every check passes** |
-| Live Sheet content | **Replaced on Nov 12 by importing `sheet/LabForHire_Content_v0.5.0.xlsx`** (File > Import > Replace spreadsheet), the same file the tests read. This supersedes the connector rebuild described in section 3 |
+| Live Sheet content | **Replaced on Nov 12 by importing the row-layout workbook (v0.5.0, now `dev/tests/fixtures/LabForHire_rows_v0.5.0.xlsx`)** (File > Import > Replace spreadsheet), the same file the tests read. This supersedes the connector rebuild described in section 3 |
 | Apps Script feed | **Deployed by Jake on Nov 12** and the game is pointed at it (`src/config.json`). **Not yet confirmed end to end**: this build environment cannot reach `script.google.com`, so Jake checks it with `?preview=1` and the Sheet's Check my content menu |
 | Real iPad Safari | **Not tested** |
 | Real students | Not yet. Development only until Hanson is comfortable (Jake, Nov 11) |
 
 ## 3. History: the Nov 11 connector rebuild (superseded on Nov 12 by a file import; nothing left to do here)
-The live Sheet ("Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`) was rebuilt in place to match `sheet/LabForHire_Content_v0.5.0.xlsx`. Every tab was written, and the old tabs are kept as hidden copies named "old ... (before Nov 11 rebuild)". **Work stopped before verification** because every write needed a manual approval click (Jake's organization disables "Always allow" for connectors in this product), and Jake asked to pause.
+The live Sheet ("Lab for Hire (Claude Controlled)", ID `1M4VycqB1kpXEfEmt8aLGQBWvZVk6S7EiKKyk7Uiwffg`) was rebuilt in place to match the row-layout workbook (v0.5.0, now `dev/tests/fixtures/LabForHire_rows_v0.5.0.xlsx`). Every tab was written, and the old tabs are kept as hidden copies named "old ... (before Nov 11 rebuild)". **Work stopped before verification** because every write needed a manual approval click (Jake's organization disables "Always allow" for connectors in this product), and Jake asked to pause.
 
 Still to do, in order (about four Sheet calls):
 1. **Verify** every row against the seed (the checksum method in `sheet/README.md`). Until this passes, treat the Sheet as *probably* right, not proven.
@@ -38,7 +49,7 @@ Still to do, in order (about four Sheet calls):
 3. Optional tidy: header notes, and dropdowns on any column that lacks them.
 4. Then Jake pastes the script (`apps-script/INSTALL.md`), and the real proof runs: **Lab for Hire > Check my content** in the Sheet, then `python3 build.py --feed-url <the /exec URL>` and `?preview=1`.
 
-## 4. Hanson and approachability (the reason for the next design step)
+## 4. Hanson and approachability (background to section 1a; the design below is now built)
 Hanson found the whole thing hard to approach when she and Jake met. Jake's read (Nov 11): the hard part is **the workflow across all the tabs**. One question means rows in Questions and Options, linked by IDs to Cases, Visuals, Data, and SideMissions.
 
 **Proposed, not built, and not yet agreed:** one tab per case. She duplicates a template tab and fills it top to bottom: the client and pitch, the data table, then each question with its answer choices and the mistake each wrong choice reveals. No IDs to type, nothing to cross-reference. SideMissions and Items stay as shared tabs. Only the Sheet's reader (`src/sheet-script.gs`) would change; the game would not. Until then: she hands over raw material in any form, Claude drafts the case (`/new-case`), and she reviews it in preview with yes/no answers.

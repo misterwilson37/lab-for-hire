@@ -4,12 +4,13 @@
    they keep agreeing when the Sheet is messy the way real Sheets get (blank rows, shuffled columns, missing columns). */
 const assert = require("assert"), fs = require("fs"), path = require("path"), cp = require("child_process");
 const T = require("./grid_tools.js");
-const { ROOT, snapshot, ART, xlsx, SEED, clone, hdr, col, mapRows, dropColumn, blankRowsAfterHeader, reverseColumns, addRow, gas, feedOf, liveAsFound } = T;
+const { ROOT, snapshot: shipped, ART, xlsx, SEED, sameContent, clone, hdr, col, mapRows, dropColumn, blankRowsAfterHeader, reverseColumns, addRow, gas, feedOf, liveAsFound } = T;
 let fails = 0, passed = 0;
 const ok = (c, m) => { if (c) passed++; else { fails++; console.log("FAIL", m); } };
 const eq = (a, b, m) => { try { assert.deepStrictEqual(JSON.parse(JSON.stringify(a)), JSON.parse(JSON.stringify(b))); passed++; } catch (e) { fails++; console.log("FAIL", m, "\n", String(e.message).split("\n").slice(0, 14).join("\n")); } };
-const SECTIONS = ["cases", "items", "visuals", "data", "tables", "questions", "options", "tags"];
-const sect = (c) => Object.fromEntries(SECTIONS.map((k) => [k, c[k]]));
+// The game ships the content of the case-tab workbook (see test_tabs.js). This file tests the ROW layout, whose practice questions
+// carry different made-up IDs, so feeds are compared by content: sect() renames those IDs by what they are.
+const sect = sameContent, snapshot = sameContent(shipped);
 const LFH = gas(clone(SEED)).ctx.LFH;
 
 /* 1. THE PARITY PROOF: Apps Script reading the real seed workbook == the content the game ships with */
@@ -91,7 +92,7 @@ eq(sect(feedOf(clone(SEED), true)), sect(snapshot), "draft feed from the seed ==
 
 /* 6. THE MENU */
 { const G = gas(clone(SEED), { url: "https://script.google.com/macros/s/AKfyc.../exec" }); G.run("onOpen()");
-  ok(G.ctx.__menu.name === "Lab for Hire" && G.ctx.__menu.items.map((i) => i[1]).join() === "checkContent,clearFeedCache,showFeedAddress", "the menu: Check my content / Send my edits / Show feed address");
+  ok(G.ctx.__menu.name === "Lab for Hire" && G.ctx.__menu.items.map((i) => i[1]).join() === "newCase,checkContent,clearFeedCache,showFeedAddress", "the menu: New case / Check my content / Send my edits / Show feed address");
   G.run("checkContent()"); ok(G.dialogs.length === 1 && /Everything students will see looks good/.test(G.dialogs[0].html) && /5 live jobs/.test(G.dialogs[0].html) && /3 teasers/.test(G.dialogs[0].html), "'Check my content' on the seed: all clear, 5 live jobs + 3 teasers");
   G.run("showFeedAddress()"); ok(/\/exec/.test(G.alerts[0][1]), "shows the feed address");
   const U = gas(clone(SEED)); U.run("showFeedAddress()"); ok(/hasn't been deployed/.test(U.alerts[0][1]), "...or explains it isn't deployed yet"); }

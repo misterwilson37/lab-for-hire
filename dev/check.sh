@@ -10,6 +10,7 @@ echo "== 2/6 engine: logic, answer keys, drills, economy, content rules, the con
 node dev/tests/test_engine.js index.html
 echo "== 3/6 Sheet reader: real seed data through the real Apps Script, plus the messes real Sheets get"
 node dev/tests/test_feed.js
+node dev/tests/test_tabs.js
 echo "== 4/6 whole game, start to finish, in a real browser"
 python3 dev/tests/play.py index.html
 echo "== 5/6 Sheet -> browser: live edits, offline, broken cases, old-layout Sheet, mid-class edits"

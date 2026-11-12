@@ -26,6 +26,9 @@ Reload the Sheet. A **Lab for Hire** menu appears:
 
 Open the game with `?preview=1` on the end of its address to see drafts and a plain-English note about where its content came from.
 
+## Writing a case (the everyday part)
+Every case is one tab. Menu **Lab for Hire > New case**, type a title, and fill in the new tab from top to bottom. It stays a Draft until you change Status to Live. The Sheet's Start Here tab has the six steps.
+
 ## If something looks wrong
 - **The game shows old content.** Open it with `?preview=1`. The banner says whether it used the live Sheet and, if not, why. Common reason: the Sheet's layout is older than the game expects (the check says so).
 - **"Sorry, unable to open the file" in the browser test.** "Who has access" isn't set to *Anyone*, or you're signed in to several Google accounts. Try a private window.

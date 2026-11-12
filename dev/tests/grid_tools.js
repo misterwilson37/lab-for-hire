@@ -7,8 +7,13 @@ const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 const block = (id) => html.match(new RegExp(`<script id="${id}"[^>]*>([\\s\\S]*?)</script>`))[1].replace(/<\\\//g, "</");
 const snapshot = JSON.parse(block("lfh-content")), ART = JSON.parse(block("lfh-art"));
 const gasSrc = fs.readFileSync(path.join(ROOT, "apps-script/LabForHire.gs"), "utf8");
-const xlsx = fs.readdirSync(path.join(ROOT, "sheet")).filter((f) => /^LabForHire_Content_v.*\.xlsx$/.test(f)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).pop();
-const SEED = JSON.parse(cp.execFileSync("python3", [path.join(__dirname, "xlsx_to_grid.py"), path.join(ROOT, "sheet", xlsx)], { maxBuffer: 1 << 26 }).toString());
+const grid = (file) => JSON.parse(cp.execFileSync("python3", [path.join(__dirname, "xlsx_to_grid.py"), file], { maxBuffer: 1 << 26 }).toString());
+// Two workbooks, same content. SEED: the older row layout (one row per thing, linked by IDs); every "messy Sheet" test edits its rows.
+// TABS: the layout teachers use (one tab per case), made from SEED by dev/content/make_case_tabs.py; this is what the live Sheet holds.
+const xlsx = "LabForHire_rows_v0.5.0.xlsx";
+const SEED = grid(path.join(__dirname, "fixtures", xlsx));
+const tabsXlsx = fs.readdirSync(path.join(ROOT, "sheet")).filter((f) => /^LabForHire_Content_v.*\.xlsx$/.test(f)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).pop();
+const TABS = grid(path.join(ROOT, "sheet", tabsXlsx));
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const hdr = (g, tab) => g[tab].values[0].map((h) => String(h));
 const col = (g, tab, name) => { const i = hdr(g, tab).findIndex((h) => h.toLowerCase().startsWith(name.toLowerCase())); if (i < 0) throw new Error(`no column ${name} in ${tab}`); return i; };
@@ -37,4 +42,14 @@ function liveAsFound(g) {
   const sj = hdr(g, "Lists").indexOf("Status"); g.Lists.values = g.Lists.values.map((r) => r.map((c, i) => (i === sj && c === "Teaser" ? "" : c))); g.Lists.display = g.Lists.values.map((r) => r.map(String));
   return g;
 }
-module.exports = { ROOT, html, block, snapshot, ART, gasSrc, xlsx, SEED, clone, hdr, col, mapRows, dropColumn, blankRowsAfterHeader, reverseColumns, setCell, setWhere, addRow, gas, feedOf, liveAsFound, makeGas };
+/* Content, for comparing two feeds. Practice questions get made-up IDs that depend on the layout, so sameContent() renames them
+   by what they are (the mistake they are for, and their position among that mistake's questions). */
+const SECTIONS = ["cases", "items", "visuals", "data", "tables", "questions", "options", "tags"];
+const sect = (c) => Object.fromEntries(SECTIONS.map((k) => [k, c[k]]));
+function sameContent(c) {
+  const out = clone(sect(c)), ren = {}, n = {};
+  out.questions.forEach((q) => { if (q.role !== "Check") return; const k = (n[q.forTag] = (n[q.forTag] || 0) + 1); ren[q.id] = `CK:${q.forTag}:${k}`; q.id = ren[q.id]; q.order = k; });
+  out.options.forEach((o) => { if (ren[o.qid]) o.qid = ren[o.qid]; });
+  return out;
+}
+module.exports = { SECTIONS, sect, sameContent, ROOT, html, block, snapshot, ART, gasSrc, xlsx, SEED, tabsXlsx, TABS, clone, hdr, col, mapRows, dropColumn, blankRowsAfterHeader, reverseColumns, setCell, setWhere, addRow, gas, feedOf, liveAsFound, makeGas };
