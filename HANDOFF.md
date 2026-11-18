@@ -80,6 +80,8 @@ Hanson found the whole thing hard to approach when she and Jake met. Jake's read
 **Hanson:** play the preview; rule on the real-water diagram disagreeing with her worksheet key, the sample data, and "dissolves" vs "reacts"; say whether the plan questions match how she teaches fair tests; pick which unit comes first; say when the framed graph should be earned (today: finishing any Build-mode job).
 
 ## 8. Where things are
+**Hanson's guide** (a Google Doc in the tertiary account, written Nov 18 for the one-tab-per-case Sheet): [Lab for Hire: how to write a case](https://docs.google.com/document/d/17nzE151gtzomQJxzhaBsggCek4_epucBV30bxyAVNxA/edit). If the Sheet's layout or menu changes, update this doc too (Docs connector edits it in place; same link).
+
 `CLAUDE.md` (rules and commands) · `docs/ARCHITECTURE.md` · `docs/DECISIONS.md` · `docs/ROADMAP.md` · `docs/CONTENT-GUIDE.md` · `docs/CLIENT-BRIEF.md` (Hanson's words) · `docs/PLAYTEST-LOG.md` · `docs/PROVENANCE.md` · `sheet/` (seed workbook and the live Sheet's status) · `apps-script/` (generated script and `INSTALL.md`) · `src/` (the sources) · `dev/` (tests, the art bake, tools) · `incoming/` (drop zone).
 
 ## 9. Session log
